@@ -10,21 +10,23 @@ export default function Home() {
     }
 
     if (Notification.permission === "granted") {
-      showNotification();
+      await showNotification();
     } else if (Notification.permission !== "denied") {
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
-        showNotification();
+        await showNotification();
       }
     }
   };
 
-  const showNotification = () => {
+  const showNotification = async () => {
     console.log("Mencoba mengirim notifikasi...");
-    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-      console.log("Menggunakan Service Worker untuk notifikasi...");
-      navigator.serviceWorker.ready.then((registration) => {
-        registration.showNotification("POSYANDU BANJARSARI", {
+
+    if ("serviceWorker" in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        console.log("Menggunakan Service Worker untuk notifikasi...");
+        const options: NotificationOptions & { vibrate?: number[] } = {
           body: "Halo! Anda Waktunya Melahirkan 1 jam lagi.",
           icon: "/icon-192x192.png",
           badge: "/icon-192x192.png",
@@ -33,15 +35,19 @@ export default function Home() {
             dateOfArrival: Date.now(),
             primaryKey: 1,
           },
-        } as any);
-      });
-    } else {
-      console.log("Service Worker tidak ditemukan/aktif, menggunakan Browser Notification...");
-      new Notification("POSYANDU BANJARSARI", {
-        body: "Halo! Ini adalah notifikasi browser (Fallback).",
-        icon: "/icon-192x192.png",
-      });
+        };
+        await registration.showNotification("POSYANDU BANJARSARI", options);
+        return;
+      } catch (err) {
+        console.warn("SW notification gagal, fallback:", err);
+      }
     }
+
+    console.log("Menggunakan Browser Notification (fallback)...");
+    new Notification("POSYANDU BANJARSARI", {
+      body: "Halo! Ini adalah notifikasi browser (Fallback).",
+      icon: "/icon-192x192.png",
+    });
   };
 
   return (
