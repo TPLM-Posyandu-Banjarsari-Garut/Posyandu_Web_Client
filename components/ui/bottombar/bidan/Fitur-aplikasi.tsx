@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BottombarBidan from "./BottombarBidan";
 
 export default function FiturAplikasi() {
     return (
@@ -8,7 +9,7 @@ export default function FiturAplikasi() {
             </div>
             <div className="grid grid-cols-3 gap-y-6 gap-x-4">
                 {/* Feature 1: Data Bayi */}
-                <Link href="/bidan/(bayi)" className="flex flex-col items-center gap-2.5 group">
+                <Link href="/bidan/data-bayi" className="flex flex-col items-center gap-2.5 group">
                     <div className="w-16 h-16 rounded-[1.25rem] bg-pink-100 flex items-center justify-center text-pink-500 shadow-sm transition-transform active:scale-95 group-hover:shadow-md">
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
