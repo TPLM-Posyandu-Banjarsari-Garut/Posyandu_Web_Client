@@ -83,7 +83,7 @@ export default function Home() {
 
             rel="noopener noreferrer"
           >
-            Bidan
+            Test Bidan
           </a>
         </div>
       </main>
