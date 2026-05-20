@@ -53,10 +53,7 @@ export default function EdukasiPage() {
                             </div>
                             <div className="relative flex-1">
                                 <input 
-                                    type="text" 
-                                    onFocus={(e) => e.target.type = 'date'}
-                                    onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
-                                    placeholder="Pilih tanggal..."
+                                    type="date" 
                                     className="w-full px-3 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-[0_2px_10px_rgb(0,0,0,0.02)]"
                                 />
                             </div>
