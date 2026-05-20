@@ -2,6 +2,7 @@
 
 import BottombarBidan from '@/components/ui/bottombar/bidan/BottombarBidan';
 import DateFilterInput from '@/components/ui/DateFilterInput';
+import { FilterHalf, FilterRow } from '@/components/ui/FilterRow';
 import Link from 'next/link';
 
 export default function EdukasiPage() {
@@ -13,7 +14,7 @@ export default function EdukasiPage() {
 
     return (
         <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
-            <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200">
+            <div className="w-full max-w-md min-w-0 bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200">
 
                 {/* Header */}
                 <div className="bg-white px-6 pt-8 pb-4 flex justify-between items-center z-10 sticky top-0 shadow-sm">
@@ -26,7 +27,7 @@ export default function EdukasiPage() {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar bg-slate-50">
+                <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-6 py-6 custom-scrollbar bg-slate-50">
 
                     {/* Filter Section */}
                     <div className="mb-6 flex flex-col gap-3">
@@ -40,20 +41,24 @@ export default function EdukasiPage() {
                                 placeholder="Cari judul edukasi..."
                             />
                         </div>
-                        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
-                            <div className="relative min-w-0 w-full max-w-full">
-                                <select className="w-full min-w-0 max-w-full box-border px-3 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-[0_2px_10px_rgb(0,0,0,0.02)] appearance-none">
-                                    <option value="">Semua Kategori</option>
-                                    <option value="Kesehatan Ibu">Kesehatan Ibu</option>
-                                    <option value="Kesehatan Bayi">Kesehatan Bayi</option>
-                                    <option value="Pola Asuh">Pola Asuh</option>
-                                </select>
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                        <FilterRow>
+                            <FilterHalf>
+                                <div className="relative h-[3.25rem] w-full overflow-hidden">
+                                    <select className="filter-select-input absolute inset-0 h-full w-full box-border px-3 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-[0_2px_10px_rgb(0,0,0,0.02)] appearance-none">
+                                        <option value="">Semua Kategori</option>
+                                        <option value="Kesehatan Ibu">Kesehatan Ibu</option>
+                                        <option value="Kesehatan Bayi">Kesehatan Bayi</option>
+                                        <option value="Pola Asuh">Pola Asuh</option>
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                    </div>
                                 </div>
-                            </div>
-                            <DateFilterInput />
-                        </div>
+                            </FilterHalf>
+                            <FilterHalf>
+                                <DateFilterInput />
+                            </FilterHalf>
+                        </FilterRow>
                     </div>
 
                     {/* Stack Data */}
