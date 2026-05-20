@@ -61,3 +61,28 @@ body {
   -webkit-appearance: none;
   appearance: none;
 }
+
+/* Form: date/time di iOS Safari */
+.form-native-input {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-native-input::-webkit-calendar-picker-indicator,
+.form-native-input::-webkit-clear-button {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.form-native-input::-webkit-date-and-time-value {
+  text-align: left;
+}
