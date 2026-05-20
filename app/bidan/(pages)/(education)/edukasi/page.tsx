@@ -1,3 +1,5 @@
+'use client';
+
 import BottombarBidan from '@/components/ui/bottombar/bidan/BottombarBidan';
 import Link from 'next/link';
 
@@ -37,22 +39,25 @@ export default function EdukasiPage() {
                                 placeholder="Cari judul edukasi..."
                             />
                         </div>
-                        <div className="flex flex-col gap-3">
-                            <div className="relative w-full">
-                                <select className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-[0_2px_10px_rgb(0,0,0,0.02)] appearance-none">
+                        <div className="flex gap-2">
+                            <div className="relative flex-1">
+                                <select className="w-full px-3 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-[0_2px_10px_rgb(0,0,0,0.02)] appearance-none">
                                     <option value="">Semua Kategori</option>
                                     <option value="Kesehatan Ibu">Kesehatan Ibu</option>
                                     <option value="Kesehatan Bayi">Kesehatan Bayi</option>
                                     <option value="Pola Asuh">Pola Asuh</option>
                                 </select>
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                                    <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                                 </div>
                             </div>
-                            <div className="relative w-full">
+                            <div className="relative flex-1">
                                 <input 
-                                    type="date" 
-                                    className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-[0_2px_10px_rgb(0,0,0,0.02)]"
+                                    type="text" 
+                                    onFocus={(e) => e.target.type = 'date'}
+                                    onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
+                                    placeholder="Pilih tanggal..."
+                                    className="w-full px-3 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-[0_2px_10px_rgb(0,0,0,0.02)]"
                                 />
                             </div>
                         </div>
