@@ -40,10 +40,10 @@ export default function JadwalKonsultasiPage() {
                                 placeholder="Cari nama ibu..."
                             />
                         </div>
-                        <div className="flex gap-2 min-w-0">
+                        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
                             <DateFilterInput />
-                            <div className="relative min-w-0 flex-1 basis-0">
-                                <select className="w-full min-w-0 max-w-full px-3 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-[0_2px_10px_rgb(0,0,0,0.02)] appearance-none">
+                            <div className="relative min-w-0 w-full max-w-full">
+                                <select className="w-full min-w-0 max-w-full box-border px-3 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-[0_2px_10px_rgb(0,0,0,0.02)] appearance-none">
                                     <option value="">Semua Jadwal</option>
                                     <option value="Ditolak">Ditolak</option>
                                 </select>

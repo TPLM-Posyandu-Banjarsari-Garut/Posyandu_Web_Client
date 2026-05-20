@@ -13,12 +13,12 @@ export default function DateFilterInput({ className = '' }: DateFilterInputProps
     const [value, setValue] = useState('');
 
     return (
-        <div className={`relative min-w-0 flex-1 basis-0 ${className}`}>
+        <div className={`relative min-w-0 w-full max-w-full ${className}`}>
             <input
                 type="date"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                className={`${controlClassName} pr-9 ${value ? 'text-slate-700' : 'text-transparent [&::-webkit-datetime-edit]:opacity-0'} [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0`}
+                className={`${controlClassName} box-border min-w-0 max-w-full pr-9 ${value ? 'text-slate-700' : 'text-transparent [&::-webkit-datetime-edit]:opacity-0'} [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0`}
                 aria-label="Filter tanggal"
             />
             {!value && (
