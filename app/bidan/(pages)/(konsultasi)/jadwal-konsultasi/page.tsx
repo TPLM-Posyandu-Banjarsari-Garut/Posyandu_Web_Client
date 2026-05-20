@@ -1,3 +1,5 @@
+'use client';
+
 import BottombarBidan from '@/components/ui/bottombar/bidan/BottombarBidan';
 import Link from 'next/link';
 
