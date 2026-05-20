@@ -4,14 +4,14 @@ export default function BottombarBidan() {
   return (
     <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/90 backdrop-blur-lg border-t border-slate-100 flex justify-around items-center h-20 px-6 z-[999] rounded-t-3xl sm:rounded-t-none sm:rounded-b-[2.5rem] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
       <Link href="/bidan/home" className="flex flex-col items-center gap-1.5 text-blue-600">
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" /></svg>
         <span className="text-[10px] font-bold">Beranda</span>
       </Link>
-      <Link href="/bidan/data-imunisasi" className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-blue-600 transition-colors">
+      <Link href="/bidan/jadwal-konsultasi" className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-blue-600 transition-colors">
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-        <span className="text-[10px] font-bold">Laporan</span>
+        <span className="text-[10px] font-bold">Jadwal</span>
       </Link>
-      
+
       {/* Center Floating Action Button */}
       <div className="relative -top-6 flex justify-center">
         <button className="w-14 h-14 bg-gradient-to-tr from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white shadow-[0_8px_20px_rgba(79,70,229,0.4)] border-[4px] border-white hover:scale-105 active:scale-95 transition-all">
