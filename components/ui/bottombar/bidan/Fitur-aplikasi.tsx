@@ -33,7 +33,7 @@ export default function FiturAplikasi() {
                 </Link>
 
                 {/* Feature 4: Inventaris */}
-                <Link href="/bidan/inventaris" className="flex flex-col items-center gap-2.5 group">
+                <Link href="/bidan/data-inventaris" className="flex flex-col items-center gap-2.5 group">
                     <div className="w-16 h-16 rounded-[1.25rem] bg-purple-100 flex items-center justify-center text-purple-600 shadow-sm transition-transform active:scale-95 group-hover:shadow-md">
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                     </div>
