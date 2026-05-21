@@ -3,7 +3,7 @@
 import BottombarBidan from '@/components/ui/bottombar/bidan/BottombarBidan';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 
 // Interfaces
 interface HistoryItem {
@@ -26,7 +26,7 @@ interface BabyDetail {
     terakhirDiperbarui: string;
 }
 
-export default function BuatDataImunisasi() {
+function BuatDataImunisasiContent() {
     const searchParams = useSearchParams();
     const bayiIdParam = searchParams.get('bayiId');
     const namaParam = searchParams.get('nama');
@@ -767,5 +767,13 @@ export default function BuatDataImunisasi() {
                 <BottombarBidan />
             </div>
         </div>
+    );
+}
+
+export default function BuatDataImunisasi() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-slate-100 flex items-center justify-center"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>}>
+            <BuatDataImunisasiContent />
+        </Suspense>
     );
 }
