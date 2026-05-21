@@ -68,14 +68,18 @@ export default function DetailBayi() {
                             NIK: 3201010101010001
                         </div>
 
-                        <div className="w-full grid grid-cols-2 gap-4 border-t border-slate-100 pt-5">
-                            <div className="flex flex-col items-center p-3.5 bg-slate-50/80 rounded-[1rem] border border-slate-100">
-                                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Umur</span>
-                                <span className="text-sm font-bold text-slate-800">6 Bulan</span>
+                        <div className="w-full grid grid-cols-3 gap-3 border-t border-slate-100 pt-5">
+                            <div className="flex flex-col items-center p-2.5 bg-slate-50/80 rounded-[1rem] border border-slate-100">
+                                <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Umur</span>
+                                <span className="text-xs font-bold text-slate-800">6 Bulan</span>
                             </div>
-                            <div className="flex flex-col items-center p-3.5 bg-slate-50/80 rounded-[1rem] border border-slate-100">
-                                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Kelamin</span>
-                                <span className="text-sm font-bold text-slate-800">Laki-laki</span>
+                            <div className="flex flex-col items-center p-2.5 bg-slate-50/80 rounded-[1rem] border border-slate-100">
+                                <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Kelamin</span>
+                                <span className="text-xs font-bold text-slate-800 truncate max-w-full">Laki-laki</span>
+                            </div>
+                            <div className="flex flex-col items-center p-2.5 bg-slate-50/80 rounded-[1rem] border border-slate-100">
+                                <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Tgl Lahir</span>
+                                <span className="text-[10px] font-bold text-slate-800 truncate max-w-full">15 Nov 2025</span>
                             </div>
                         </div>
                     </div>

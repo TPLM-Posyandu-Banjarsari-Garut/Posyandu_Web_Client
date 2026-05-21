@@ -7,17 +7,29 @@ const controlClassName =
 
 type DateFilterInputProps = {
     className?: string;
+    value?: string;
+    onChange?: (value: string) => void;
 };
 
-export default function DateFilterInput({ className = '' }: DateFilterInputProps) {
-    const [value, setValue] = useState('');
+export default function DateFilterInput({ className = '', value: externalValue, onChange }: DateFilterInputProps) {
+    const [internalValue, setInternalValue] = useState('');
+
+    const value = externalValue !== undefined ? externalValue : internalValue;
+
+    const handleChange = (val: string) => {
+        if (onChange) {
+            onChange(val);
+        } else {
+            setInternalValue(val);
+        }
+    };
 
     return (
         <div className={`relative h-[3.25rem] min-w-0 w-full overflow-hidden ${className}`}>
             <input
                 type="date"
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e) => handleChange(e.target.value)}
                 className={`${controlClassName} pr-9 ${value ? 'text-slate-700' : 'text-transparent'}`}
                 aria-label="Filter tanggal"
             />
