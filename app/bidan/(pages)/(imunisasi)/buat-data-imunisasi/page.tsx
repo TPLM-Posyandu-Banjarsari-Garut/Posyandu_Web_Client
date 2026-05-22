@@ -124,7 +124,7 @@ function BuatDataImunisasiContent() {
     ]);
 
     // Collapsible states
-    const [showHistory, setShowHistory] = useState(true);
+    const [showHistory, setShowHistory] = useState(false);
 
     // Dynamic Mock History state
     const [history, setHistory] = useState<HistoryItem[]>([
