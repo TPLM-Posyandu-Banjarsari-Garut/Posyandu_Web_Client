@@ -50,16 +50,16 @@ export default function PendaftaranBayi() {
                                     </div>
                                      <div>
                                          <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Tanggal Lahir</label>
-                                         <div className="relative h-[2.875rem] min-w-0 w-full overflow-hidden">
+                                         <div className="relative w-full">
                                              <input
                                                  type="date"
                                                  value={tanggalLahir}
                                                  onChange={(e) => setTanggalLahir(e.target.value)}
-                                                 className="absolute inset-0 h-full w-full box-border px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
+                                                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
                                                  style={{ color: tanggalLahir ? undefined : 'transparent' }}
                                              />
                                              {!tanggalLahir && (
-                                                 <span className="absolute inset-y-0 left-4 right-10 z-[1] flex items-center pointer-events-none text-sm text-slate-400 truncate">
+                                                 <span className="absolute inset-y-0 left-4 right-10 z-[1] flex items-center pointer-events-none text-sm text-slate-400">
                                                      dd/mm/yy
                                                  </span>
                                              )}
@@ -180,16 +180,16 @@ export default function PendaftaranBayi() {
                                 <div className="grid grid-cols-2 gap-4">
                                      <div>
                                          <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Tgl Pengukuran</label>
-                                         <div className="relative h-[2.875rem] min-w-0 w-full overflow-hidden">
+                                         <div className="relative w-full">
                                              <input
                                                  type="date"
                                                  value={tanggalPengukuran}
                                                  onChange={(e) => setTanggalPengukuran(e.target.value)}
-                                                 className="absolute inset-0 h-full w-full box-border px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
+                                                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
                                                  style={{ color: tanggalPengukuran ? undefined : 'transparent' }}
                                              />
                                              {!tanggalPengukuran && (
-                                                 <span className="absolute inset-y-0 left-4 right-10 z-[1] flex items-center pointer-events-none text-sm text-slate-400 truncate">
+                                                 <span className="absolute inset-y-0 left-4 right-10 z-[1] flex items-center pointer-events-none text-sm text-slate-400">
                                                      dd/mm/yy
                                                  </span>
                                              )}
