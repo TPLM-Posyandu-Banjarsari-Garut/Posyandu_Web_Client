@@ -1,6 +1,12 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 
 export default function PendaftaranBayi() {
+    const [tanggalLahir, setTanggalLahir] = useState('');
+    const [tanggalPengukuran, setTanggalPengukuran] = useState('');
+
     return (
         <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
             <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200">
@@ -42,10 +48,28 @@ export default function PendaftaranBayi() {
                                             <option value="P">Perempuan</option>
                                         </select>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Tanggal Lahir</label>
-                                        <input type="date" className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm text-slate-700 transition-all" />
-                                    </div>
+                                     <div>
+                                         <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Tanggal Lahir</label>
+                                         <div className="relative h-[2.875rem] min-w-0 w-full overflow-hidden">
+                                             <input
+                                                 type="date"
+                                                 value={tanggalLahir}
+                                                 onChange={(e) => setTanggalLahir(e.target.value)}
+                                                 className="absolute inset-0 h-full w-full box-border px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
+                                                 style={{ color: tanggalLahir ? undefined : 'transparent' }}
+                                             />
+                                             {!tanggalLahir && (
+                                                 <span className="absolute inset-y-0 left-4 right-10 z-[1] flex items-center pointer-events-none text-sm text-slate-400 truncate">
+                                                     dd/mm/yy
+                                                 </span>
+                                             )}
+                                             <div className="absolute inset-y-0 right-0 z-[1] flex items-center pr-3.5 pointer-events-none text-slate-400">
+                                                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                 </svg>
+                                             </div>
+                                         </div>
+                                     </div>
                                 </div>
                                 <div className="grid grid-cols-3 gap-3">
                                     <div>
@@ -154,10 +178,28 @@ export default function PendaftaranBayi() {
                             </h2>
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Tgl Pengukuran</label>
-                                        <input type="date" className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 text-sm text-slate-700 transition-all" />
-                                    </div>
+                                     <div>
+                                         <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Tgl Pengukuran</label>
+                                         <div className="relative h-[2.875rem] min-w-0 w-full overflow-hidden">
+                                             <input
+                                                 type="date"
+                                                 value={tanggalPengukuran}
+                                                 onChange={(e) => setTanggalPengukuran(e.target.value)}
+                                                 className="absolute inset-0 h-full w-full box-border px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
+                                                 style={{ color: tanggalPengukuran ? undefined : 'transparent' }}
+                                             />
+                                             {!tanggalPengukuran && (
+                                                 <span className="absolute inset-y-0 left-4 right-10 z-[1] flex items-center pointer-events-none text-sm text-slate-400 truncate">
+                                                     dd/mm/yy
+                                                 </span>
+                                             )}
+                                             <div className="absolute inset-y-0 right-0 z-[1] flex items-center pr-3.5 pointer-events-none text-slate-400">
+                                                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                 </svg>
+                                             </div>
+                                         </div>
+                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Usia (Bulan)</label>
                                         <input type="text" className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 text-sm transition-all" placeholder="Misal: 6" />
