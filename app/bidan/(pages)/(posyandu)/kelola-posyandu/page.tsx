@@ -52,6 +52,9 @@ export default function KelolaPosyandu() {
     const [toastMessage, setToastMessage] = useState('');
     const [showToast, setShowToast] = useState(false);
 
+    // Search state
+    const [searchQuery, setSearchQuery] = useState('');
+
     // Form inputs state
     const [nama, setNama] = useState('');
     const [jalan, setJalan] = useState('');
@@ -143,13 +146,20 @@ export default function KelolaPosyandu() {
         closeModal();
     };
 
+    // Filtered posyandu list based on search query
+    const filteredPosyandu = posyanduList.filter(item =>
+        item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.jalan.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.tempat.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
             {/* Mobile Container */}
             <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200">
 
                 {/* Header Background Gradient */}
-                <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-br from-indigo-500 via-indigo-600 to-blue-600 z-0 rounded-b-[2.5rem]"></div>
+                <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-br from-indigo-500 via-indigo-600 to-blue-600 z-0 rounded-t-[2rem] rounded-b-[2.5rem]"></div>
 
                 {/* Sticky Header Nav */}
                 <div className="relative z-10 px-6 pt-8 flex items-center justify-between">
@@ -175,15 +185,31 @@ export default function KelolaPosyandu() {
                         <div>
                             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Terdaftar</p>
                             <h2 className="text-xl font-bold text-slate-800 leading-tight">
-                                {posyanduList.length} Posyandu
+                                {filteredPosyandu.length} Posyandu
                             </h2>
                         </div>
                     </div>
 
+                    {/* Search Bar */}
+                    <div className="mb-6 relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)]"
+                            placeholder="Cari nama atau lokasi posyandu..."
+                        />
+                    </div>
+
                     {/* Stacks Card list */}
                     <div className="flex flex-col gap-4">
-                        {posyanduList.length > 0 ? (
-                            posyanduList.map((item) => (
+                        {filteredPosyandu.length > 0 ? (
+                            filteredPosyandu.map((item) => (
                                 <div
                                     key={item.id}
                                     className="bg-white rounded-[2rem] p-5 shadow-[0_4px_15px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col gap-4 hover:shadow-md transition-shadow duration-300"
@@ -256,8 +282,8 @@ export default function KelolaPosyandu() {
                                 </div>
                             ))
                         ) : (
-                            <div className="bg-white rounded-3xl p-8 border border-slate-100 text-center text-xs text-slate-400 font-medium">
-                                Belum ada data Posyandu terdaftar.
+                            <div className="bg-white rounded-3xl p-8 border border-slate-100 text-center text-xs text-slate-400 font-semibold shadow-[0_2px_10px_rgb(0,0,0,0.01)]">
+                                Tidak ada data posyandu yang ditemukan.
                             </div>
                         )}
                     </div>
