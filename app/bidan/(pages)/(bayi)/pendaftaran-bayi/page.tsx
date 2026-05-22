@@ -39,7 +39,7 @@ export default function PendaftaranBayi() {
                                     <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">NIK Bayi</label>
                                     <input type="number" className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all" placeholder="16 digit NIK" />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-4 overflow-hidden">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Jenis Kelamin</label>
                                         <select className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm appearance-none transition-all">
@@ -50,12 +50,12 @@ export default function PendaftaranBayi() {
                                     </div>
                                      <div className="min-w-0">
                                          <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Tanggal Lahir</label>
-                                         <div className="relative w-full min-w-0">
+                                         <div className="relative w-full min-w-0 overflow-hidden">
                                              <input
                                                  type="date"
                                                  value={tanggalLahir}
                                                  onChange={(e) => setTanggalLahir(e.target.value)}
-                                                 className="w-full min-w-0 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
+                                                 className="w-full max-w-full min-w-0 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
                                                  style={{ color: tanggalLahir ? undefined : 'transparent' }}
                                              />
                                              {!tanggalLahir && (
@@ -177,15 +177,15 @@ export default function PendaftaranBayi() {
                                 Pengukuran & Antropometri
                             </h2>
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-4 overflow-hidden">
                                      <div className="min-w-0">
                                          <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Tgl Pengukuran</label>
-                                         <div className="relative w-full min-w-0">
+                                         <div className="relative w-full min-w-0 overflow-hidden">
                                              <input
                                                  type="date"
                                                  value={tanggalPengukuran}
                                                  onChange={(e) => setTanggalPengukuran(e.target.value)}
-                                                 className="w-full min-w-0 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
+                                                 className="w-full max-w-full min-w-0 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
                                                  style={{ color: tanggalPengukuran ? undefined : 'transparent' }}
                                              />
                                              {!tanggalPengukuran && (
