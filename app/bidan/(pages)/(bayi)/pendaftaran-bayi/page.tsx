@@ -48,14 +48,14 @@ export default function PendaftaranBayi() {
                                             <option value="P">Perempuan</option>
                                         </select>
                                     </div>
-                                     <div>
+                                     <div className="min-w-0">
                                          <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Tanggal Lahir</label>
-                                         <div className="relative w-full">
+                                         <div className="relative w-full min-w-0">
                                              <input
                                                  type="date"
                                                  value={tanggalLahir}
                                                  onChange={(e) => setTanggalLahir(e.target.value)}
-                                                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
+                                                 className="w-full min-w-0 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
                                                  style={{ color: tanggalLahir ? undefined : 'transparent' }}
                                              />
                                              {!tanggalLahir && (
@@ -178,14 +178,14 @@ export default function PendaftaranBayi() {
                             </h2>
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
-                                     <div>
+                                     <div className="min-w-0">
                                          <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Tgl Pengukuran</label>
-                                         <div className="relative w-full">
+                                         <div className="relative w-full min-w-0">
                                              <input
                                                  type="date"
                                                  value={tanggalPengukuran}
                                                  onChange={(e) => setTanggalPengukuran(e.target.value)}
-                                                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
+                                                 className="w-full min-w-0 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all pr-10 [color-scheme:light] font-normal text-slate-700"
                                                  style={{ color: tanggalPengukuran ? undefined : 'transparent' }}
                                              />
                                              {!tanggalPengukuran && (
