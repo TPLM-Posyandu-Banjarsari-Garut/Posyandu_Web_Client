@@ -1,8 +1,19 @@
 "use client";
 
+import React, { useEffect } from "react";
 import Image from "next/image";
 
 export default function Home() {
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then((reg) => {
+        console.log('Service Worker registered successfully with scope:', reg.scope);
+      }).catch((err) => {
+        console.warn('Service Worker registration failed:', err);
+      });
+    }
+  }, []);
+
   const sendNotification = async () => {
     if (!("Notification" in window)) {
       alert("Browser ini tidak mendukung notifikasi.");
@@ -24,7 +35,13 @@ export default function Home() {
 
     if ("serviceWorker" in navigator) {
       try {
-        const registration = await navigator.serviceWorker.ready;
+        // Prevent hanging indefinitely by using a 1.2-second timeout
+        const swReadyPromise = navigator.serviceWorker.ready;
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout waiting for Service Worker")), 1200)
+        );
+        const registration = await Promise.race([swReadyPromise, timeoutPromise]) as ServiceWorkerRegistration;
+
         console.log("Menggunakan Service Worker untuk notifikasi...");
         const options: NotificationOptions & { vibrate?: number[] } = {
           body: "Halo! Anda Waktunya Melahirkan 1 jam lagi.",

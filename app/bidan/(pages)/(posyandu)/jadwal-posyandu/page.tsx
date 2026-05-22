@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import BottombarBidan from '@/components/ui/bottombar/bidan/BottombarBidan';
 import DateFilterInput from '@/components/ui/DateFilterInput';
@@ -14,6 +14,17 @@ interface Jadwal {
 }
 
 export default function JadwalPosyandu() {
+    // Register Service Worker explicitly on mount to ensure push notifications work flawlessly
+    useEffect(() => {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').then((reg) => {
+                console.log('Service Worker registered successfully with scope:', reg.scope);
+            }).catch((err) => {
+                console.warn('Service Worker registration failed:', err);
+            });
+        }
+    }, []);
+
     // Initial premium dummy schedule data
     const [jadwalList, setJadwalList] = useState<Jadwal[]>([
         {
@@ -181,7 +192,13 @@ export default function JadwalPosyandu() {
             // Try sending notification via registered service worker
             if ("serviceWorker" in navigator) {
                 try {
-                    const registration = await navigator.serviceWorker.ready;
+                    // Prevent hanging indefinitely by using a 1.2-second timeout
+                    const swReadyPromise = navigator.serviceWorker.ready;
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("Timeout waiting for Service Worker")), 1200)
+                    );
+                    const registration = await Promise.race([swReadyPromise, timeoutPromise]) as ServiceWorkerRegistration;
+
                     console.log("Mengirim notifikasi melalui Service Worker...");
                     await registration.showNotification(title, options);
                     triggerToast(`Notifikasi "${item.namaPosyandu}" terkirim via SW!`);
