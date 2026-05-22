@@ -120,7 +120,19 @@ export default function PendaftaranBayi() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Nama Posyandu</label>
-                                        <input type="text" className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-sm transition-all" placeholder="Posyandu" />
+                                        <div className="relative">
+                                            <select className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-sm appearance-none transition-all pr-10 text-slate-700">
+                                                <option value="">Pilih Posyandu</option>
+                                                <option value="Posyandu Mawar I">Posyandu Mawar I</option>
+                                                <option value="Posyandu Melati II">Posyandu Melati II</option>
+                                                <option value="Posyandu Flamboyan III">Posyandu Flamboyan III</option>
+                                            </select>
+                                            <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">RT / RW</label>
