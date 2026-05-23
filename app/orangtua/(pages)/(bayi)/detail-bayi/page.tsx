@@ -1,4 +1,4 @@
-import BottombarBidan from '@/components/ui/bottombar/bidan/BottombarBidan';
+import BottombarOrtu from '@/components/ui/bottombar/orangtua/BottombarOrtu';
 import Link from 'next/link';
 
 export default function DetailBayi() {
@@ -46,7 +46,7 @@ export default function DetailBayi() {
                 <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-br from-blue-500 to-indigo-600 z-0 rounded-t-[2rem] rounded-b-[2.5rem]"></div>
 
                 <div className="relative z-10 px-6 pt-8 flex items-center justify-between">
-                    <Link href="/bidan/data-bayi" className="p-2 -ml-2 rounded-full bg-white/20 text-white backdrop-blur-md hover:bg-white/30 transition-colors">
+                    <Link href="/orangtua/data-bayi" className="p-2 -ml-2 rounded-full bg-white/20 text-white backdrop-blur-md hover:bg-white/30 transition-colors">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
                     </Link>
                     <h1 className="text-lg font-bold text-white tracking-wide">Detail Bayi</h1>
@@ -165,7 +165,7 @@ export default function DetailBayi() {
                     </div>
 
                     <div className="flex flex-col gap-3 pb-10">
-                        <Link href="/bidan/riwayat-imunisasi" className="w-full bg-blue-600 text-white rounded-[1.25rem] py-4 font-bold shadow-[0_8px_20px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:-translate-y-0.5 transition-all text-center">
+                        <Link href="/orangtua/riwayat-imunisasi" className="w-full bg-blue-600 text-white rounded-[1.25rem] py-4 font-bold shadow-[0_8px_20px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:-translate-y-0.5 transition-all text-center">
                             Lihat Riwayat Imunisasi
                         </Link>
                         <button className="w-full bg-white text-blue-600 border-[2.5px] border-blue-100 rounded-[1.25rem] py-3.5 font-bold hover:bg-blue-50 hover:border-blue-200 transition-colors">

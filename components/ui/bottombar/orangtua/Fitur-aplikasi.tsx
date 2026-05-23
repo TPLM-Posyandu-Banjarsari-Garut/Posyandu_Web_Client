@@ -21,7 +21,7 @@ export default function FiturAplikasi() {
                     <div className="w-16 h-16 rounded-[1.25rem] bg-cyan-100 flex items-center justify-center text-cyan-600 shadow-sm transition-transform active:scale-95 group-hover:shadow-md">
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
                     </div>
-                    <span className="text-xs font-bold text-slate-600 text-center leading-tight">Data<br />Imunisasi</span>
+                    <span className="text-xs font-bold text-slate-600 text-center leading-tight">Imunisasi</span>
                 </Link>
 
                 {/* Feature 3: Edukasi */}
@@ -32,21 +32,6 @@ export default function FiturAplikasi() {
                     <span className="text-xs font-bold text-slate-600 text-center">Edukasi</span>
                 </Link>
 
-                {/* Feature 4: Inventaris */}
-                <Link href="/orangtua/data-inventaris" className="flex flex-col items-center gap-2.5 group">
-                    <div className="w-16 h-16 rounded-[1.25rem] bg-purple-100 flex items-center justify-center text-purple-600 shadow-sm transition-transform active:scale-95 group-hover:shadow-md">
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                    </div>
-                    <span className="text-xs font-bold text-slate-600 text-center">Inventaris</span>
-                </Link>
-
-                {/* Feature 5: Riwayat Imunisasi */}
-                <Link href="/orangtua/jadwal-posyandu" className="flex flex-col items-center gap-2.5 group">
-                    <div className="w-16 h-16 rounded-[1.25rem] bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm transition-transform active:scale-95 group-hover:shadow-md">
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-                    </div>
-                    <span className="text-xs font-bold text-slate-600 text-center leading-tight">Jadwal<br />Posyandu</span>
-                </Link>
 
             </div>
         </div>

@@ -63,7 +63,7 @@ export default function Home() {
             <div className="mb-4">
               <div className="flex justify-between items-center mb-5">
                 <h2 className="text-lg font-bold text-slate-800">Edukasi</h2>
-                <Link href="/kader/edukasi" className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full">Lihat Semua</Link>
+                <Link href="/orangtua/edukasi" className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full">Lihat Semua</Link>
               </div>
 
               {/* Card Edukasi 1 */}

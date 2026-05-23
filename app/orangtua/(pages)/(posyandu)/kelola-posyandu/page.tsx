@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import BottombarKader from '@/components/ui/bottombar/kader/BottombarKader';
+import BottombarOrtu from '@/components/ui/bottombar/orangtua/BottombarOrtu';
 
 interface Posyandu {
     id: number;
@@ -163,7 +163,7 @@ export default function KelolaPosyandu() {
 
                 {/* Sticky Header Nav */}
                 <div className="relative z-10 px-6 pt-8 flex items-center justify-between">
-                    <Link href="/kader/home" className="p-2 -ml-2 rounded-full bg-white/20 text-white backdrop-blur-md hover:bg-white/30 transition-colors">
+                    <Link href="/orangtua/home" className="p-2 -ml-2 rounded-full bg-white/20 text-white backdrop-blur-md hover:bg-white/30 transition-colors">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
                         </svg>
@@ -303,7 +303,7 @@ export default function KelolaPosyandu() {
                 </div>
 
                 {/* Sticky Bottom Navigation Bar */}
-                <BottombarKader />
+                <BottombarOrtu />
 
                 {/* Bottom Sheet Modal */}
                 {showModal && (

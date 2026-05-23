@@ -13,7 +13,7 @@ export default function PendaftaranBayi() {
                 
                 {/* Header */}
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 pt-8 pb-6 flex items-center justify-between rounded-b-[2rem] shadow-md z-10">
-                    <Link href="/bidan/data-bayi" className="p-2 -ml-2 rounded-full bg-white/20 text-white backdrop-blur-sm hover:bg-white/30 transition-colors">
+                    <Link href="/kader/data-bayi" className="p-2 -ml-2 rounded-full bg-white/20 text-white backdrop-blur-sm hover:bg-white/30 transition-colors">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
                     </Link>
                     <h1 className="text-lg font-bold text-white tracking-wide">Pendaftaran Bayi</h1>

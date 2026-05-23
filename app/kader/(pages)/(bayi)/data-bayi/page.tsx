@@ -1,4 +1,4 @@
-import BottombarBidan from '@/components/ui/bottombar/bidan/BottombarBidan';
+import BottombarKader from '@/components/ui/bottombar/kader/BottombarKader';
 import Link from 'next/link';
 
 export default function DataBayi() {
@@ -19,7 +19,7 @@ export default function DataBayi() {
                 {/* Header */}
                 <div className="bg-white px-6 pt-8 pb-4 flex justify-between items-center z-10 sticky top-0 shadow-sm">
                     <div className="flex items-center gap-3">
-                        <Link href="/bidan/home" className="p-2 -ml-2 rounded-full hover:bg-slate-100 transition-colors">
+                        <Link href="/kader/home" className="p-2 -ml-2 rounded-full hover:bg-slate-100 transition-colors">
                             <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
                         </Link>
                         <h1 className="text-xl font-bold text-slate-800">Data Bayi</h1>
@@ -65,7 +65,7 @@ export default function DataBayi() {
                                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Umur</span>
                                         <span className="text-xs font-bold text-slate-700">{bayi.umur}</span>
                                     </div>
-                                    <Link href="/bidan/detail-bayi" className="ml-2 bg-blue-50 text-blue-600 text-xs font-bold px-4 py-2.5 rounded-full hover:bg-blue-100 hover:text-blue-700 active:scale-95 transition-all shrink-0">
+                                    <Link href="/kader/detail-bayi" className="ml-2 bg-blue-50 text-blue-600 text-xs font-bold px-4 py-2.5 rounded-full hover:bg-blue-100 hover:text-blue-700 active:scale-95 transition-all shrink-0">
                                         Lihat Detail
                                     </Link>
                                 </div>
@@ -77,12 +77,12 @@ export default function DataBayi() {
 
                 {/* Fixed (+) Button */}
                 <div className="fixed bottom-[100px] w-full max-w-md mx-auto z-40 pointer-events-none flex justify-end px-6 left-1/2 -translate-x-1/2">
-                    <Link href="/bidan/pendaftaran-bayi" className="bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(37,99,235,0.4)] hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all pointer-events-auto">
+                    <Link href="/kader/pendaftaran-bayi" className="bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(37,99,235,0.4)] hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all pointer-events-auto">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg>
                     </Link>
                 </div>
 
-                <BottombarBidan />
+                <BottombarKader />
             </div>
         </div>
     );

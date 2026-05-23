@@ -1,9 +1,9 @@
 'use client';
 
-import BottombarKader from '@/components/ui/bottombar/kader/BottombarKader';
+import BottombarOrtu from '@/components/ui/bottombar/orangtua/BottombarOrtu';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 
 // Interfaces
 interface HistoryItem {
@@ -13,7 +13,7 @@ interface HistoryItem {
     status: 'Selesai' | 'Terjadwal' | 'Ditunda';
     keterangan: string;
 }
-// pada jenis imunisasi buat bisa create jenis imunisasi,update,delete dan tambahkan search juga jenis imunisasi lalu untuk history imu
+
 interface BabyDetail {
     id: number;
     nama: string;
@@ -106,136 +106,15 @@ function BuatDataImunisasiContent() {
         babiesDb.find(b => b.nama.toLowerCase() === namaParam?.toLowerCase()) ||
         babiesDb[0];
 
-    // Immunization standard list state
-    const [immunizationList, setImmunizationList] = useState<string[]>([
-        'BCG (Tuberculosis)',
-        'Polio 1 (OPV)',
-        'Polio 2 (OPV)',
-        'Polio 3 (OPV)',
-        'Polio 4 (OPV)',
-        'Hepatitis B',
-        'DPT-HB-Hib 1',
-        'DPT-HB-Hib 2',
-        'DPT-HB-Hib 3',
-        'Campak / MR',
-        'IPV (Inactivated Polio Vaccine)',
-        'PCV 1',
-        'PCV 2'
-    ]);
-
-    // Collapsible states
-    const [showHistory, setShowHistory] = useState(false);
+    // Collapsible states - default to true since it is the main view now
+    const [showHistory, setShowHistory] = useState(true);
 
     // Dynamic Mock History state
-    const [history, setHistory] = useState<HistoryItem[]>([
+    const [history] = useState<HistoryItem[]>([
         { id: 101, tanggal: '2026-01-20', jenis: 'Hepatitis B', status: 'Selesai', keterangan: 'Kondisi bayi sangat sehat saat disuntik' },
         { id: 102, tanggal: '2026-02-18', jenis: 'BCG (Tuberculosis)', status: 'Selesai', keterangan: 'Muncul bekas suntikan normal' },
         { id: 103, tanggal: '2026-03-20', jenis: 'Polio 1 (OPV)', status: 'Selesai', keterangan: 'Vaksin tetes lancar' }
     ]);
-
-    // Form inputs state
-    const [tanggalEntry, setTanggalEntry] = useState('');
-    const [jenisImunisasi, setJenisImunisasi] = useState('BCG (Tuberculosis)');
-    const [status, setStatus] = useState<'Selesai' | 'Terjadwal' | 'Ditunda'>('Selesai');
-    const [keterangan, setKeterangan] = useState('');
-
-    // Editing State
-    const [editingItem, setEditingItem] = useState<HistoryItem | null>(null);
-
-    // Notification states
-    const [toastMessage, setToastMessage] = useState('');
-    const [showToast, setShowToast] = useState(false);
-
-
-
-    // Prefill date with today's date in YYYY-MM-DD format
-    useEffect(() => {
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        setTanggalEntry(`${yyyy}-${mm}-${dd}`);
-    }, []);
-
-    // Set form fields if editing
-    useEffect(() => {
-        if (editingItem) {
-            setTanggalEntry(editingItem.tanggal);
-            setJenisImunisasi(editingItem.jenis);
-            setStatus(editingItem.status);
-            setKeterangan(editingItem.keterangan);
-        } else {
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            setTanggalEntry(`${yyyy}-${mm}-${dd}`);
-            setJenisImunisasi(immunizationList[0] || '');
-            setStatus('Selesai');
-            setKeterangan('');
-        }
-    }, [editingItem]);
-
-    const triggerToast = (msg: string) => {
-        setToastMessage(msg);
-        setShowToast(true);
-        setTimeout(() => {
-            setShowToast(false);
-        }, 2500);
-    };
-
-    const handleFormSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (editingItem) {
-            // Update mode
-            setHistory(prev => prev.map(item =>
-                item.id === editingItem.id
-                    ? { ...item, tanggal: tanggalEntry, jenis: jenisImunisasi, status, keterangan }
-                    : item
-            ));
-            triggerToast('Data Imunisasi berhasil diperbarui!');
-            setEditingItem(null);
-        } else {
-            // Create mode
-            const newItem: HistoryItem = {
-                id: Date.now(),
-                tanggal: tanggalEntry,
-                jenis: jenisImunisasi,
-                status,
-                keterangan
-            };
-            setHistory(prev => [newItem, ...prev]);
-            triggerToast('Data Imunisasi baru berhasil ditambahkan!');
-        }
-
-        // Reset inputs
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        setTanggalEntry(`${yyyy}-${mm}-${dd}`);
-        setJenisImunisasi(immunizationList[0] || '');
-        setStatus('Selesai');
-        setKeterangan('');
-    };
-
-    const handleEditItem = (item: HistoryItem) => {
-        setEditingItem(item);
-        // Scroll to form nicely
-        const formEl = document.getElementById('imunisasi-form');
-        if (formEl) {
-            formEl.scrollIntoView({ behavior: 'smooth' });
-        }
-    };
-
-    const handleDeleteItem = (id: number) => {
-        if (editingItem?.id === id) {
-            setEditingItem(null);
-        }
-        setHistory(prev => prev.filter(item => item.id !== id));
-        triggerToast('Data Imunisasi berhasil dihapus!');
-    };
 
     const getStatusColor = (statusVal: string) => {
         switch (statusVal) {
@@ -269,7 +148,7 @@ function BuatDataImunisasiContent() {
 
                 {/* Sticky Nav Header */}
                 <div className="relative z-10 px-6 pt-8 flex items-center justify-between">
-                    <Link href="/kader/data-imunisasi" className="p-2 -ml-2 rounded-full bg-white/20 text-white backdrop-blur-md hover:bg-white/30 transition-colors">
+                    <Link href="/orangtua/data-imunisasi" className="p-2 -ml-2 rounded-full bg-white/20 text-white backdrop-blur-md hover:bg-white/30 transition-colors">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
                         </svg>
@@ -379,21 +258,6 @@ function BuatDataImunisasiContent() {
                                                     {item.keterangan}
                                                 </p>
                                             )}
-
-                                            <div className="flex justify-end gap-2.5 border-t border-slate-50 pt-3">
-                                                <button
-                                                    onClick={() => handleEditItem(item)}
-                                                    className="bg-blue-50 text-blue-600 hover:bg-blue-100 text-[11px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteItem(item.id)}
-                                                    className="bg-rose-50 text-rose-600 hover:bg-rose-100 text-[11px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all"
-                                                >
-                                                    Hapus
-                                                </button>
-                                            </div>
                                         </div>
                                     ))
                                 ) : (
@@ -404,128 +268,10 @@ function BuatDataImunisasiContent() {
                             </div>
                         )}
                     </div>
-
-                    {/* Entry Form */}
-                    <div id="imunisasi-form" className="scroll-mt-6">
-                        <h3 className="text-sm font-bold text-slate-800 mb-3 px-2">
-                            {editingItem ? 'Edit Data Imunisasi' : 'Input Data Imunisasi'}
-                        </h3>
-
-                        <form onSubmit={handleFormSubmit} className="bg-white rounded-[1.5rem] p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100 flex flex-col gap-4">
-
-                            {/* Tanggal Entry */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tanggal Entry</label>
-                                <div className="relative h-[3.25rem] w-full overflow-hidden">
-                                    <input
-                                        type="date"
-                                        value={tanggalEntry}
-                                        onChange={(e) => setTanggalEntry(e.target.value)}
-                                        className="absolute inset-0 h-full w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all [color-scheme:light]"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Jenis Imunisasi */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Jenis Imunisasi</label>
-                                <div className="relative">
-                                    <select
-                                        value={jenisImunisasi}
-                                        onChange={(e) => setJenisImunisasi(e.target.value)}
-                                        className="w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-705 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all appearance-none"
-                                        required
-                                    >
-                                        {immunizationList.map((imun) => (
-                                            <option key={imun} value={imun}>{imun}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Status */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</label>
-                                <div className="relative">
-                                    <select
-                                        value={status}
-                                        onChange={(e) => setStatus(e.target.value as 'Selesai' | 'Terjadwal' | 'Ditunda')}
-                                        className="w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-705 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all appearance-none"
-                                        required
-                                    >
-                                        <option value="Selesai">Selesai</option>
-                                        <option value="Terjadwal">Terjadwal</option>
-                                        <option value="Ditunda">Ditunda</option>
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Keterangan */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Keterangan / Catatan</label>
-                                <textarea
-                                    value={keterangan}
-                                    onChange={(e) => setKeterangan(e.target.value)}
-                                    placeholder="Masukkan keterangan detail (misalnya: suhu tubuh normal, dll)..."
-                                    className="w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all placeholder-slate-400 min-h-[5rem] resize-none"
-                                />
-                            </div>
-
-                            {/* Form Submission Button */}
-                            <div className="flex gap-3.5 pt-2">
-                                {editingItem && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setEditingItem(null)}
-                                        className="w-1/3 bg-slate-100 text-slate-600 font-bold text-sm py-4 rounded-[1.25rem] hover:bg-slate-200 active:scale-95 transition-all text-center"
-                                    >
-                                        Batal
-                                    </button>
-                                )}
-                                <button
-                                    type="submit"
-                                    className={`font-bold text-sm py-4 rounded-[1.25rem] active:scale-95 transition-all flex justify-center items-center gap-2 ${editingItem
-                                        ? 'w-2/3 bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)] hover:bg-blue-700'
-                                        : 'w-full bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)] hover:bg-blue-700'
-                                        }`}
-                                >
-                                    <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                                    </svg>
-                                    {editingItem ? 'Update Imunisasi' : 'Simpan Data'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
                 </div>
 
-
-
-                {/* Toast Notification */}
-                {showToast && (
-                    <div className="absolute bottom-[92px] left-1/2 -translate-x-1/2 w-[85%] bg-slate-900/90 text-white text-xs font-bold px-4 py-3.5 rounded-2xl shadow-xl flex items-center gap-2.5 z-[1000] animate-fade-in backdrop-blur-sm border border-white/10">
-                        <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
-                        <span className="flex-1 text-slate-100">{toastMessage}</span>
-                    </div>
-                )}
-
                 {/* Bottom Navigation */}
-                <BottombarKader />
+                <BottombarOrtu />
             </div>
         </div>
     );
