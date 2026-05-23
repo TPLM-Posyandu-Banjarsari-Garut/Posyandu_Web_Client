@@ -1,6 +1,6 @@
 import Link from "next/link";
-import BottombarKader from "@/components/ui/bottombar/kader/BottombarKader";
-import FiturAplikasi from "@/components/ui/bottombar/kader/Fitur-aplikasi";
+import BottombarKader from "@/components/ui/bottombar/orangtua/BottombarOrtu";
+import FiturAplikasi from "@/components/ui/bottombar/orangtua/Fitur-aplikasi";
 
 export default function Home() {
   const today = new Date().toLocaleDateString("id-ID", {
@@ -32,7 +32,7 @@ export default function Home() {
                 </div>
               </div>
               <div>
-                <h1 className="text-lg font-bold text-slate-800">Kader Posyandu</h1>
+                <h1 className="text-lg font-bold text-slate-800">Orang tua</h1>
                 <p className="text-sm text-slate-500 font-medium">Selamat datang kembali 👋</p>
               </div>
             </div>
