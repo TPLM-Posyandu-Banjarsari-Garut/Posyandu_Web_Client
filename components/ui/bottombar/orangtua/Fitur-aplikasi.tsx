@@ -32,6 +32,26 @@ export default function FiturAplikasi() {
                     <span className="text-xs font-bold text-slate-600 text-center">Edukasi</span>
                 </Link>
 
+                {/* Feature 4: Booking Layanan */}
+                <Link href="/orangtua/booking-layanan" className="flex flex-col items-center gap-2.5 group">
+                    <div className="w-16 h-16 rounded-[1.25rem] bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm transition-transform active:scale-95 group-hover:shadow-md">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <span className="text-xs font-bold text-slate-600 text-center leading-tight">Booking</span>
+                </Link>
+
+                {/* Feature 5: Lihat Antrean */}
+                <Link href="/orangtua/lihat-antrean" className="flex flex-col items-center gap-2.5 group">
+                    <div className="w-16 h-16 rounded-[1.25rem] bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm transition-transform active:scale-95 group-hover:shadow-md">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <span className="text-xs font-bold text-slate-600 text-center leading-tight">Antrean</span>
+                </Link>
+
 
             </div>
         </div>
