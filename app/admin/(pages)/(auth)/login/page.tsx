@@ -1,57 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
+import { useLoginAdmin } from "@/hooks/query/authAdmin/UseLoginAdmin";
 
 export default function AdminLogin() {
   const router = useRouter();
-
-  // Form states
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
-
-  // UI state
-  const [passwordVisible, setPasswordVisible] = useState(false);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    // Front-end validation
-    if (!email.trim()) {
-      setError("Email tidak boleh kosong");
-      return;
-    }
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      setError("Format email tidak valid");
-      return;
-    }
-    if (!password.trim()) {
-      setError("Kata sandi tidak boleh kosong");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Kata sandi minimal harus berisi 6 karakter");
-      return;
-    }
-
-    setIsLoading(true);
-
-    // Simulate authentication
-    setTimeout(() => {
-      setIsLoading(false);
-      setShowSuccess(true);
-
-      // Redirect after success animation
-      setTimeout(() => {
-        router.push("/admin/kelola-buat-akun");
-      }, 1500);
-    }, 1200);
-  };
+  const {
+    register,
+    onSubmit,
+    displayError,
+    passwordVisible,
+    setPasswordVisible,
+    showSuccess,
+    isPending,
+  } = useLoginAdmin();
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-0 sm:px-0 text-slate-800 flex justify-center">
@@ -83,17 +46,17 @@ export default function AdminLogin() {
         {/* White Form Card Overlap Section */}
         <div className="bg-white rounded-t-[2.5rem] -mt-8 pt-8 px-6 pb-8 flex-1 flex flex-col justify-between relative z-10">
           
-          <form onSubmit={handleLogin} className="flex flex-col gap-5">
+          <form onSubmit={onSubmit} className="flex flex-col gap-5">
             
             {/* Error Alert Display */}
-            {error && (
+            {displayError && (
               <div className="bg-rose-50 border border-rose-100 text-rose-700 text-xs font-bold p-4 rounded-2xl flex items-center gap-3 animate-shake shadow-sm">
                 <div className="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
                   <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <span>{error}</span>
+                <span>{displayError}</span>
               </div>
             )}
 
@@ -111,8 +74,14 @@ export default function AdminLogin() {
                 </label>
                 <input
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="username"
+                  {...register("email", {
+                    required: "Email tidak boleh kosong",
+                    pattern: {
+                      value: /\S+@\S+\.\S+/,
+                      message: "Format email tidak valid",
+                    },
+                  })}
                   className="bg-transparent border-none outline-none p-0 text-sm text-slate-800 placeholder-slate-400 font-semibold focus:ring-0 w-full"
                   placeholder="contoh@email.com"
                 />
@@ -133,8 +102,14 @@ export default function AdminLogin() {
                 </label>
                 <input
                   type={passwordVisible ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  {...register("password", {
+                    required: "Kata sandi tidak boleh kosong",
+                    minLength: {
+                      value: 6,
+                      message: "Kata sandi minimal harus berisi 6 karakter",
+                    },
+                  })}
                   className="bg-transparent border-none outline-none p-0 text-sm text-slate-800 placeholder-slate-400 font-semibold focus:ring-0 w-full"
                   placeholder="password123"
                 />
@@ -164,8 +139,7 @@ export default function AdminLogin() {
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
+                  {...register("rememberMe")}
                   className="w-4 h-4 rounded text-blue-600 border-slate-350 focus:ring-blue-500 focus:ring-opacity-20 cursor-pointer"
                 />
                 <span className="text-xs text-slate-500 font-bold tracking-wide">Ingat saya</span>
@@ -181,11 +155,11 @@ export default function AdminLogin() {
           {/* Submit Action Button */}
           <div className="mt-8 flex flex-col gap-4">
             <button
-              onClick={handleLogin}
-              disabled={isLoading}
+              onClick={onSubmit}
+              disabled={isPending}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-full active:scale-98 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.25)] flex justify-center items-center gap-2 disabled:opacity-75"
             >
-              {isLoading ? (
+              {isPending ? (
                 <>
                   <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
