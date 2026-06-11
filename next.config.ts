@@ -12,8 +12,20 @@ const withPWA = withPWAInit({
   },
 });
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "https://posyandu-web-server.vercel.app";
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  /*
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${API_URL}/api/:path*`,
+      },
+    ];
+  },
+  */
   turbopack: {},
 };
 
