@@ -1,8 +1,27 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import BottombarBidan from "@/components/ui/bottombar/bidan/BottombarBidan";
 import FiturAplikasi from "@/components/ui/bottombar/bidan/Fitur-aplikasi";
+import { BidanUser } from "@/interfaces/auth";
 
 export default function Home() {
+  const [user, setUser] = useState<BidanUser | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("bidan_user") ?? sessionStorage.getItem("bidan_user");
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (e) {
+          console.error("Gagal mem-parse data user bidan:", e);
+        }
+      }
+    }
+  }, []);
+
   const today = new Date().toLocaleDateString("id-ID", {
     weekday: "long",
     year: "numeric",
@@ -32,7 +51,7 @@ export default function Home() {
                 </div>
               </div>
               <div>
-                <h1 className="text-lg font-bold text-slate-800">Bidan Posyandu</h1>
+                <h1 className="text-lg font-bold text-slate-800">{user?.name || "Bidan Posyandu"}</h1>
                 <p className="text-sm text-slate-500 font-medium">Selamat datang kembali 👋</p>
               </div>
             </div>

@@ -27,6 +27,29 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // 1.5. Proteksi Halaman Bidan (/bidan/*)
+  if (pathname.startsWith("/bidan")) {
+    const isLoginPage = pathname === "/bidan/login";
+
+    // Ambil session token dari cookie better-auth
+    const sessionToken =
+      request.cookies.get("better-auth.session_token")?.value ??
+      request.cookies.get("__Secure-better-auth.session_token")?.value;
+
+    // Jika pengguna belum login dan mencoba mengakses halaman bidan selain login
+    if (!sessionToken && !isLoginPage) {
+      const loginUrl = new URL("/bidan/login", request.url);
+      // Simpan URL asal untuk redirect setelah login berhasil (optional)
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Jika pengguna sudah login dan mencoba mengakses halaman login kembali
+    if (sessionToken && isLoginPage) {
+      return NextResponse.redirect(new URL("/bidan/home", request.url));
+    }
+  }
+
   // 2. Proxy Rute API (/api/*) ke Backend Production
   if (pathname.startsWith("/api")) {
     const API_URL =
@@ -73,5 +96,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*", "/admin/:path*"],
+  matcher: ["/api/:path*", "/admin/:path*", "/bidan/:path*"],
 };
