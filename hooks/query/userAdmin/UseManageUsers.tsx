@@ -6,6 +6,7 @@ import {
   createUser,
   deleteUser,
   updateUser,
+  fetchAdminPosyandus,
 } from "@/service/user/userService";
 import { BackendRole, CreateUserPayload } from "@/interfaces/user";
 
@@ -52,5 +53,13 @@ export function useUpdateUser() {
       // Refresh list user setelah berhasil mengupdate user
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
+  });
+}
+
+export function useGetAdminPosyandus() {
+  return useQuery({
+    queryKey: ["admin-posyandus"],
+    queryFn: fetchAdminPosyandus,
+    staleTime: Infinity,
   });
 }

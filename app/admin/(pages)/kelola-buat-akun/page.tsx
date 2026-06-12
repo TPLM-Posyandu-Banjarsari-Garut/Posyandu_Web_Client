@@ -38,6 +38,7 @@ export default function KelolaBuatAkun() {
         handleToggleVerify,
         isUpdatePending,
         firstFormError,
+        watchedRole,
     } = useManageUsersPage();
 
     return (
@@ -169,6 +170,7 @@ export default function KelolaBuatAkun() {
                     firstFormError={firstFormError}
                     formPasswordVisible={formPasswordVisible}
                     onToggleFormPasswordVisible={() => setFormPasswordVisible(!formPasswordVisible)}
+                    watchedRole={watchedRole}
                 />
 
                 {/* Confirm Logout Modal Overlay */}

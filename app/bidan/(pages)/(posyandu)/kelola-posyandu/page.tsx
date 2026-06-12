@@ -3,48 +3,42 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import BottombarBidan from '@/components/ui/bottombar/bidan/BottombarBidan';
+import { useGetMidwifeProfile } from '@/hooks/query/midwife/useMidwifeProfile';
+import {
+    useGetPosyandus,
+    useGetPosyanduById,
+    useCreatePosyandu,
+    useUpdatePosyandu,
+    useDeletePosyandu
+} from '@/hooks/query/posyandu/useManagePosyandu';
+import { Posyandu } from '@/interfaces/posyandu';
+import axios from 'axios';
 
-interface Posyandu {
-    id: number;
-    nama: string;
-    rt: string;
-    rw: string;
-    jalan: string;
-    patokan: string;
-    tempat: string;
-}
+// Helper to parse combined address_line into jalan and patokan
+const parseAddress = (addressLine: string | null | undefined) => {
+    if (!addressLine) return { jalan: '', patokan: '' };
+    const parts = addressLine.split(' | Patokan: ');
+    if (parts.length > 1) {
+        return { jalan: parts[0], patokan: parts[1] };
+    }
+    return { jalan: addressLine, patokan: '' };
+};
 
 export default function KelolaPosyandu() {
-    // Initial premium dummy data
-    const [posyanduList, setPosyanduList] = useState<Posyandu[]>([
-        {
-            id: 1,
-            nama: 'Posyandu Mawar I',
-            rt: '02',
-            rw: '04',
-            jalan: 'Jl. Banjarsari Raya No. 45',
-            patokan: 'Dekat Lapangan Bola Banjarsari',
-            tempat: 'Aula Desa Banjarsari'
-        },
-        {
-            id: 2,
-            nama: 'Posyandu Melati II',
-            rt: '01',
-            rw: '03',
-            jalan: 'Gang Harapan Indah II',
-            patokan: 'Samping SDN Banjarsari 1',
-            tempat: 'Halaman Rumah Ketua RW 03'
-        },
-        {
-            id: 3,
-            nama: 'Posyandu Flamboyan III',
-            rt: '05',
-            rw: '01',
-            jalan: 'Jl. Raya Garut-Tasik No. 12',
-            patokan: 'Seberang Kantor Kecamatan',
-            tempat: 'Balai Dusun Cempaka'
-        }
-    ]);
+    // API queries & mutations
+    const { data: midwife } = useGetMidwifeProfile();
+    const { data: currentPosyandu } = useGetPosyanduById(
+        midwife?.posyandu_id || '',
+        !!midwife?.posyandu_id
+    );
+    const healthCenterId = currentPosyandu?.health_center_id;
+
+    const { data: posyandusResponse, isLoading } = useGetPosyandus({ limit: 100 });
+    const posyanduList = posyandusResponse?.data || [];
+
+    const createMutation = useCreatePosyandu();
+    const updateMutation = useUpdatePosyandu();
+    const deleteMutation = useDeletePosyandu();
 
     // Modal & Toast states
     const [showModal, setShowModal] = useState(false);
@@ -86,13 +80,14 @@ export default function KelolaPosyandu() {
 
     // Open Edit Modal
     const openEditModal = (item: Posyandu) => {
+        const { jalan: parsedJalan, patokan: parsedPatokan } = parseAddress(item.address_line);
         setEditingItem(item);
-        setNama(item.nama);
-        setJalan(item.jalan);
-        setRt(item.rt);
-        setRw(item.rw);
-        setPatokan(item.patokan);
-        setTempat(item.tempat);
+        setNama(item.name);
+        setJalan(parsedJalan);
+        setRt(item.rt || '');
+        setRw(item.rw || '');
+        setPatokan(parsedPatokan);
+        setTempat(item.village_name || '');
         setShowModal(true);
     };
 
@@ -103,10 +98,20 @@ export default function KelolaPosyandu() {
     };
 
     // Delete Posyandu Handler
-    const handleDelete = (id: number, name: string) => {
+    const handleDelete = (id: string, name: string) => {
         if (confirm(`Apakah Anda yakin ingin menghapus "${name}"?`)) {
-            setPosyanduList(prev => prev.filter(item => item.id !== id));
-            triggerToast(`Posyandu "${name}" berhasil dihapus.`);
+            deleteMutation.mutate(id, {
+                onSuccess: () => {
+                    triggerToast(`Posyandu "${name}" berhasil dihapus.`);
+                },
+                onError: (err: any) => {
+                    let msg = 'Gagal menghapus Posyandu';
+                    if (axios.isAxiosError(err)) {
+                        msg = err.response?.data?.message || msg;
+                    }
+                    alert(msg);
+                }
+            });
         }
     };
 
@@ -115,43 +120,76 @@ export default function KelolaPosyandu() {
         e.preventDefault();
 
         // Validations
-        if (!nama.trim() || !jalan.trim() || !rt.trim() || !rw.trim() || !patokan.trim() || !tempat.trim()) {
-            alert('Semua kolom form wajib diisi!');
+        if (!nama.trim() || !jalan.trim() || !rt.trim() || !rw.trim() || !tempat.trim()) {
+            alert('Semua kolom form wajib diisi (kecuali Patokan)!');
             return;
         }
 
+        const address_line = patokan.trim() ? `${jalan} | Patokan: ${patokan}` : jalan;
+
         if (editingItem) {
             // Update mode
-            setPosyanduList(prev => prev.map(item =>
-                item.id === editingItem.id
-                    ? { ...item, nama, jalan, rt, rw, patokan, tempat }
-                    : item
-            ));
-            triggerToast(`Posyandu "${nama}" berhasil diperbarui!`);
+            updateMutation.mutate({
+                publicId: editingItem.id,
+                payload: {
+                    name: nama,
+                    address_line,
+                    rt,
+                    rw,
+                    village_name: tempat,
+                }
+            }, {
+                onSuccess: () => {
+                    triggerToast(`Posyandu "${nama}" berhasil diperbarui!`);
+                    closeModal();
+                },
+                onError: (err: any) => {
+                    let msg = 'Gagal memperbarui data posyandu';
+                    if (axios.isAxiosError(err)) {
+                        msg = err.response?.data?.message || msg;
+                    }
+                    alert(msg);
+                }
+            });
         } else {
             // Add new mode
-            const newItem: Posyandu = {
-                id: Date.now(),
-                nama,
-                jalan,
+            if (!healthCenterId) {
+                alert('Gagal mendeteksi Puskesmas Bidan. Silakan muat ulang halaman atau periksa profil Bidan Anda.');
+                return;
+            }
+
+            createMutation.mutate({
+                name: nama,
+                health_center_id: healthCenterId,
+                address_line,
                 rt,
                 rw,
-                patokan,
-                tempat
-            };
-            setPosyanduList(prev => [...prev, newItem]);
-            triggerToast(`Posyandu "${nama}" berhasil ditambahkan!`);
+                village_name: tempat,
+                status: 'active'
+            }, {
+                onSuccess: () => {
+                    triggerToast(`Posyandu "${nama}" berhasil ditambahkan!`);
+                    closeModal();
+                },
+                onError: (err: any) => {
+                    let msg = 'Gagal menambahkan posyandu baru';
+                    if (axios.isAxiosError(err)) {
+                        msg = err.response?.data?.message || msg;
+                    }
+                    alert(msg);
+                }
+            });
         }
-
-        closeModal();
     };
 
     // Filtered posyandu list based on search query
     const filteredPosyandu = posyanduList.filter(item =>
-        item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.jalan.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.tempat.toLowerCase().includes(searchQuery.toLowerCase())
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.address_line && item.address_line.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (item.village_name && item.village_name.toLowerCase().includes(searchQuery.toLowerCase()))
     );
+
+    const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
     return (
         <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
@@ -185,7 +223,11 @@ export default function KelolaPosyandu() {
                         <div>
                             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Terdaftar</p>
                             <h2 className="text-xl font-bold text-slate-800 leading-tight">
-                                {filteredPosyandu.length} Posyandu
+                                {isLoading ? (
+                                    <span className="text-slate-400 text-sm animate-pulse">Memuat...</span>
+                                ) : (
+                                    `${filteredPosyandu.length} Posyandu`
+                                )}
                             </h2>
                         </div>
                     </div>
@@ -208,79 +250,92 @@ export default function KelolaPosyandu() {
 
                     {/* Stacks Card list */}
                     <div className="flex flex-col gap-4">
-                        {filteredPosyandu.length > 0 ? (
-                            filteredPosyandu.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="bg-white rounded-[2rem] p-5 shadow-[0_4px_15px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col gap-4 hover:shadow-md transition-shadow duration-300"
-                                >
-                                    {/* Posyandu Name */}
-                                    <div className="flex justify-between items-start gap-2">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-650 shrink-0">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        {isLoading ? (
+                            <div className="flex flex-col items-center justify-center p-12 text-slate-400 font-semibold gap-3 bg-white rounded-3xl border border-slate-100">
+                                <svg className="animate-spin h-8 w-8 text-indigo-500" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                <span className="text-xs">Memuat data posyandu...</span>
+                            </div>
+                        ) : filteredPosyandu.length > 0 ? (
+                            filteredPosyandu.map((item) => {
+                                const { jalan: streetAddress, patokan: benchmark } = parseAddress(item.address_line);
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className="bg-white rounded-[2rem] p-5 shadow-[0_4px_15px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col gap-4 hover:shadow-md transition-shadow duration-300"
+                                    >
+                                        {/* Posyandu Name */}
+                                        <div className="flex justify-between items-start gap-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-650 shrink-0">
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-sm font-extrabold text-slate-850 leading-tight">
+                                                        {item.name}
+                                                    </h3>
+                                                    <span className="inline-block mt-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded-md border border-indigo-100/50">
+                                                        RT. {item.rt || '-'} / RW. {item.rw || '-'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Address Details */}
+                                        <div className="flex flex-col gap-2 bg-slate-50/70 p-3 rounded-2xl border border-slate-100">
+                                            <div className="flex gap-2 items-start text-xs text-slate-600 leading-relaxed font-medium">
+                                                <svg className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                                                 </svg>
+                                                <span>{streetAddress || 'Alamat belum diatur'}</span>
                                             </div>
-                                            <div>
-                                                <h3 className="text-sm font-extrabold text-slate-850 leading-tight">
-                                                    {item.nama}
-                                                </h3>
-                                                <span className="inline-block mt-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2 py-0.5 rounded-md border border-indigo-100/50">
-                                                    RT. {item.rt} / RW. {item.rw}
-                                                </span>
-                                            </div>
+                                            {benchmark && (
+                                                <div className="flex gap-2 items-start text-xs text-slate-500 font-medium">
+                                                    <svg className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                                    </svg>
+                                                    <span className="italic">Patokan: {benchmark}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Tempat / Venue */}
+                                        <div className="flex justify-between items-center text-xs font-semibold border-b border-slate-50 pb-2">
+                                            <span className="text-slate-400">Tempat Pelaksanaan</span>
+                                            <span className="text-slate-800 font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-xl border border-amber-100">
+                                                {item.village_name || 'Belum diatur'}
+                                            </span>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-2 border-t border-slate-50 pt-3">
+                                            <button
+                                                onClick={() => openEditModal(item)}
+                                                className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 text-[11px] font-bold px-3 py-2 rounded-xl active:scale-95 transition-all text-center flex items-center justify-center gap-1.5"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(item.id, item.name)}
+                                                className="bg-rose-50 text-rose-600 hover:bg-rose-100 text-[11px] font-bold px-3.5 py-2 rounded-xl active:scale-95 transition-all text-center flex items-center justify-center"
+                                                title="Hapus"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
                                         </div>
                                     </div>
-
-                                    {/* Address Details */}
-                                    <div className="flex flex-col gap-2 bg-slate-50/70 p-3 rounded-2xl border border-slate-100">
-                                        <div className="flex gap-2 items-start text-xs text-slate-600 leading-relaxed font-medium">
-                                            <svg className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                                            </svg>
-                                            <span>{item.jalan}</span>
-                                        </div>
-                                        <div className="flex gap-2 items-start text-xs text-slate-500 font-medium">
-                                            <svg className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                            </svg>
-                                            <span className="italic">Patokan: {item.patokan}</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Tempat / Venue */}
-                                    <div className="flex justify-between items-center text-xs font-semibold border-b border-slate-50 pb-2">
-                                        <span className="text-slate-400">Tempat Pelaksanaan</span>
-                                        <span className="text-slate-800 font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-xl border border-amber-100">
-                                            {item.tempat}
-                                        </span>
-                                    </div>
-
-                                    {/* Action Buttons */}
-                                    <div className="flex gap-2 border-t border-slate-50 pt-3">
-                                        <button
-                                            onClick={() => openEditModal(item)}
-                                            className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 text-[11px] font-bold px-3 py-2 rounded-xl active:scale-95 transition-all text-center flex items-center justify-center gap-1.5"
-                                        >
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                            Edit
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(item.id, item.nama)}
-                                            className="bg-rose-50 text-rose-600 hover:bg-rose-100 text-[11px] font-bold px-3.5 py-2 rounded-xl active:scale-95 transition-all text-center flex items-center justify-center"
-                                            title="Hapus"
-                                        >
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            ))
+                                );
+                            })
                         ) : (
                             <div className="bg-white rounded-3xl p-8 border border-slate-100 text-center text-xs text-slate-400 font-semibold shadow-[0_2px_10px_rgb(0,0,0,0.01)]">
                                 Tidak ada data posyandu yang ditemukan.
@@ -395,7 +450,6 @@ export default function KelolaPosyandu() {
                                             onChange={(e) => setPatokan(e.target.value)}
                                             placeholder="Contoh: Dekat masjid / seberang lapangan bola..."
                                             className="w-full box-border px-4 py-3 bg-slate-50 border border-slate-205 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all"
-                                            required
                                         />
                                     </div>
 
@@ -419,19 +473,33 @@ export default function KelolaPosyandu() {
                                 <button
                                     type="button"
                                     onClick={closeModal}
-                                    className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm py-4 rounded-[1.25rem] active:scale-95 transition-all text-center cursor-pointer"
+                                    disabled={isMutating}
+                                    className="w-1/3 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 font-bold text-sm py-4 rounded-[1.25rem] active:scale-95 transition-all text-center cursor-pointer"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     type="submit"
                                     form="posyandu-form"
-                                    className="w-2/3 bg-blue-600 text-white font-bold text-sm py-4 rounded-[1.25rem] shadow-[0_8px_20px_rgba(37,99,235,0.3)] hover:bg-blue-700 active:scale-95 transition-all flex justify-center items-center gap-2 cursor-pointer"
+                                    disabled={isMutating}
+                                    className="w-2/3 bg-blue-600 text-white font-bold text-sm py-4 rounded-[1.25rem] shadow-[0_8px_20px_rgba(37,99,235,0.3)] hover:bg-blue-700 disabled:opacity-70 active:scale-95 transition-all flex justify-center items-center gap-2 cursor-pointer"
                                 >
-                                    <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                                    </svg>
-                                    Simpan Data
+                                    {isMutating ? (
+                                        <>
+                                            <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                            </svg>
+                                            <span>Menyimpan...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                            </svg>
+                                            <span>Simpan Data</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
