@@ -6,12 +6,16 @@ interface UserCardProps {
   user: BackendUser;
   onDelete: (id: string) => void;
   isDeletePending: boolean;
+  onToggleVerify: (id: string, currentStatus: boolean) => void;
+  isUpdatePending: boolean;
 }
 
 export default function UserCard({
   user,
   onDelete,
-  isDeletePending
+  isDeletePending,
+  onToggleVerify,
+  isUpdatePending
 }: UserCardProps) {
   const feRole = roleMapToFrontend(user.role);
 
@@ -23,6 +27,8 @@ export default function UserCard({
     roleColor = 'bg-indigo-50 text-indigo-600 border-indigo-100';
   } else if (feRole === 'admin desa') {
     roleColor = 'bg-blue-50 text-blue-600 border-blue-100';
+  } else if (feRole === 'admin posyandu') {
+    roleColor = 'bg-rose-50 text-rose-600 border-rose-100';
   }
 
   return (
@@ -38,7 +44,9 @@ export default function UserCard({
                 ? 'bg-indigo-100 border-indigo-200 text-indigo-600'
                 : feRole === 'admin desa'
                   ? 'bg-blue-100 border-blue-200 text-blue-600'
-                  : 'bg-teal-100 border-teal-200 text-teal-600'
+                  : feRole === 'admin posyandu'
+                    ? 'bg-rose-100 border-rose-200 text-rose-600'
+                    : 'bg-teal-100 border-teal-200 text-teal-600'
           }`}>
             {feRole === 'bidan' ? (
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -48,7 +56,7 @@ export default function UserCard({
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
-            ) : feRole === 'admin desa' ? (
+            ) : (feRole === 'admin desa' || feRole === 'admin posyandu') ? (
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
@@ -92,11 +100,33 @@ export default function UserCard({
         {/* Created Date Row */}
         <div className="flex items-center gap-2.5 text-slate-600">
           <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
           <span>
             Dibuat: <span className="font-semibold text-slate-700">{new Date(user.created_at).toISOString().split('T')[0]}</span>
           </span>
+        </div>
+
+        {/* Email Verification Row */}
+        <div className="flex justify-between items-center text-slate-600 border-t border-slate-100/60 pt-2.5 mt-0.5">
+          <div className="flex items-center gap-2.5">
+            <svg className={`w-3.5 h-3.5 ${user.email_verified ? 'text-emerald-500' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <span className="font-semibold text-slate-500 text-[10px] uppercase tracking-wider">Verifikasi Email</span>
+          </div>
+          <button
+            onClick={() => onToggleVerify(user.id, user.email_verified)}
+            disabled={isUpdatePending}
+            className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold uppercase border tracking-wider transition-all duration-200 active:scale-95 flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${
+              user.email_verified
+                ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
+                : 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'
+            }`}
+            title={user.email_verified ? "Batalkan Verifikasi Email" : "Verifikasi Email Sekarang"}
+          >
+            {user.email_verified ? 'Terverifikasi' : 'Belum Verifikasi'}
+          </button>
         </div>
       </div>
     </div>

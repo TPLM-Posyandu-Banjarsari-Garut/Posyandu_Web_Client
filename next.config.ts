@@ -13,7 +13,7 @@ const withPWA = withPWAInit({
 });
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://posyandu-web-server.vercel.app";
+  process.env.NEXT_PUBLIC_API_URL ?? "https://api.posyandubanjarsari.my.id";
 
 const nextConfig: NextConfig = {
   /*

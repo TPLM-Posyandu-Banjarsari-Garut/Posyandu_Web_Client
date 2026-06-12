@@ -80,10 +80,10 @@ export function useLoginAdmin() {
           throw new Error("Email atau kata sandi tidak valid");
         }
 
-        if (response.user.role !== "village_admin") {
+        if (response.user.role !== "village_admin" && response.user.role !== "posyandu_admin") {
           clearAdminSession();
           throw new Error(
-            "Akses ditolak. Hanya admin desa yang dapat masuk ke halaman ini."
+            "Akses ditolak. Hanya administrator yang dapat masuk ke halaman ini."
           );
         }
 

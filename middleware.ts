@@ -30,7 +30,7 @@ export function middleware(request: NextRequest) {
   // 2. Proxy Rute API (/api/*) ke Backend Production
   if (pathname.startsWith("/api")) {
     const API_URL =
-      process.env.NEXT_PUBLIC_API_URL ?? "https://posyandu-web-server.vercel.app";
+      process.env.NEXT_PUBLIC_API_URL ?? "https://api.posyandubanjarsari.my.id";
 
     const apiUrlObj = new URL(API_URL);
 

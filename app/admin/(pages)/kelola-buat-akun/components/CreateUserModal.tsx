@@ -170,15 +170,7 @@ export default function CreateUserModal({
             </div>
           </div>
 
-          {/* Input Tanggal Akun Dibuat */}
-          <div className="flex flex-col">
-            <label className={labelClass}>Tanggal Akun Dibuat</label>
-            <input
-              type="date"
-              {...register('tanggalDibuat')}
-              className={inputClass}
-            />
-          </div>
+
 
           {/* Form Buttons */}
           <div className="flex gap-3 pt-4 shrink-0">

@@ -7,6 +7,7 @@ import {
   useGetUsers,
   useCreateUser,
   useDeleteUser,
+  useUpdateUser,
 } from "@/hooks/query/userAdmin/UseManageUsers";
 import { BackendRole } from "@/interfaces/user";
 
@@ -15,7 +16,6 @@ export interface CreateFormInputs {
   email: string;
   password: string;
   role: "orang tua" | "kader" | "bidan" | "admin desa";
-  tanggalDibuat: string;
 }
 
 // Helpers untuk memetakan role dari UI ke database
@@ -29,6 +29,8 @@ export const roleMapToBackend = (feRole: string): BackendRole => {
       return "midwife";
     case "admin desa":
       return "village_admin";
+    case "admin posyandu":
+      return "posyandu_admin";
     default:
       return "parent";
   }
@@ -44,6 +46,8 @@ export const roleMapToFrontend = (beRole: string): string => {
       return "bidan";
     case "village_admin":
       return "admin desa";
+    case "posyandu_admin":
+      return "admin posyandu";
     default:
       return beRole;
   }
@@ -72,6 +76,7 @@ export function useManageUsersPage() {
 
   const createUserMutation = useCreateUser();
   const deleteUserMutation = useDeleteUser();
+  const updateUserMutation = useUpdateUser();
 
   // Password visibility maps (publicId -> boolean)
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
@@ -97,17 +102,8 @@ export function useManageUsersPage() {
       email: "",
       password: "",
       role: "orang tua",
-      tanggalDibuat: "",
     },
   });
-
-  // Set today's date as default when modal opens
-  useEffect(() => {
-    if (isModalOpen) {
-      const today = new Date().toISOString().split("T")[0];
-      setCreateValue("tanggalDibuat", today);
-    }
-  }, [isModalOpen, setCreateValue]);
 
   // Toggle password visibility in the list
   const togglePasswordVisibility = (publicId: string) => {
@@ -123,6 +119,24 @@ export function useManageUsersPage() {
     setTimeout(() => {
       setShowSuccessModal(false);
     }, 1500);
+  };
+
+  // Handle verification status toggle
+  const handleToggleVerify = (publicId: string, currentStatus: boolean) => {
+    updateUserMutation.mutate(
+      {
+        publicId,
+        payload: { email_verified: !currentStatus },
+      },
+      {
+        onSuccess: () => {
+          showToast("Status verifikasi berhasil diperbarui!");
+        },
+        onError: (err: any) => {
+          alert(err.response?.data?.message ?? err.message ?? "Gagal memperbarui status verifikasi");
+        },
+      }
+    );
   };
 
   // Handle account deletion
@@ -182,6 +196,9 @@ export function useManageUsersPage() {
     paginatedUsers,
     createUserMutation,
     deleteUserMutation,
+    updateUserMutation,
+    handleToggleVerify,
+    isUpdatePending: updateUserMutation.isPending,
     visiblePasswords,
     togglePasswordVisibility,
     isModalOpen,

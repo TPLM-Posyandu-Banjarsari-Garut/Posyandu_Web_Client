@@ -35,6 +35,8 @@ export default function KelolaBuatAkun() {
         registerCreate,
         handleCreateAccount,
         handleDeleteAccount,
+        handleToggleVerify,
+        isUpdatePending,
         firstFormError,
     } = useManageUsersPage();
 
@@ -84,42 +86,9 @@ export default function KelolaBuatAkun() {
                         )}
                     </div>
 
-                    {/* Stack list of accounts */}
-                    <div className="flex flex-col gap-4">
-                        <div className="flex justify-between items-center px-1">
-                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Daftar Akun Stack</h3>
-                        </div>
-
-                        {isLoading ? (
-                            <div className="bg-white rounded-2xl p-8 border border-slate-100 text-center shadow-[0_4px_15px_rgba(0,0,0,0.02)]">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
-                                <h4 className="text-xs font-bold text-slate-700">Memuat Data...</h4>
-                            </div>
-                        ) : paginatedUsers.length > 0 ? (
-                            paginatedUsers.map((user) => (
-                                <UserCard
-                                    key={user.id}
-                                    user={user}
-                                    onDelete={handleDeleteAccount}
-                                    isDeletePending={deleteUserMutation.isPending}
-                                />
-                            ))
-                        ) : (
-                            <div className="bg-white rounded-2xl p-8 border border-slate-100 text-center shadow-[0_4px_15px_rgba(0,0,0,0.02)]">
-                                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mx-auto mb-3">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                                <h4 className="text-xs font-bold text-slate-700 mb-0.5">Akun Tidak Ditemukan</h4>
-                                <p className="text-[10px] text-slate-400">Cobalah kata kunci pencarian yang lain.</p>
-                            </div>
-                        )}
-                    </div>
-
                     {/* Pagination Controls */}
                     {totalItems > 0 && (
-                        <div className="flex justify-between items-center mt-6 px-1">
+                        <div className="flex justify-between items-center mb-5 px-1">
                             <button
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={page === 1}
@@ -139,6 +108,42 @@ export default function KelolaBuatAkun() {
                             </button>
                         </div>
                     )}
+
+                    {/* Stack list of accounts */}
+                    <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center px-1">
+                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Daftar Akun Stack</h3>
+                        </div>
+
+                        {isLoading ? (
+                            <div className="bg-white rounded-2xl p-8 border border-slate-100 text-center shadow-[0_4px_15px_rgba(0,0,0,0.02)]">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                                <h4 className="text-xs font-bold text-slate-700">Memuat Data...</h4>
+                            </div>
+                        ) : paginatedUsers.length > 0 ? (
+                            paginatedUsers.map((user) => (
+                                <UserCard
+                                    key={user.id}
+                                    user={user}
+                                    onDelete={handleDeleteAccount}
+                                    isDeletePending={deleteUserMutation.isPending}
+                                    onToggleVerify={handleToggleVerify}
+                                    isUpdatePending={isUpdatePending}
+                                />
+                            ))
+                        ) : (
+                            <div className="bg-white rounded-2xl p-8 border border-slate-100 text-center shadow-[0_4px_15px_rgba(0,0,0,0.02)]">
+                                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mx-auto mb-3">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h4 className="text-xs font-bold text-slate-700 mb-0.5">Akun Tidak Ditemukan</h4>
+                                <p className="text-[10px] text-slate-400">Cobalah kata kunci pencarian yang lain.</p>
+                            </div>
+                        )}
+                    </div>
+
                 </div>
 
                 {/* Floating Add Account Button - Fixed Position matching other pages */}

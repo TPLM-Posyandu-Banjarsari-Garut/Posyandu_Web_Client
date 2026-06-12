@@ -30,3 +30,11 @@ export async function deleteUser(publicId: string): Promise<BackendUser> {
   const { data } = await adminApi.delete<ApiResponse<BackendUser>>(`/api/users/${publicId}`);
   return data.data;
 }
+
+export async function updateUser(
+  publicId: string,
+  payload: Partial<CreateUserPayload> & { email_verified?: boolean }
+): Promise<BackendUser> {
+  const { data } = await adminApi.put<ApiResponse<BackendUser>>(`/api/users/${publicId}`, payload);
+  return data.data;
+}
