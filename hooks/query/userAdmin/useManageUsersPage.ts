@@ -7,15 +7,17 @@ import {
   useGetUsers,
   useCreateUser,
   useDeleteUser,
+  useUpdateUser,
 } from "@/hooks/query/userAdmin/UseManageUsers";
 import { BackendRole } from "@/interfaces/user";
+import { createMidwifeProfile, createCadreProfile } from "@/service/user/userService";
 
 export interface CreateFormInputs {
   name: string;
   email: string;
   password: string;
   role: "orang tua" | "kader" | "bidan" | "admin desa";
-  tanggalDibuat: string;
+  posyanduId?: string;
 }
 
 // Helpers untuk memetakan role dari UI ke database
@@ -29,6 +31,8 @@ export const roleMapToBackend = (feRole: string): BackendRole => {
       return "midwife";
     case "admin desa":
       return "village_admin";
+    case "admin posyandu":
+      return "posyandu_admin";
     default:
       return "parent";
   }
@@ -44,6 +48,8 @@ export const roleMapToFrontend = (beRole: string): string => {
       return "bidan";
     case "village_admin":
       return "admin desa";
+    case "posyandu_admin":
+      return "admin posyandu";
     default:
       return beRole;
   }
@@ -72,6 +78,7 @@ export function useManageUsersPage() {
 
   const createUserMutation = useCreateUser();
   const deleteUserMutation = useDeleteUser();
+  const updateUserMutation = useUpdateUser();
 
   // Password visibility maps (publicId -> boolean)
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
@@ -90,6 +97,7 @@ export function useManageUsersPage() {
     handleSubmit: handleSubmitCreate,
     reset: resetCreate,
     setValue: setCreateValue,
+    watch: watchCreate,
     formState: { errors: createErrors },
   } = useForm<CreateFormInputs>({
     defaultValues: {
@@ -97,17 +105,11 @@ export function useManageUsersPage() {
       email: "",
       password: "",
       role: "orang tua",
-      tanggalDibuat: "",
+      posyanduId: "",
     },
   });
 
-  // Set today's date as default when modal opens
-  useEffect(() => {
-    if (isModalOpen) {
-      const today = new Date().toISOString().split("T")[0];
-      setCreateValue("tanggalDibuat", today);
-    }
-  }, [isModalOpen, setCreateValue]);
+  const watchedRole = watchCreate("role");
 
   // Toggle password visibility in the list
   const togglePasswordVisibility = (publicId: string) => {
@@ -123,6 +125,24 @@ export function useManageUsersPage() {
     setTimeout(() => {
       setShowSuccessModal(false);
     }, 1500);
+  };
+
+  // Handle verification status toggle
+  const handleToggleVerify = (publicId: string, currentStatus: boolean) => {
+    updateUserMutation.mutate(
+      {
+        publicId,
+        payload: { email_verified: !currentStatus },
+      },
+      {
+        onSuccess: () => {
+          showToast("Status verifikasi berhasil diperbarui!");
+        },
+        onError: (err: any) => {
+          alert(err.response?.data?.message ?? err.message ?? "Gagal memperbarui status verifikasi");
+        },
+      }
+    );
   };
 
   // Handle account deletion
@@ -142,19 +162,40 @@ export function useManageUsersPage() {
   // Form submission handler
   const handleCreateAccount = handleSubmitCreate((data) => {
     setFormError("");
+    const targetRole = roleMapToBackend(data.role);
 
     createUserMutation.mutate(
       {
         name: data.name,
         email: data.email,
         password: data.password,
-        role: roleMapToBackend(data.role),
+        role: targetRole,
       },
       {
-        onSuccess: () => {
-          resetCreate();
-          setIsModalOpen(false);
-          showToast("Akun baru berhasil dibuat!");
+        onSuccess: async (createdUser) => {
+          try {
+            if (targetRole === "midwife" && data.posyanduId) {
+              await createMidwifeProfile({
+                user_id: createdUser.id,
+                posyandu_id: data.posyanduId,
+                status: "active",
+              });
+            } else if (targetRole === "cadre" && data.posyanduId) {
+              await createCadreProfile({
+                user_id: createdUser.id,
+                posyandu_id: data.posyanduId,
+                status: "active",
+              });
+            }
+            resetCreate();
+            setIsModalOpen(false);
+            showToast("Akun baru dan profil tugas berhasil dibuat!");
+          } catch (error: any) {
+            setFormError(
+              "Akun dibuat, tetapi gagal mengasosiasikan Posyandu: " +
+              (error.response?.data?.message ?? error.message)
+            );
+          }
         },
         onError: (err: any) => {
           setFormError(err.response?.data?.message ?? err.message ?? "Gagal membuat akun");
@@ -182,6 +223,9 @@ export function useManageUsersPage() {
     paginatedUsers,
     createUserMutation,
     deleteUserMutation,
+    updateUserMutation,
+    handleToggleVerify,
+    isUpdatePending: updateUserMutation.isPending,
     visiblePasswords,
     togglePasswordVisibility,
     isModalOpen,
@@ -200,5 +244,6 @@ export function useManageUsersPage() {
     handleDeleteAccount,
     firstFormError,
     createErrors,
+    watchedRole,
   };
 }

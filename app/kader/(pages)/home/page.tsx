@@ -1,8 +1,26 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import BottombarKader from "@/components/ui/bottombar/kader/BottombarKader";
 import FiturAplikasi from "@/components/ui/bottombar/kader/Fitur-aplikasi";
+import { KaderUser } from "@/interfaces/auth";
 
 export default function Home() {
+  const [user, setUser] = useState<KaderUser | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("kader_user") ?? sessionStorage.getItem("kader_user");
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (e) {
+          console.error("Gagal mem-parse data user kader:", e);
+        }
+      }
+    }
+  }, []);
   const today = new Date().toLocaleDateString("id-ID", {
     weekday: "long",
     year: "numeric",
@@ -32,7 +50,7 @@ export default function Home() {
                 </div>
               </div>
               <div>
-                <h1 className="text-lg font-bold text-slate-800">Kader Posyandu</h1>
+                <h1 className="text-lg font-bold text-slate-800">{user?.name || "Kader Posyandu"}</h1>
                 <p className="text-sm text-slate-500 font-medium">Selamat datang kembali 👋</p>
               </div>
             </div>

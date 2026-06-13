@@ -8,6 +8,7 @@ export interface BackendUser {
   role: BackendRole;
   status: "active" | "suspended";
   avatar_url?: string | null;
+  email_verified: boolean;
   created_at: string;
   updated_at: string;
 }

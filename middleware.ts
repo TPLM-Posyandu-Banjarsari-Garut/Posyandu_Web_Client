@@ -27,10 +27,77 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // 1.5. Proteksi Halaman Bidan (/bidan/*)
+  if (pathname.startsWith("/bidan")) {
+    const isLoginPage = pathname === "/bidan/login";
+
+    // Ambil session token dari cookie better-auth
+    const sessionToken =
+      request.cookies.get("better-auth.session_token")?.value ??
+      request.cookies.get("__Secure-better-auth.session_token")?.value;
+
+    // Jika pengguna belum login dan mencoba mengakses halaman bidan selain login
+    if (!sessionToken && !isLoginPage) {
+      const loginUrl = new URL("/bidan/login", request.url);
+      // Simpan URL asal untuk redirect setelah login berhasil (optional)
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Jika pengguna sudah login dan mencoba mengakses halaman login kembali
+    if (sessionToken && isLoginPage) {
+      return NextResponse.redirect(new URL("/bidan/home", request.url));
+    }
+  }
+
+  // 1.6. Proteksi Halaman Kader (/kader/*)
+  if (pathname.startsWith("/kader")) {
+    const isLoginPage = pathname === "/kader/login";
+
+    // Ambil session token dari cookie better-auth
+    const sessionToken =
+      request.cookies.get("better-auth.session_token")?.value ??
+      request.cookies.get("__Secure-better-auth.session_token")?.value;
+
+    // Jika pengguna belum login dan mencoba mengakses halaman kader selain login
+    if (!sessionToken && !isLoginPage) {
+      const loginUrl = new URL("/kader/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Jika pengguna sudah login dan mencoba mengakses halaman login kembali
+    if (sessionToken && isLoginPage) {
+      return NextResponse.redirect(new URL("/kader/home", request.url));
+    }
+  }
+
+  // 1.7. Proteksi Halaman Orang Tua (/orangtua/*)
+  if (pathname.startsWith("/orangtua")) {
+    const isLoginPage = pathname === "/orangtua/login" || pathname === "/orangtua/otp";
+
+    // Ambil session token dari cookie better-auth
+    const sessionToken =
+      request.cookies.get("better-auth.session_token")?.value ??
+      request.cookies.get("__Secure-better-auth.session_token")?.value;
+
+    // Jika pengguna belum login dan mencoba mengakses halaman orangtua selain login/otp
+    if (!sessionToken && !isLoginPage) {
+      const loginUrl = new URL("/orangtua/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Jika pengguna sudah login dan mencoba mengakses halaman login kembali
+    if (sessionToken && isLoginPage) {
+      return NextResponse.redirect(new URL("/orangtua/home", request.url));
+    }
+  }
+
   // 2. Proxy Rute API (/api/*) ke Backend Production
   if (pathname.startsWith("/api")) {
     const API_URL =
-      process.env.NEXT_PUBLIC_API_URL ?? "https://posyandu-web-server.vercel.app";
+      process.env.NEXT_PUBLIC_API_URL ?? "https://api.posyandubanjarsari.my.id";
 
     const apiUrlObj = new URL(API_URL);
 
@@ -73,5 +140,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*", "/admin/:path*"],
+  matcher: ["/api/:path*", "/admin/:path*", "/bidan/:path*", "/kader/:path*", "/orangtua/:path*"],
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { UseFormRegister } from 'react-hook-form';
 import { CreateFormInputs } from '@/hooks/query/userAdmin/useManageUsersPage';
+import { useGetAdminPosyandus } from '@/hooks/query/userAdmin/UseManageUsers';
 
 interface CreateUserModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface CreateUserModalProps {
   firstFormError: string | undefined;
   formPasswordVisible: boolean;
   onToggleFormPasswordVisible: () => void;
+  watchedRole: string;
 }
 
 const inputClass =
@@ -26,8 +28,12 @@ export default function CreateUserModal({
   register,
   firstFormError,
   formPasswordVisible,
-  onToggleFormPasswordVisible
+  onToggleFormPasswordVisible,
+  watchedRole
 }: CreateUserModalProps) {
+  const { data: posyandusResponse } = useGetAdminPosyandus();
+  const posyandusList = posyandusResponse?.data || [];
+
   if (!isOpen) return null;
 
   return (
@@ -155,7 +161,7 @@ export default function CreateUserModal({
             <div className="relative">
               <select
                 {...register('role')}
-                className={`${inputClass} appearance-none pr-10`}
+                className={`${inputClass} appearance-none pr-10 font-semibold text-slate-700`}
               >
                 <option value="orang tua">Orang Tua</option>
                 <option value="kader">Kader Posyandu</option>
@@ -170,29 +176,48 @@ export default function CreateUserModal({
             </div>
           </div>
 
-          {/* Input Tanggal Akun Dibuat */}
-          <div className="flex flex-col">
-            <label className={labelClass}>Tanggal Akun Dibuat</label>
-            <input
-              type="date"
-              {...register('tanggalDibuat')}
-              className={inputClass}
-            />
-          </div>
+          {/* Dropdown Select Posyandu for Bidan / Kader */}
+          {(watchedRole === 'bidan' || watchedRole === 'kader') && (
+            <div className="flex flex-col animate-fade-in">
+              <label className={labelClass}>
+                Pilih Posyandu Penugasan <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  {...register('posyanduId', {
+                    required: `Posyandu penugasan wajib dipilih untuk peran ${watchedRole}`,
+                  })}
+                  className={`${inputClass} appearance-none pr-10 font-semibold text-slate-700`}
+                >
+                  <option value="">Pilih Posyandu...</option>
+                  {posyandusList.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Form Buttons */}
           <div className="flex gap-3 pt-4 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 border border-slate-200 text-slate-500 font-bold text-xs py-3.5 rounded-2xl hover:bg-slate-50 active:scale-95 transition-all text-center"
+              className="flex-1 border border-slate-200 text-slate-500 font-bold text-xs py-3.5 rounded-2xl hover:bg-slate-50 active:scale-95 transition-all text-center cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-3.5 rounded-2xl active:scale-95 transition-all shadow-[0_6px_15px_rgba(37,99,235,0.25)] flex justify-center items-center gap-2 disabled:opacity-50"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-3.5 rounded-2xl active:scale-95 transition-all shadow-[0_6px_15px_rgba(37,99,235,0.25)] flex justify-center items-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               {isPending ? (
                 <>

@@ -13,6 +13,16 @@ export const adminApi = axios.create({
   withCredentials: true,
 });
 
+adminApi.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = getAdminToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
 export async function loginAdmin(
   payload: AdminLoginPayload
 ): Promise<AdminLoginResponse> {

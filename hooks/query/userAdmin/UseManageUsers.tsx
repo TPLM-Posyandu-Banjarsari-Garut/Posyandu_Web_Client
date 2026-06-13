@@ -5,6 +5,8 @@ import {
   fetchUsers,
   createUser,
   deleteUser,
+  updateUser,
+  fetchAdminPosyandus,
 } from "@/service/user/userService";
 import { BackendRole, CreateUserPayload } from "@/interfaces/user";
 
@@ -38,5 +40,26 @@ export function useDeleteUser() {
       // Refresh list user setelah berhasil menghapus user
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
+  });
+}
+
+export function useUpdateUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ publicId, payload }: { publicId: string; payload: Partial<CreateUserPayload> & { email_verified?: boolean } }) =>
+      updateUser(publicId, payload),
+    onSuccess: () => {
+      // Refresh list user setelah berhasil mengupdate user
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+}
+
+export function useGetAdminPosyandus() {
+  return useQuery({
+    queryKey: ["admin-posyandus"],
+    queryFn: fetchAdminPosyandus,
+    staleTime: Infinity,
   });
 }

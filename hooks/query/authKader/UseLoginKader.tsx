@@ -6,18 +6,18 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import {
-  clearAdminSession,
-  loginAdmin,
-  saveAdminSession,
-} from "@/service/auth/adminAuthService";
-import { AdminLoginPayload, AdminUser } from "@/interfaces/auth";
+  clearKaderSession,
+  loginKader,
+  saveKaderSession,
+} from "@/service/auth/kaderAuthService";
+import { KaderLoginPayload, KaderUser } from "@/interfaces/auth";
 
-interface LoginAdminVariables extends AdminLoginPayload {
+interface LoginKaderVariables extends KaderLoginPayload {
   rememberMe?: boolean;
 }
 
-interface LoginAdminResult {
-  user: AdminUser;
+interface LoginKaderResult {
+  user: KaderUser;
 }
 
 export interface LoginFormInputs {
@@ -49,7 +49,7 @@ function getErrorMessage(error: unknown): string {
   return "Terjadi kesalahan saat login";
 }
 
-export function useLoginAdmin() {
+export function useLoginKader() {
   const router = useRouter();
   
   // UI States
@@ -71,23 +71,23 @@ export function useLoginAdmin() {
   });
 
   // react-query mutation
-  const loginMutation = useMutation<LoginAdminResult, Error, LoginAdminVariables>({
+  const loginMutation = useMutation<LoginKaderResult, Error, LoginKaderVariables>({
     mutationFn: async ({ email, password, rememberMe = false }) => {
       try {
-        const response = await loginAdmin({ email, password });
+        const response = await loginKader({ email, password });
 
         if (!response.token || !response.user) {
           throw new Error("Email atau kata sandi tidak valid");
         }
 
-        if (response.user.role !== "village_admin" && response.user.role !== "posyandu_admin") {
-          clearAdminSession();
+        if (response.user.role !== "cadre") {
+          clearKaderSession();
           throw new Error(
-            "Akses ditolak. Hanya administrator yang dapat masuk ke halaman ini."
+            "Akses ditolak. Hanya kader yang dapat masuk ke halaman ini."
           );
         }
 
-        saveAdminSession(response.token, response.user, rememberMe);
+        saveKaderSession(response.token, response.user, rememberMe);
         return { user: response.user };
       } catch (error) {
         throw new Error(getErrorMessage(error));
@@ -108,7 +108,7 @@ export function useLoginAdmin() {
         onSuccess: () => {
           setShowSuccess(true);
           setTimeout(() => {
-            router.push("/admin/kelola-buat-akun");
+            router.push("/kader/home");
           }, 1500);
         },
         onError: (err) => {
