@@ -11,12 +11,13 @@ export function useLogoutOrangTua() {
   return useMutation({
     mutationFn: logoutOrangTua,
     onSuccess: () => {
+      // Clear all React Query cache to prevent data leaks between sessions
       queryClient.clear();
       router.push("/orangtua/login");
     },
-    onError: (error) => {
-      console.error("Logout gagal:", error);
-      // Tetap paksa redirect meskipun API gagal
+    onError: () => {
+      // Force redirect even if API fails
+      queryClient.clear();
       router.push("/orangtua/login");
     },
   });

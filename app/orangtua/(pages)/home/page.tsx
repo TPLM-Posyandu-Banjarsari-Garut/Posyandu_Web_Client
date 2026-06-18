@@ -1,26 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import BottombarKader from "@/components/ui/bottombar/orangtua/BottombarOrtu";
 import FiturAplikasi from "@/components/ui/bottombar/orangtua/Fitur-aplikasi";
+import { useCurrentUser } from "@/hooks/query/auth/useCurrentUser";
 
 export default function Home() {
-  const [userName, setUserName] = useState("Orang tua");
-
-  useEffect(() => {
-    try {
-      const userStr = localStorage.getItem("orangtua_user") || sessionStorage.getItem("orangtua_user");
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        if (user && user.name) {
-          setUserName(user.name);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to parse user data", e);
-    }
-  }, []);
+  const { data: user } = useCurrentUser();
+  const userName = user?.name ?? "Orang Tua";
 
   const today = new Date().toLocaleDateString("id-ID", {
     weekday: "long",

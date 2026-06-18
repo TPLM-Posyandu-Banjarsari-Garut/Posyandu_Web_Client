@@ -1,23 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import {
-  clearBidanSession,
-  loginBidan,
-  saveBidanSession,
-} from "@/service/auth/bidanAuthService";
-import { BidanLoginPayload, BidanUser } from "@/interfaces/auth";
+import { loginBidan } from "@/service/auth/bidanAuthService";
+import { BidanLoginPayload } from "@/interfaces/auth";
 
 interface LoginBidanVariables extends BidanLoginPayload {
   rememberMe?: boolean;
-}
-
-interface LoginBidanResult {
-  user: BidanUser;
 }
 
 export interface LoginFormInputs {
@@ -31,7 +23,6 @@ function getErrorMessage(error: unknown): string {
     if (!error.response) {
       return "Tidak dapat terhubung ke server. Pastikan koneksi internet aktif dan coba lagi.";
     }
-
     const data = error.response.data as
       | { message?: string; error?: string }
       | undefined;
@@ -41,23 +32,20 @@ function getErrorMessage(error: unknown): string {
       "Email atau kata sandi tidak valid"
     );
   }
-
   if (error instanceof Error) {
     return error.message;
   }
-
   return "Terjadi kesalahan saat login";
 }
 
 export function useLoginBidan() {
   const router = useRouter();
-  
-  // UI States
+  const queryClient = useQueryClient();
+
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [apiError, setApiError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // react-hook-form initialization
   const {
     register,
     handleSubmit,
@@ -70,32 +58,29 @@ export function useLoginBidan() {
     },
   });
 
-  // react-query mutation
-  const loginMutation = useMutation<LoginBidanResult, Error, LoginBidanVariables>({
-    mutationFn: async ({ email, password, rememberMe = false }) => {
+  const loginMutation = useMutation<void, Error, LoginBidanVariables>({
+    mutationFn: async ({ email, password }) => {
       try {
         const response = await loginBidan({ email, password });
 
-        if (!response.token || !response.user) {
+        if (!response.user) {
           throw new Error("Email atau kata sandi tidak valid");
         }
 
         if (response.user.role !== "midwife") {
-          clearBidanSession();
           throw new Error(
             "Akses ditolak. Hanya Bidan yang dapat masuk ke halaman ini."
           );
         }
 
-        saveBidanSession(response.token, response.user, rememberMe);
-        return { user: response.user };
+        // Invalidate current-user cache so fresh data is fetched
+        await queryClient.invalidateQueries({ queryKey: ["current-user"] });
       } catch (error) {
         throw new Error(getErrorMessage(error));
       }
     },
   });
 
-  // Submit handler calling mutation
   const onSubmit = handleSubmit((data) => {
     setApiError("");
     loginMutation.mutate(
@@ -118,7 +103,6 @@ export function useLoginBidan() {
     );
   });
 
-  // Gabungkan error dari validation react-hook-form dan API backend
   const displayError =
     errors.email?.message || errors.password?.message || apiError || "";
 

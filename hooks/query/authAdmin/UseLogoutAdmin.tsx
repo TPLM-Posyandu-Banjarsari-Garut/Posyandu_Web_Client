@@ -13,12 +13,15 @@ export function useLogoutAdmin() {
       await logoutAdmin();
     },
     onSuccess: () => {
-      // Bersihkan semua cache React Query untuk menghindari data bocor
+      // Clear all React Query cache to prevent data leaks between sessions
       queryClient.clear();
-      
-      // Redirect kembali ke halaman login admin
       router.push("/admin/login");
       router.refresh();
+    },
+    onError: () => {
+      // Force redirect even if API fails
+      queryClient.clear();
+      router.push("/admin/login");
     },
   });
 }

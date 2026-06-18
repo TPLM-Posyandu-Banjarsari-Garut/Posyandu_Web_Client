@@ -1,23 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import {
-  clearOrangTuaSession,
-  loginOrangTua,
-  saveOrangTuaSession,
-} from "@/service/auth/orangTuaAuthService";
-import { OrangTuaLoginPayload, OrangTuaUser } from "@/interfaces/auth";
+import { loginOrangTua } from "@/service/auth/orangTuaAuthService";
+import { OrangTuaLoginPayload } from "@/interfaces/auth";
 
 interface LoginOrangTuaVariables extends OrangTuaLoginPayload {
   rememberMe?: boolean;
-}
-
-interface LoginOrangTuaResult {
-  user: OrangTuaUser;
 }
 
 export interface LoginFormInputs {
@@ -42,7 +34,8 @@ function getErrorMessage(error: unknown): string {
 
 export function useLoginOrangTua() {
   const router = useRouter();
-  
+  const queryClient = useQueryClient();
+
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [apiError, setApiError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -59,22 +52,21 @@ export function useLoginOrangTua() {
     },
   });
 
-  const loginMutation = useMutation<LoginOrangTuaResult, Error, LoginOrangTuaVariables>({
-    mutationFn: async ({ email, password, rememberMe = false }) => {
+  const loginMutation = useMutation<void, Error, LoginOrangTuaVariables>({
+    mutationFn: async ({ email, password }) => {
       try {
         const response = await loginOrangTua({ email, password });
 
-        if (!response.token || !response.user) {
+        if (!response.user) {
           throw new Error("Email atau kata sandi tidak valid");
         }
 
         if (response.user.role !== "parent") {
-          clearOrangTuaSession();
           throw new Error("Akses ditolak. Hanya Orang Tua yang dapat masuk ke halaman ini.");
         }
 
-        saveOrangTuaSession(response.token, response.user, rememberMe);
-        return { user: response.user };
+        // Invalidate current-user cache so fresh data is fetched
+        await queryClient.invalidateQueries({ queryKey: ["current-user"] });
       } catch (error) {
         throw new Error(getErrorMessage(error));
       }

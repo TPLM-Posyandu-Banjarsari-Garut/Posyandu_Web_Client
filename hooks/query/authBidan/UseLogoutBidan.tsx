@@ -13,12 +13,15 @@ export function useLogoutBidan() {
       await logoutBidan();
     },
     onSuccess: () => {
-      // Clear React Query cache to prevent data leaks
+      // Clear all React Query cache to prevent data leaks between sessions
       queryClient.clear();
-      
-      // Redirect back to Bidan login page
       router.push("/bidan/login");
       router.refresh();
+    },
+    onError: () => {
+      // Force redirect even if API fails
+      queryClient.clear();
+      router.push("/bidan/login");
     },
   });
 }
