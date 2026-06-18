@@ -43,3 +43,14 @@ export async function resendEmailOTP(payload: ResendOTPPayload): Promise<any> {
 export async function logoutOrangTua(): Promise<void> {
   await api.post("/api/auth/sign-out");
 }
+
+export async function signInOrangTuaGoogle(
+  callbackURL: string
+): Promise<{ url: string }> {
+  const { data } = await api.post<{ url: string }>("/api/auth/sign-in/social", {
+    provider: "google",
+    callbackURL,
+  });
+  return data;
+}
+

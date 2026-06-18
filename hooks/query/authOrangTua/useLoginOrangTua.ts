@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { loginOrangTua } from "@/service/auth/orangTuaAuthService";
+import { loginOrangTua, signInOrangTuaGoogle } from "@/service/auth/orangTuaAuthService";
 import { OrangTuaLoginPayload } from "@/interfaces/auth";
 
 interface LoginOrangTuaVariables extends OrangTuaLoginPayload {
@@ -95,6 +95,25 @@ export function useLoginOrangTua() {
     );
   });
 
+  const [isGooglePending, setIsGooglePending] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setIsGooglePending(true);
+    setApiError("");
+    try {
+      const callbackURL = `${window.location.origin}/orangtua/home`;
+      const response = await signInOrangTuaGoogle(callbackURL);
+      if (response && response.url) {
+        window.location.href = response.url;
+      } else {
+        throw new Error("Gagal mendapatkan URL login Google.");
+      }
+    } catch (error) {
+      setIsGooglePending(false);
+      setApiError(getErrorMessage(error));
+    }
+  };
+
   const displayError = errors.email?.message || errors.password?.message || apiError || "";
 
   return {
@@ -106,5 +125,8 @@ export function useLoginOrangTua() {
     setPasswordVisible,
     showSuccess,
     isPending: loginMutation.isPending,
+    handleGoogleLogin,
+    isGooglePending,
   };
 }
+
