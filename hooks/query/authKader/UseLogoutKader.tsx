@@ -13,12 +13,15 @@ export function useLogoutKader() {
       await logoutKader();
     },
     onSuccess: () => {
-      // Clear React Query cache to prevent data leaks
+      // Clear all React Query cache to prevent data leaks between sessions
       queryClient.clear();
-      
-      // Redirect back to Kader login page
       router.push("/kader/login");
       router.refresh();
+    },
+    onError: () => {
+      // Force redirect even if API fails
+      queryClient.clear();
+      router.push("/kader/login");
     },
   });
 }

@@ -1,28 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLogoutBidan } from "@/hooks/query/authBidan/UseLogoutBidan";
 import BottombarBidan from "@/components/ui/bottombar/bidan/BottombarBidan";
-import { BidanUser } from "@/interfaces/auth";
+import { useCurrentUser } from "@/hooks/query/auth/useCurrentUser";
 
 export default function BidanProfile() {
   const router = useRouter();
-  const [user, setUser] = useState<BidanUser | null>(null);
+  const { data: user } = useCurrentUser();
   const { mutate: logout, isPending: isLoggingOut } = useLogoutBidan();
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem("bidan_user") ?? sessionStorage.getItem("bidan_user");
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (e) {
-          console.error("Gagal mem-parse data user bidan:", e);
-        }
-      }
-    }
-  }, []);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "-";

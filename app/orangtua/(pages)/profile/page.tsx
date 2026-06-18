@@ -1,28 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLogoutOrangTua } from "@/hooks/query/authOrangTua/UseLogoutOrangTua";
 import BottombarOrtu from "@/components/ui/bottombar/orangtua/BottombarOrtu";
-import { OrangTuaUser } from "@/interfaces/auth";
+import { useCurrentUser } from "@/hooks/query/auth/useCurrentUser";
 
 export default function OrangTuaProfile() {
   const router = useRouter();
-  const [user, setUser] = useState<OrangTuaUser | null>(null);
+  const { data: user } = useCurrentUser();
   const { mutate: logout, isPending: isLoggingOut } = useLogoutOrangTua();
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem("orangtua_user") ?? sessionStorage.getItem("orangtua_user");
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (e) {
-          console.error("Gagal mem-parse data user orang tua:", e);
-        }
-      }
-    }
-  }, []);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "-";

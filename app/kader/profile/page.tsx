@@ -1,28 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLogoutKader } from "@/hooks/query/authKader/UseLogoutKader";
 import BottombarKader from "@/components/ui/bottombar/kader/BottombarKader";
-import { KaderUser } from "@/interfaces/auth";
+import { useCurrentUser } from "@/hooks/query/auth/useCurrentUser";
 
 export default function KaderProfile() {
   const router = useRouter();
-  const [user, setUser] = useState<KaderUser | null>(null);
+  const { data: user } = useCurrentUser();
   const { mutate: logout, isPending: isLoggingOut } = useLogoutKader();
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem("kader_user") ?? sessionStorage.getItem("kader_user");
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (e) {
-          console.error("Gagal mem-parse data user kader:", e);
-        }
-      }
-    }
-  }, []);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "-";

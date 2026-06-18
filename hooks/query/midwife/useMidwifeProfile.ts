@@ -1,26 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 import { fetchMidwives } from "@/service/midwife/midwifeService";
-import { BidanUser } from "@/interfaces/auth";
+import { useCurrentUser } from "@/hooks/query/auth/useCurrentUser";
 
 export function useGetMidwifeProfile() {
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem("bidan_user") ?? sessionStorage.getItem("bidan_user");
-      if (storedUser) {
-        try {
-          const parsed = JSON.parse(storedUser) as BidanUser;
-          setCurrentUserId(parsed.id);
-        } catch (e) {
-          console.error("Gagal membaca session user untuk profil bidan:", e);
-        }
-      }
-    }
-  }, []);
+  const { data: currentUser } = useCurrentUser();
+  const currentUserId = currentUser?.id ?? null;
 
   return useQuery({
     queryKey: ["midwife-profile", currentUserId],

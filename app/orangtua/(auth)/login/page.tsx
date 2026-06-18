@@ -19,6 +19,8 @@ export default function OrangTuaAuth() {
     setPasswordVisible: setLoginPasswordVisible,
     showSuccess: showLoginSuccess,
     isPending: isLoginPending,
+    handleGoogleLogin,
+    isGooglePending,
   } = useLoginOrangTua();
 
   const {
@@ -34,9 +36,10 @@ export default function OrangTuaAuth() {
   } = useRegisterOrangTua();
 
   const error = activeTab === "login" ? loginError : registerError;
-  const isLoading = activeTab === "login" ? isLoginPending : isRegisterPending;
+  const isLoading = (activeTab === "login" ? isLoginPending : isRegisterPending) || isGooglePending;
   const showSuccess = showLoginSuccess || showRegisterSuccess;
   const successType = showLoginSuccess ? "login" : "register";
+
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-0 sm:px-0 text-slate-800 flex justify-center">
@@ -345,15 +348,29 @@ export default function OrangTuaAuth() {
 
             <button
               type="button"
-              className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold py-3.5 rounded-full flex items-center justify-center gap-3 transition-all duration-200 shadow-sm active:scale-98 cursor-pointer"
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold py-3.5 rounded-full flex items-center justify-center gap-3 transition-all duration-200 shadow-sm active:scale-98 cursor-pointer disabled:opacity-50"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" width="24" height="24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.69a5.74 5.74 0 0 1-2.48 3.77v3.13h3.99c2.34-2.16 3.68-5.32 3.68-8.75z" />
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.99-3.13a7.5 7.5 0 0 1-11.4 0H.55v3.13C2.53 21.08 7.53 24 12 24z" />
-                <path fill="#FBBC05" d="M6.54 14.71a7.25 7.25 0 0 1 0-4.58V7h-4A11.94 11.94 0 0 0 12 12c0 1.2-.21 2.37-.58 3.48l3.99 3.13a7.25 7.25 0 0 1-8.87-3.9z" />
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.93 1.19 15.22 0 12 0 7.53 0 2.53 2.92.55 7.15l3.99 3.13a7.25 7.25 0 0 1 7.46-5.53z" />
-              </svg>
-              <span className="text-sm tracking-wide">Google</span>
+              {isGooglePending ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <span className="text-sm tracking-wide">Menghubungkan...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.69a5.74 5.74 0 0 1-2.48 3.77v3.13h3.99c2.34-2.16 3.68-5.32 3.68-8.75z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.99-3.13a7.5 7.5 0 0 1-11.4 0H.55v3.13C2.53 21.08 7.53 24 12 24z" />
+                    <path fill="#FBBC05" d="M6.54 14.71a7.25 7.25 0 0 1 0-4.58V7h-4A11.94 11.94 0 0 0 12 12c0 1.2-.21 2.37-.58 3.48l3.99 3.13a7.25 7.25 0 0 1-8.87-3.9z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.93 1.19 15.22 0 12 0 7.53 0 2.53 2.92.55 7.15l3.99 3.13a7.25 7.25 0 0 1 7.46-5.53z" />
+                  </svg>
+                  <span className="text-sm tracking-wide">Google</span>
+                </>
+              )}
             </button>
           </div>
         </div>

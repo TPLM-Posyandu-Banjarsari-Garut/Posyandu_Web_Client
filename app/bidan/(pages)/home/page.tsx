@@ -1,26 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import BottombarBidan from "@/components/ui/bottombar/bidan/BottombarBidan";
 import FiturAplikasi from "@/components/ui/bottombar/bidan/Fitur-aplikasi";
-import { BidanUser } from "@/interfaces/auth";
+import { useCurrentUser } from "@/hooks/query/auth/useCurrentUser";
 
 export default function Home() {
-  const [user, setUser] = useState<BidanUser | null>(null);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem("bidan_user") ?? sessionStorage.getItem("bidan_user");
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (e) {
-          console.error("Gagal mem-parse data user bidan:", e);
-        }
-      }
-    }
-  }, []);
+  const { data: user } = useCurrentUser();
 
   const today = new Date().toLocaleDateString("id-ID", {
     weekday: "long",
