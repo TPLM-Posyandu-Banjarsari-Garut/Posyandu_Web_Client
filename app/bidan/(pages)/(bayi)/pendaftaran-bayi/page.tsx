@@ -230,9 +230,9 @@ export default function PendaftaranBayi() {
                     Posyandu <span className="text-rose-500">*</span>
                   </label>
                   <select
-                    disabled
+                    className="w-full px-4 py-3 rounded-xl bg-slate-100 border border-slate-200 focus:outline-none text-sm transition-all font-semibold text-slate-500 pointer-events-none appearance-none"
+                    tabIndex={-1}
                     {...register("posyandu_id", { required: "Posyandu wajib dipilih" })}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-100 border border-slate-200 focus:outline-none text-sm transition-all font-semibold text-slate-500 cursor-not-allowed appearance-none"
                   >
                     <option value="">Pilih Posyandu</option>
                     {isPosyandusLoading ? (
