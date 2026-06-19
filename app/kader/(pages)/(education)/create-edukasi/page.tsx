@@ -2,18 +2,31 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
+import { useGetEducationCategories, useCreateEducationCategory, useUpdateEducationCategory, useDeleteEducationCategory, useCreateEducation } from '@/hooks/query/education/useManageEducations';
 
 // Dynamically import ReactQuill to prevent SSR issues (document is not defined)
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 export default function CreateEdukasiPage() {
     const [value, setValue] = useState('');
-    const [categories, setCategories] = useState(['Kesehatan Ibu', 'Kesehatan Bayi', 'Pola Asuh']);
+    
+    const { data: categoriesResponse, isLoading: isLoadingCategories } = useGetEducationCategories();
+    const categories = categoriesResponse?.data?.data || [];
+    const createCategoryMutation = useCreateEducationCategory();
+    const updateCategoryMutation = useUpdateEducationCategory();
+    const deleteCategoryMutation = useDeleteEducationCategory();
+
+    const router = useRouter();
+    const createEducationMutation = useCreateEducation();
+
     const [selectedTema, setSelectedTema] = useState('');
     const [isAddingTema, setIsAddingTema] = useState(false);
+    const [isEditingTema, setIsEditingTema] = useState(false);
     const [newTema, setNewTema] = useState('');
+    const [title, setTitle] = useState('');
 
     // Allow only a known set of sizes so the dropdown works consistently.
     // Quill uses class-based sizes: ql-size-small|large|huge (or default).
@@ -60,17 +73,18 @@ export default function CreateEdukasiPage() {
                         <div className="flex flex-col gap-2.5">
                             <label className="text-sm font-bold text-slate-700">Tema Edukasi</label>
                             
-                            {!isAddingTema ? (
+                            {!isAddingTema && !isEditingTema ? (
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
                                         <select 
                                             value={selectedTema}
                                             onChange={(e) => setSelectedTema(e.target.value)}
-                                            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner appearance-none transition-all"
+                                            disabled={isLoadingCategories}
+                                            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner appearance-none transition-all disabled:opacity-50"
                                         >
-                                            <option value="">Pilih Tema Edukasi</option>
+                                            <option value="">{isLoadingCategories ? "Memuat Kategori..." : "Pilih Tema Edukasi"}</option>
                                             {categories.map(cat => (
-                                                <option key={cat} value={cat}>{cat}</option>
+                                                <option key={cat.id} value={cat.id}>{cat.name}</option>
                                             ))}
                                         </select>
                                         <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
@@ -85,6 +99,41 @@ export default function CreateEdukasiPage() {
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
                                         Baru
                                     </button>
+                                    {selectedTema && (
+                                        <>
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    const cat = categories.find(c => c.id === selectedTema);
+                                                    if (cat) {
+                                                        setNewTema(cat.name);
+                                                        setIsEditingTema(true);
+                                                    }
+                                                }}
+                                                className="px-3 bg-amber-50 text-amber-600 border border-amber-100 rounded-[1.25rem] hover:bg-amber-100 transition-colors flex items-center shrink-0"
+                                                title="Edit Tema"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    if (confirm("Apakah Anda yakin ingin menghapus tema ini?")) {
+                                                        deleteCategoryMutation.mutate(selectedTema, {
+                                                            onSuccess: () => {
+                                                                setSelectedTema('');
+                                                            }
+                                                        });
+                                                    }
+                                                }}
+                                                disabled={deleteCategoryMutation.isPending}
+                                                className="px-3 bg-red-50 text-red-600 border border-red-100 rounded-[1.25rem] hover:bg-red-100 transition-colors flex items-center shrink-0 disabled:opacity-50"
+                                                title="Hapus Tema"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="flex gap-2">
@@ -93,29 +142,60 @@ export default function CreateEdukasiPage() {
                                         value={newTema}
                                         onChange={(e) => setNewTema(e.target.value)}
                                         className="flex-1 min-w-0 px-3 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all placeholder-slate-400" 
-                                        placeholder="Tema baru..." 
+                                        placeholder={isEditingTema ? "Ubah nama tema..." : "Tema baru..."} 
                                         autoFocus
                                     />
                                     <button 
                                         type="button"
+                                        disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}
                                         onClick={() => {
                                             if (newTema.trim()) {
-                                                if (!categories.includes(newTema.trim())) {
-                                                    setCategories([...categories, newTema.trim()]);
+                                                const slug = newTema.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+                                                
+                                                if (isEditingTema) {
+                                                    updateCategoryMutation.mutate(
+                                                        { id: selectedTema, payload: { name: newTema.trim(), slug } },
+                                                        {
+                                                            onSuccess: () => {
+                                                                setIsEditingTema(false);
+                                                                setNewTema('');
+                                                            }
+                                                        }
+                                                    );
+                                                } else {
+                                                    const existing = categories.find(c => c.name.toLowerCase() === newTema.trim().toLowerCase());
+                                                    if (!existing) {
+                                                        createCategoryMutation.mutate(
+                                                            { name: newTema.trim(), slug },
+                                                            {
+                                                                onSuccess: (response) => {
+                                                                    setSelectedTema(response.data.id);
+                                                                    setIsAddingTema(false);
+                                                                    setNewTema('');
+                                                                }
+                                                            }
+                                                        );
+                                                    } else {
+                                                        setSelectedTema(existing.id);
+                                                        setIsAddingTema(false);
+                                                        setNewTema('');
+                                                    }
                                                 }
-                                                setSelectedTema(newTema.trim());
+                                            } else {
+                                                setIsAddingTema(false);
+                                                setIsEditingTema(false);
+                                                setNewTema('');
                                             }
-                                            setIsAddingTema(false);
-                                            setNewTema('');
                                         }}
-                                        className="px-3 sm:px-4 bg-blue-600 text-white rounded-[1.25rem] font-medium text-sm hover:bg-blue-700 transition-colors flex items-center shrink-0"
+                                        className="px-3 sm:px-4 bg-blue-600 text-white rounded-[1.25rem] font-medium text-sm hover:bg-blue-700 transition-colors flex items-center shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        Simpan
+                                        {(createCategoryMutation.isPending || updateCategoryMutation.isPending) ? 'Menyimpan...' : 'Simpan'}
                                     </button>
                                     <button 
                                         type="button"
                                         onClick={() => {
                                             setIsAddingTema(false);
+                                            setIsEditingTema(false);
                                             setNewTema('');
                                         }}
                                         className="px-3 sm:px-4 bg-slate-100 text-slate-600 rounded-[1.25rem] font-medium text-sm hover:bg-slate-200 transition-colors flex items-center shrink-0"
@@ -130,6 +210,8 @@ export default function CreateEdukasiPage() {
                             <label className="text-sm font-bold text-slate-700">Judul Edukasi</label>
                             <input 
                                 type="text" 
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
                                 className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all placeholder-slate-400" 
                                 placeholder="Masukkan judul edukasi..." 
                             />
@@ -177,9 +259,28 @@ export default function CreateEdukasiPage() {
                             </div>
                         </div>
 
-                        <button className="w-full mt-2 bg-blue-600 text-white font-bold text-sm py-4 rounded-[1.25rem] hover:bg-blue-700 active:scale-95 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.3)] flex justify-center items-center gap-2">
+                        <button 
+                            onClick={() => {
+                                if (!title.trim() || !value.trim() || !selectedTema) {
+                                    alert("Mohon lengkapi Tema, Judul, dan Isi Edukasi!");
+                                    return;
+                                }
+                                createEducationMutation.mutate({
+                                    title: title.trim(),
+                                    content: value,
+                                    category_id: selectedTema,
+                                    status: 'active'
+                                }, {
+                                    onSuccess: () => {
+                                        router.push('/kader/edukasi');
+                                    }
+                                });
+                            }}
+                            disabled={createEducationMutation.isPending}
+                            className="w-full mt-2 bg-blue-600 text-white font-bold text-sm py-4 rounded-[1.25rem] hover:bg-blue-700 active:scale-95 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.3)] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                            Simpan Edukasi
+                            {createEducationMutation.isPending ? 'Menyimpan...' : 'Simpan Edukasi'}
                         </button>
                     </div>
                 </div>

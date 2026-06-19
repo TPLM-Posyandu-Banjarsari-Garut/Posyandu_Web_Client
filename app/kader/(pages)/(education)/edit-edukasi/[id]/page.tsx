@@ -1,35 +1,56 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
-import { useGetEducationCategories, useCreateEducationCategory, useUpdateEducationCategory, useDeleteEducationCategory, useCreateEducation } from '@/hooks/query/education/useManageEducations';
+import { 
+    useGetEducationCategories, 
+    useCreateEducationCategory, 
+    useUpdateEducationCategory, 
+    useDeleteEducationCategory, 
+    useUpdateEducation,
+    useGetEducationById
+} from '@/hooks/query/education/useManageEducations';
 
-// Dynamically import ReactQuill to prevent SSR issues (document is not defined)
+// Dynamically import ReactQuill to prevent SSR issues
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
-export default function CreateEdukasiPage() {
-    const [value, setValue] = useState('');
+export default function EditEdukasiPage() {
+    const params = useParams();
+    const id = params.id as string;
     
+    const { data: educationResponse, isLoading: isLoadingEducation } = useGetEducationById(id);
+    const education = educationResponse?.data;
+
+    const [value, setValue] = useState('');
+    const [selectedTema, setSelectedTema] = useState('');
+    const [title, setTitle] = useState('');
+    
+    // Populate form when data is loaded
+    useEffect(() => {
+        if (education) {
+            setTitle(education.title);
+            setValue(education.content);
+            setSelectedTema(education.category_id);
+        }
+    }, [education]);
+
     const { data: categoriesResponse, isLoading: isLoadingCategories } = useGetEducationCategories();
     const categories = categoriesResponse?.data?.data || [];
+    
     const createCategoryMutation = useCreateEducationCategory();
     const updateCategoryMutation = useUpdateEducationCategory();
     const deleteCategoryMutation = useDeleteEducationCategory();
 
     const router = useRouter();
-    const createEducationMutation = useCreateEducation();
+    const updateEducationMutation = useUpdateEducation();
 
-    const [selectedTema, setSelectedTema] = useState('');
     const [isAddingTema, setIsAddingTema] = useState(false);
     const [isEditingTema, setIsEditingTema] = useState(false);
     const [newTema, setNewTema] = useState('');
-    const [title, setTitle] = useState('');
 
-    // Allow only a known set of sizes so the dropdown works consistently.
-    // Quill uses class-based sizes: ql-size-small|large|huge (or default).
     const fontSizes = ['small', false, 'large', 'huge'] as const;
 
     const modules = {
@@ -52,6 +73,31 @@ export default function CreateEdukasiPage() {
         'image'
     ];
 
+    if (isLoadingEducation) {
+        return (
+            <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
+                <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col justify-center items-center">
+                    <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
+                    <div className="text-slate-500 font-medium text-sm mt-3">Memuat form edit...</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!education) {
+        return (
+            <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
+                <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col justify-center items-center gap-4">
+                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div className="text-slate-800 font-bold text-lg">Edukasi Tidak Ditemukan</div>
+                    <Link href="/kader/edukasi" className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-[1.25rem] text-sm font-bold">Kembali ke Daftar</Link>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
             <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200">
@@ -59,10 +105,10 @@ export default function CreateEdukasiPage() {
                 {/* Header */}
                 <div className="bg-white px-6 pt-8 pb-4 flex justify-between items-center z-10 sticky top-0 shadow-sm">
                     <div className="flex items-center gap-3">
-                        <Link href="/bidan/edukasi" className="p-2 -ml-2 rounded-full hover:bg-slate-100 transition-colors">
+                        <Link href="/kader/edukasi" className="p-2 -ml-2 rounded-full hover:bg-slate-100 transition-colors">
                             <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
                         </Link>
-                        <h1 className="text-xl font-bold text-slate-800">Buat Edukasi Baru</h1>
+                        <h1 className="text-xl font-bold text-slate-800">Edit Edukasi</h1>
                     </div>
                 </div>
 
@@ -245,7 +291,6 @@ export default function CreateEdukasiPage() {
                                     .custom-quill .ql-editor {
                                         min-height: 200px !important;
                                     }
-                                    /* Fix for tooltips and icons */
                                     .custom-quill .ql-stroke {
                                         stroke: #475569 !important;
                                     }
@@ -265,22 +310,24 @@ export default function CreateEdukasiPage() {
                                     alert("Mohon lengkapi Tema, Judul, dan Isi Edukasi!");
                                     return;
                                 }
-                                createEducationMutation.mutate({
-                                    title: title.trim(),
-                                    content: value,
-                                    category_id: selectedTema,
-                                    status: 'active'
+                                updateEducationMutation.mutate({
+                                    id,
+                                    payload: {
+                                        title: title.trim(),
+                                        content: value,
+                                        category_id: selectedTema,
+                                    }
                                 }, {
                                     onSuccess: () => {
-                                        router.push('/bidan/edukasi');
+                                        router.push('/kader/edukasi');
                                     }
                                 });
                             }}
-                            disabled={createEducationMutation.isPending}
+                            disabled={updateEducationMutation.isPending}
                             className="w-full mt-2 bg-blue-600 text-white font-bold text-sm py-4 rounded-[1.25rem] hover:bg-blue-700 active:scale-95 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.3)] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                            {createEducationMutation.isPending ? 'Menyimpan...' : 'Simpan Edukasi'}
+                            {updateEducationMutation.isPending ? 'Menyimpan Perubahan...' : 'Simpan Perubahan'}
                         </button>
                     </div>
                 </div>
