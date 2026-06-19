@@ -3,10 +3,20 @@
 import Link from "next/link";
 import BottombarKader from "@/components/ui/bottombar/orangtua/BottombarOrtu";
 import FiturAplikasi from "@/components/ui/bottombar/orangtua/Fitur-aplikasi";
-import { useCurrentUser } from "@/hooks/query/auth/useCurrentUser";
+import { useOrangTuaCurrentUser } from "@/hooks/query/authOrangTua/useOrangTuaCurrentUser";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Home() {
-  const { data: user } = useCurrentUser();
+  const router = useRouter();
+  const { data: user, isPending, isError } = useOrangTuaCurrentUser();
+  
+  useEffect(() => {
+    if (isError || (!isPending && !user)) {
+      router.replace("/orangtua/login");
+    }
+  }, [user, isPending, isError, router]);
+
   const userName = user?.name ?? "Orang Tua";
 
   const today = new Date().toLocaleDateString("id-ID", {
@@ -15,6 +25,14 @@ export default function Home() {
     month: "long",
     day: "numeric",
   });
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">

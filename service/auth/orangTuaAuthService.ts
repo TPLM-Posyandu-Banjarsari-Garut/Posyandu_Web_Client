@@ -1,5 +1,4 @@
-import axios from "axios";
-import { api } from "@/service/auth/authService";
+import { orangTuaApi as api } from "@/service/auth/orangTuaApiService";
 import {
   OrangTuaLoginPayload,
   OrangTuaLoginResponse,
@@ -48,16 +47,13 @@ export async function logoutOrangTua(): Promise<void> {
 export async function signInOrangTuaGoogle(
   callbackURL: string
 ): Promise<{ url: string }> {
-  // Bypass proxy to ensure oauth_state cookie is set on the backend domain
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.posyandubanjarsari.my.id";
-  const { data } = await axios.post<{ url: string }>(
-    `${API_URL}/api/auth/sign-in/social`,
+  const { data } = await api.post<{ url: string }>(
+    "/api/auth/sign-in/social",
     {
       provider: "google",
-      callbackURL: `${window.location.origin}/orangtua/auth/sync`,
+      callbackURL,
       errorCallbackURL: `${window.location.origin}/orangtua/login?error=oauth_failed`,
-    },
-    { withCredentials: true }
+    }
   );
   return data;
 }

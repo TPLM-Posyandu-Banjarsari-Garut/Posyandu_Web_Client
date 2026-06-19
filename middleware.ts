@@ -73,26 +73,7 @@ export function middleware(request: NextRequest) {
   }
 
   // 1.7. Proteksi Halaman Orang Tua (/orangtua/*)
-  if (pathname.startsWith("/orangtua")) {
-    const isLoginPage = pathname === "/orangtua/login" || pathname === "/orangtua/otp" || pathname === "/orangtua/auth/sync";
-
-    // Ambil session token dari cookie better-auth
-    const sessionToken =
-      request.cookies.get("better-auth.session_token")?.value ??
-      request.cookies.get("__Secure-better-auth.session_token")?.value;
-
-    // Jika pengguna belum login dan mencoba mengakses halaman orangtua selain login/otp
-    if (!sessionToken && !isLoginPage) {
-      const loginUrl = new URL("/orangtua/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // Jika pengguna sudah login dan mencoba mengakses halaman login kembali
-    if (sessionToken && isLoginPage) {
-      return NextResponse.redirect(new URL("/orangtua/home", request.url));
-    }
-  }
+  // Route protection for OrangTua is now handled client-side due to cross-domain cookie requirements for Google OAuth.
 
   // 2. Proxy Rute API (/api/*) ke Backend Production
   if (pathname.startsWith("/api")) {
