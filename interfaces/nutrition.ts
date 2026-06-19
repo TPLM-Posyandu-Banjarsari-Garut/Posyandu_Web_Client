@@ -23,5 +23,6 @@ export interface CreateNutritionRecordPayload {
   age_months?: number | null;
   nutrition_status: 'normal' | 'underweight' | 'severely_underweight' | 'stunted' | 'wasted' | 'overweight';
   midwife_id?: string | null;
+  cadre_id?: string | null;
   notes?: string | null;
 }

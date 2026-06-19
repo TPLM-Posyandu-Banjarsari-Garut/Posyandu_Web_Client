@@ -29,5 +29,6 @@ export interface CreateImmunizationRecordPayload {
   status?: 'not_yet' | 'scheduled' | 'completed' | 'missed';
   notes?: string | null;
   midwife_id?: string | null;
+  cadre_id?: string | null;
   posyandu_id?: string | null;
 }
