@@ -125,10 +125,10 @@ export default function PendaftaranBayi() {
       onError: (err: any) => {
         let msg = "Gagal mendaftarkan data bayi.";
         if (axios.isAxiosError(err)) {
-          const resData = err.response?.data as 
-            | { message?: string; errors?: Record<string, string[]> } 
+          const resData = err.response?.data as
+            | { message?: string; errors?: Record<string, string[]> }
             | undefined;
-          
+
           if (resData?.errors) {
             const errorDetails = Object.entries(resData.errors)
               .map(([field, msgs]) => {
@@ -167,7 +167,7 @@ export default function PendaftaranBayi() {
   return (
     <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
       <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200">
-        
+
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 pt-8 pb-6 flex items-center justify-between rounded-b-[2rem] shadow-md z-10 shrink-0">
           <Link
@@ -184,7 +184,7 @@ export default function PendaftaranBayi() {
 
         {/* Form Content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pt-6 pb-28 bg-slate-50 relative">
-          
+
           {/* Error Alert Display */}
           {(apiError || Object.keys(errors).length > 0) && (
             <div className="bg-rose-50 border border-rose-100 text-rose-700 text-xs font-bold p-4 rounded-2xl flex items-center gap-3 mb-4 shadow-sm animate-shake">
@@ -207,7 +207,7 @@ export default function PendaftaranBayi() {
           )}
 
           <form onSubmit={onSubmit} className="flex flex-col gap-6">
-            
+
             {/* 1. Informasi Pribadi */}
             <div className="bg-white p-5 rounded-[1.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100">
               <h2 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -216,7 +216,7 @@ export default function PendaftaranBayi() {
                 </div>
                 Informasi Pribadi
               </h2>
-              
+
               <div className="space-y-4">
 
                 {/* Pilih Posyandu */}
@@ -225,8 +225,9 @@ export default function PendaftaranBayi() {
                     Posyandu <span className="text-rose-500">*</span>
                   </label>
                   <select
+                    disabled
                     {...register("posyandu_id", { required: "Posyandu wajib dipilih" })}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all font-semibold text-slate-700"
+                    className="w-full px-4 py-3 rounded-xl bg-slate-100 border border-slate-200 focus:outline-none text-sm transition-all font-semibold text-slate-500 cursor-not-allowed appearance-none"
                   >
                     <option value="">Pilih Posyandu</option>
                     {isPosyandusLoading ? (
@@ -240,7 +241,7 @@ export default function PendaftaranBayi() {
                     )}
                   </select>
                 </div>
-                
+
                 {/* Nama Lengkap */}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">
@@ -283,7 +284,7 @@ export default function PendaftaranBayi() {
 
                 {/* Gender & Birth Date */}
                 <div className="grid grid-cols-2 gap-4">
-                  
+
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">
                       Jenis Kelamin <span className="text-rose-500">*</span>
@@ -455,13 +456,13 @@ export default function PendaftaranBayi() {
                 Data Orang Tua
               </h2>
               <div className="space-y-4">
-                
+
                 {/* Nama Ibu */}
                 <div className="relative">
                   <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">
                     Nama Ibu
                   </label>
-                  
+
                   {/* Dropdown Toggle Trigger Button */}
                   <button
                     type="button"
@@ -481,8 +482,8 @@ export default function PendaftaranBayi() {
 
                   {/* Backdrop to close dropdown when clicking outside */}
                   {showMotherDropdown && (
-                    <div 
-                      className="fixed inset-0 z-20 cursor-default" 
+                    <div
+                      className="fixed inset-0 z-20 cursor-default"
                       onClick={() => setShowMotherDropdown(false)}
                     />
                   )}

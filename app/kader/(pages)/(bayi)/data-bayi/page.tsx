@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import BottombarKader from "@/components/ui/bottombar/kader/BottombarKader";
-import { useCurrentUser } from "@/hooks/query/auth/useCurrentUser";
+import { useGetCadreProfile } from "@/hooks/query/cadre/useCadreProfile";
 import { useGetChildren } from "@/hooks/query/child/useManageChildren";
 import axios from "axios";
 
@@ -21,10 +21,11 @@ export default function DataBayi() {
     return () => clearTimeout(handler);
   }, [search]);
 
-  const { data: user, isLoading: isUserLoading } = useCurrentUser();
+  const { data: cadre, isLoading: isCadreLoading } = useGetCadreProfile();
 
-  // Load children
+  // Load children under this posyandu
   const { data: response, isLoading: isChildrenLoading, error: childrenError } = useGetChildren({
+    posyandu_id: cadre?.posyandu_id || "",
     search: debouncedSearch,
     page: currentPage,
     limit: 5,
@@ -41,8 +42,8 @@ export default function DataBayi() {
   const apiError = getErrorMessage(childrenError);
 
   console.log("data-bayi debug:", {
-    user,
-    isUserLoading,
+    cadre,
+    isCadreLoading,
     response,
     isChildrenLoading,
     childrenError: childrenError ? { message: childrenError.message, response: (childrenError as any).response?.data } : null,
@@ -54,12 +55,12 @@ export default function DataBayi() {
     if (!birthDateStr) return "-";
     const birthDate = new Date(birthDateStr);
     const today = new Date();
-    
+
     // Calculate difference in months
     let months = (today.getFullYear() - birthDate.getFullYear()) * 12;
     months -= birthDate.getMonth();
     months += today.getMonth();
-    
+
     if (months < 1) {
       const diffTime = Math.abs(today.getTime() - birthDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -72,12 +73,12 @@ export default function DataBayi() {
     return gender === "male" ? "Laki-laki" : "Perempuan";
   };
 
-  const isLoading = isUserLoading || isChildrenLoading;
+  const isLoading = isCadreLoading || isChildrenLoading;
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
       <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200">
-        
+
         {/* Header */}
         <div className="bg-white px-6 pt-8 pb-4 flex justify-between items-center z-10 sticky top-0 shadow-sm">
           <div className="flex items-center gap-3">
@@ -95,7 +96,7 @@ export default function DataBayi() {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar bg-slate-50">
-          
+
           {apiError && (
             <div className="bg-rose-50 border border-rose-100 text-rose-700 text-xs font-bold p-4 rounded-2xl flex items-center gap-3 mb-6 shadow-sm">
               <div className="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
@@ -139,7 +140,7 @@ export default function DataBayi() {
               </svg>
               Sebelumnya
             </button>
-            
+
             <span className="text-xs font-extrabold text-slate-500 whitespace-nowrap">
               Hal. {currentPage} dari {response?.data?.meta?.total_pages || 1}
             </span>

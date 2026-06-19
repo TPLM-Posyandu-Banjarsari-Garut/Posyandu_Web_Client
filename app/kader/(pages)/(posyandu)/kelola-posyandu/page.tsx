@@ -54,9 +54,9 @@ export default function KelolaPosyandu() {
     <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
       {/* Mobile Device Mockup */}
       <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200">
-        
+
         {/* Sticky Header */}
-        
+
         <div className="bg-white px-6 pt-8 pb-4 flex justify-between items-center z-20 sticky top-0 shadow-sm border-b border-slate-50">
           <div className="flex items-center gap-3">
             <Link
@@ -78,7 +78,7 @@ export default function KelolaPosyandu() {
 
         {/* Main Content Area - Scrollable */}
         <div className="flex-1 overflow-y-auto bg-slate-50 pb-28 pt-4 px-6 custom-scrollbar">
-          
+
           {/* Info Banner showing total items */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[1.5rem] p-4 text-white shadow-md mb-5 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
@@ -238,7 +238,7 @@ export default function KelolaPosyandu() {
         </div>
 
         {/* Floating Action Button (FAB) - Fixed Bottom Right Position */}
-        <div className="fixed bottom-[100px] w-full max-w-md mx-auto z-30 pointer-events-none flex justify-end px-6 left-1/2 -translate-x-1/2">
+        <div className="fixed bottom-[32px] w-full max-w-md mx-auto z-30 pointer-events-none flex justify-end px-6 left-1/2 -translate-x-1/2">
           <button
             onClick={openAddModal}
             className="pointer-events-auto w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full text-white flex items-center justify-center shadow-[0_8px_25px_rgba(37,99,235,0.4)] hover:shadow-[0_12px_30px_rgba(37,99,235,0.5)] cursor-pointer hover:scale-110 active:scale-95 transition-all group"
@@ -280,7 +280,7 @@ export default function KelolaPosyandu() {
         <BottombarKader />
 
         {/* Confirm Logout Modal */}
-        
+
 
         {/* Success Toast */}
         <SuccessToast isOpen={showSuccessModal} message={successMessage} />
