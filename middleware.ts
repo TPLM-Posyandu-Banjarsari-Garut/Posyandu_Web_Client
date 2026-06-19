@@ -74,7 +74,7 @@ export function middleware(request: NextRequest) {
 
   // 1.7. Proteksi Halaman Orang Tua (/orangtua/*)
   if (pathname.startsWith("/orangtua")) {
-    const isLoginPage = pathname === "/orangtua/login" || pathname === "/orangtua/otp";
+    const isLoginPage = pathname === "/orangtua/login" || pathname === "/orangtua/otp" || pathname === "/orangtua/auth/sync";
 
     // Ambil session token dari cookie better-auth
     const sessionToken =
