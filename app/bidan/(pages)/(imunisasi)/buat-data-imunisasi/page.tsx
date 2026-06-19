@@ -4,140 +4,134 @@ import BottombarBidan from '@/components/ui/bottombar/bidan/BottombarBidan';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
+import { useGetChildById } from '@/hooks/query/child/useManageChildren';
+import { useGetVaccines, useCreateVaccine, useUpdateVaccine, useDeleteVaccine } from '@/hooks/query/vaccine/useManageVaccines';
+import { useGetMidwifeProfile } from '@/hooks/query/midwife/useMidwifeProfile';
+import { useGetImmunizationRecords, useCreateImmunizationRecord, useUpdateImmunizationRecord, useDeleteImmunizationRecord } from '@/hooks/query/immunization/useManageImmunizationRecords';
+import { useCreateNutritionRecord } from '@/hooks/query/nutrition/useManageNutritionRecords';
+import ChildProfile from './ChildProfile';
+import ImmunizationHistory from './ImmunizationHistory';
+import ManageVaccinesModal from './ManageVaccinesModal';
+import ImmunizationForm from './ImmunizationForm';
 
 // Interfaces
 interface HistoryItem {
-    id: number;
+    id: string;
     tanggal: string;
     jenis: string;
     status: 'Selesai' | 'Terjadwal' | 'Ditunda';
     keterangan: string;
 }
 // pada jenis imunisasi buat bisa create jenis imunisasi,update,delete dan tambahkan search juga jenis imunisasi lalu untuk history imu
-interface BabyDetail {
-    id: number;
-    nama: string;
-    nik: string;
-    umur: string;
-    kelamin: 'Laki-laki' | 'Perempuan';
-    tanggalLahir: string;
-    orangTua: string;
-    posyandu: string;
-    terakhirDiperbarui: string;
-}
+// interface BabyDetail is removed because we map directly from Child API
 
 function BuatDataImunisasiContent() {
     const searchParams = useSearchParams();
     const bayiIdParam = searchParams.get('bayiId');
     const namaParam = searchParams.get('nama');
 
-    // List of premium dummy babies database
-    const babiesDb: BabyDetail[] = [
-        {
-            id: 1,
-            nama: 'Ahmad Rafli',
-            nik: '3201010101010001',
-            umur: '6 Bulan',
-            kelamin: 'Laki-laki',
-            tanggalLahir: '15 November 2025',
-            orangTua: 'Siti Aminah & Hendra',
-            posyandu: 'Posyandu Mawar',
-            terakhirDiperbarui: '18 Mei 2026'
-        },
-        {
-            id: 2,
-            nama: 'Siti Maryam',
-            nik: '3201010101010002',
-            umur: '4 Bulan',
-            kelamin: 'Perempuan',
-            tanggalLahir: '10 Januari 2026',
-            orangTua: 'Budi Santoso & Ratna',
-            posyandu: 'Posyandu Melati',
-            terakhirDiperbarui: '20 Mei 2026'
-        },
-        {
-            id: 3,
-            nama: 'Budi Santoso',
-            nik: '3201010101010003',
-            umur: '9 Bulan',
-            kelamin: 'Laki-laki',
-            tanggalLahir: '22 Agustus 2025',
-            orangTua: 'Dewi Lestari & Joko',
-            posyandu: 'Posyandu Mawar',
-            terakhirDiperbarui: '15 Mei 2026'
-        },
-        {
-            id: 4,
-            nama: 'Keysha Putri',
-            nik: '3201010101010004',
-            umur: '3 Bulan',
-            kelamin: 'Perempuan',
-            tanggalLahir: '12 Februari 2026',
-            orangTua: 'Hendra Wijaya & Rina',
-            posyandu: 'Posyandu Anggrek',
-            terakhirDiperbarui: '21 Mei 2026'
-        },
-        {
-            id: 5,
-            nama: 'Rian Hidayat',
-            nik: '3201010101010005',
-            umur: '12 Bulan',
-            kelamin: 'Laki-laki',
-            tanggalLahir: '10 Mei 2025',
-            orangTua: 'Mulyadi & Tini',
-            posyandu: 'Posyandu Melati',
-            terakhirDiperbarui: '10 Mei 2026'
-        },
-        {
-            id: 6,
-            nama: 'Aditya Pratama',
-            nik: '3201010101010006',
-            umur: '5 Bulan',
-            kelamin: 'Laki-laki',
-            tanggalLahir: '25 Desember 2025',
-            orangTua: 'Yusuf & Siska',
-            posyandu: 'Posyandu Anggrek',
-            terakhirDiperbarui: '21 Mei 2026'
+    // Fetch real child data
+    const { data: childResponse, isLoading: isChildLoading } = useGetChildById(bayiIdParam || "");
+    const child = childResponse?.data;
+
+    const calculateAge = (birthDateStr?: string | null) => {
+        if (!birthDateStr) return "-";
+        const birthDate = new Date(birthDateStr);
+        const today = new Date();
+        let months = (today.getFullYear() - birthDate.getFullYear()) * 12;
+        months -= birthDate.getMonth();
+        months += today.getMonth();
+        if (months < 1) {
+            const diffTime = Math.abs(today.getTime() - birthDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return `${diffDays} Hari`;
         }
-    ];
+        return `${months} Bulan`;
+    };
 
-    // Find current baby or default to index 0
-    const matchedBaby = babiesDb.find(b => b.id === Number(bayiIdParam)) ||
-        babiesDb.find(b => b.nama.toLowerCase() === namaParam?.toLowerCase()) ||
-        babiesDb[0];
+    const formatDateIndo = (dateStr?: string | null) => {
+        if (!dateStr) return "-";
+        const date = new Date(dateStr);
+        return date.toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+        });
+    };
 
-    // Immunization standard list state
-    const [immunizationList, setImmunizationList] = useState<string[]>([
-        'BCG (Tuberculosis)',
-        'Polio 1 (OPV)',
-        'Polio 2 (OPV)',
-        'Polio 3 (OPV)',
-        'Polio 4 (OPV)',
-        'Hepatitis B',
-        'DPT-HB-Hib 1',
-        'DPT-HB-Hib 2',
-        'DPT-HB-Hib 3',
-        'Campak / MR',
-        'IPV (Inactivated Polio Vaccine)',
-        'PCV 1',
-        'PCV 2'
-    ]);
+    const matchedBaby = child ? {
+        id: child.id,
+        nama: child.name,
+        nik: child.identity_number,
+        umur: calculateAge(child.birth_date),
+        kelamin: child.gender === 'male' ? 'Laki-laki' : 'Perempuan',
+        tanggalLahir: formatDateIndo(child.birth_date),
+        orangTua: child.mother_name || "-",
+        posyandu: child.posyandu_detail?.name || "-",
+        terakhirDiperbarui: formatDateIndo(child.updated_at)
+    } : null;
+
+    // Fetch real vaccines
+    const { data: vaccinesResponse } = useGetVaccines();
+    const vaccinesList = vaccinesResponse?.data?.data || [];
+
+    const createVaccineMutation = useCreateVaccine();
+    const updateVaccineMutation = useUpdateVaccine();
+    const deleteVaccineMutation = useDeleteVaccine();
+
+    // Fetch midwife profile
+    const { data: midwifeProfile } = useGetMidwifeProfile();
+
+    // Fetch real immunization records
+    const { data: immunizationResponse } = useGetImmunizationRecords({ children_id: bayiIdParam || "" });
+    const immunizationRecordsList = immunizationResponse?.data || [];
+
+    const createImmunizationMutation = useCreateImmunizationRecord();
+    const updateImmunizationMutation = useUpdateImmunizationRecord();
+    const deleteImmunizationMutation = useDeleteImmunizationRecord();
+    const createNutritionMutation = useCreateNutritionRecord();
 
     // Collapsible states
     const [showHistory, setShowHistory] = useState(false);
 
-    // Dynamic Mock History state
-    const [history, setHistory] = useState<HistoryItem[]>([
-        { id: 101, tanggal: '2026-01-20', jenis: 'Hepatitis B', status: 'Selesai', keterangan: 'Kondisi bayi sangat sehat saat disuntik' },
-        { id: 102, tanggal: '2026-02-18', jenis: 'BCG (Tuberculosis)', status: 'Selesai', keterangan: 'Muncul bekas suntikan normal' },
-        { id: 103, tanggal: '2026-03-20', jenis: 'Polio 1 (OPV)', status: 'Selesai', keterangan: 'Vaksin tetes lancar' }
-    ]);
+    // Map database records to UI HistoryItems
+    const history: HistoryItem[] = immunizationRecordsList.map((rec) => {
+        const matchingVaccine = vaccinesList.find((v) => v.id === rec.vaccine_id);
+        const statusMap: Record<string, 'Selesai' | 'Terjadwal' | 'Ditunda'> = {
+            completed: 'Selesai',
+            scheduled: 'Terjadwal',
+            not_yet: 'Ditunda',
+            missed: 'Ditunda'
+        };
+        return {
+            id: rec.id,
+            tanggal: rec.date_given ? new Date(rec.date_given).toISOString().split('T')[0] : '',
+            jenis: matchingVaccine?.name || 'Vaksin Tidak Dikenal',
+            status: statusMap[rec.status] || 'Ditunda',
+            keterangan: rec.notes || ''
+        };
+    });
 
     // Form inputs state
     const [tanggalEntry, setTanggalEntry] = useState('');
-    const [jenisImunisasi, setJenisImunisasi] = useState('BCG (Tuberculosis)');
+    const [jenisImunisasi, setJenisImunisasi] = useState('');
     const [status, setStatus] = useState<'Selesai' | 'Terjadwal' | 'Ditunda'>('Selesai');
     const [keterangan, setKeterangan] = useState('');
+
+    // Nutrition states
+    const [latestNutrition, setLatestNutrition] = useState<{
+        measurement_date?: string;
+        weight_kg?: string;
+        height_cm?: string;
+        head_circumference_cm?: string;
+        age_months?: number;
+    } | null>(null);
+    const [tanggalPengukuran, setTanggalPengukuran] = useState('');
+    const [usiaSaatUkur, setUsiaSaatUkur] = useState('');
+    const [beratBadan, setBeratBadan] = useState('');
+    const [tinggiBadan, setTinggiBadan] = useState('');
+    const [lingkarKepala, setLingkarKepala] = useState('');
+    const [nutritionStatus, setNutritionStatus] = useState<'normal' | 'underweight' | 'severely_underweight' | 'stunted' | 'wasted' | 'overweight'>('normal');
 
     // Editing State
     const [editingItem, setEditingItem] = useState<HistoryItem | null>(null);
@@ -150,8 +144,15 @@ function BuatDataImunisasiContent() {
     const [showManageModal, setShowManageModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [newTypeName, setNewTypeName] = useState('');
-    const [editingTypeIndex, setEditingTypeIndex] = useState<number | null>(null);
+    const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
     const [editingTypeName, setEditingTypeName] = useState('');
+
+    // Set initial dropdown vaccine name
+    useEffect(() => {
+        if (vaccinesList.length > 0 && !jenisImunisasi) {
+            setJenisImunisasi(vaccinesList[0].name);
+        }
+    }, [vaccinesList, jenisImunisasi]);
 
     // Manage Immunization Types Handlers
     const handleAddType = (e: React.FormEvent) => {
@@ -159,61 +160,85 @@ function BuatDataImunisasiContent() {
         const trimmed = newTypeName.trim();
         if (!trimmed) return;
         
-        if (immunizationList.some(item => item.toLowerCase() === trimmed.toLowerCase())) {
+        if (vaccinesList.some(item => item.name.toLowerCase() === trimmed.toLowerCase())) {
             alert('Jenis imunisasi sudah ada!');
             return;
         }
+
+        let code = trimmed.slice(0, 10).toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (!code) code = 'V' + Math.floor(100000 + Math.random() * 900000);
         
-        setImmunizationList(prev => [...prev, trimmed]);
-        setNewTypeName('');
-        triggerToast('Jenis imunisasi berhasil ditambahkan!');
+        createVaccineMutation.mutate({
+            name: trimmed,
+            code: code
+        }, {
+            onSuccess: () => {
+                setNewTypeName('');
+                triggerToast('Jenis imunisasi berhasil ditambahkan!');
+            },
+            onError: (err: any) => {
+                alert(err?.response?.data?.message || err?.message || 'Gagal menambahkan jenis imunisasi');
+            }
+        });
     };
 
-    const handleUpdateType = (index: number) => {
+    const handleUpdateType = (id: string, nameBeforeUpdate: string) => {
         const trimmed = editingTypeName.trim();
         if (!trimmed) return;
         
-        const oldName = immunizationList[index];
-        if (oldName === trimmed) {
-            setEditingTypeIndex(null);
+        if (nameBeforeUpdate === trimmed) {
+            setEditingTypeId(null);
             return;
         }
 
-        if (immunizationList.some((item, idx) => idx !== index && item.toLowerCase() === trimmed.toLowerCase())) {
+        if (vaccinesList.some((item) => item.id !== id && item.name.toLowerCase() === trimmed.toLowerCase())) {
             alert('Jenis imunisasi sudah ada!');
             return;
         }
 
-        setImmunizationList(prev => prev.map((item, idx) => idx === index ? trimmed : item));
-        
-        if (jenisImunisasi === oldName) {
-            setJenisImunisasi(trimmed);
-        }
+        let code = trimmed.slice(0, 10).toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (!code) code = 'V' + Math.floor(100000 + Math.random() * 900000);
 
-        setHistory(prev => prev.map(item => 
-            item.jenis === oldName ? { ...item, jenis: trimmed } : item
-        ));
-
-        setEditingTypeIndex(null);
-        setEditingTypeName('');
-        triggerToast('Jenis imunisasi berhasil diperbarui!');
-    };
-
-    const handleDeleteType = (nameToDelete: string) => {
-        if (confirm(`Apakah Anda yakin ingin menghapus jenis imunisasi "${nameToDelete}"?`)) {
-            const remainingList = immunizationList.filter(item => item !== nameToDelete);
-            setImmunizationList(remainingList);
-            
-            if (jenisImunisasi === nameToDelete) {
-                setJenisImunisasi(remainingList[0] || '');
+        updateVaccineMutation.mutate({
+            id,
+            payload: {
+                name: trimmed,
+                code: code
             }
-            
-            triggerToast('Jenis imunisasi berhasil dihapus!');
+        }, {
+            onSuccess: () => {
+                if (jenisImunisasi === nameBeforeUpdate) {
+                    setJenisImunisasi(trimmed);
+                }
+                setEditingTypeId(null);
+                setEditingTypeName('');
+                triggerToast('Jenis imunisasi berhasil diperbarui!');
+            },
+            onError: (err: any) => {
+                alert(err?.response?.data?.message || err?.message || 'Gagal memperbarui jenis imunisasi');
+            }
+        });
+    };
+
+    const handleDeleteType = (id: string, nameToDelete: string) => {
+        if (confirm(`Apakah Anda yakin ingin menghapus jenis imunisasi "${nameToDelete}"?`)) {
+            deleteVaccineMutation.mutate(id, {
+                onSuccess: () => {
+                    const remainingList = vaccinesList.filter(item => item.id !== id);
+                    if (jenisImunisasi === nameToDelete) {
+                        setJenisImunisasi(remainingList[0]?.name || '');
+                    }
+                    triggerToast('Jenis imunisasi berhasil dihapus!');
+                },
+                onError: (err: any) => {
+                    alert(err?.response?.data?.message || err?.message || 'Gagal menghapus jenis imunisasi');
+                }
+            });
         }
     };
 
-    const filteredList = immunizationList.filter(item =>
-        item.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredList = vaccinesList.filter(item =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     // Prefill date with today's date in YYYY-MM-DD format
@@ -223,7 +248,36 @@ function BuatDataImunisasiContent() {
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
         setTanggalEntry(`${yyyy}-${mm}-${dd}`);
+        setTanggalPengukuran(`${yyyy}-${mm}-${dd}`);
     }, []);
+
+    // Set initial nutrition from child details
+    useEffect(() => {
+        if (child?.latest_nutrition) {
+            setLatestNutrition(child.latest_nutrition);
+            const ln = child.latest_nutrition;
+            if (ln.measurement_date) {
+                try {
+                    const dateVal = new Date(ln.measurement_date).toISOString().split('T')[0];
+                    setTanggalPengukuran(dateVal);
+                } catch (e) {
+                    setTanggalPengukuran('');
+                }
+            }
+            if (ln.age_months !== undefined && ln.age_months !== null) {
+                setUsiaSaatUkur(String(ln.age_months));
+            }
+            if (ln.weight_kg !== undefined && ln.weight_kg !== null) {
+                setBeratBadan(String(ln.weight_kg));
+            }
+            if (ln.height_cm !== undefined && ln.height_cm !== null) {
+                setTinggiBadan(String(ln.height_cm));
+            }
+            if (ln.head_circumference_cm !== undefined && ln.head_circumference_cm !== null) {
+                setLingkarKepala(String(ln.head_circumference_cm));
+            }
+        }
+    }, [child]);
 
     // Set form fields if editing
     useEffect(() => {
@@ -238,11 +292,11 @@ function BuatDataImunisasiContent() {
             const mm = String(today.getMonth() + 1).padStart(2, '0');
             const dd = String(today.getDate()).padStart(2, '0');
             setTanggalEntry(`${yyyy}-${mm}-${dd}`);
-            setJenisImunisasi(immunizationList[0] || '');
+            setJenisImunisasi(vaccinesList[0]?.name || '');
             setStatus('Selesai');
             setKeterangan('');
         }
-    }, [editingItem]);
+    }, [editingItem, vaccinesList]);
 
     const triggerToast = (msg: string) => {
         setToastMessage(msg);
@@ -255,37 +309,108 @@ function BuatDataImunisasiContent() {
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (editingItem) {
-            // Update mode
-            setHistory(prev => prev.map(item =>
-                item.id === editingItem.id
-                    ? { ...item, tanggal: tanggalEntry, jenis: jenisImunisasi, status, keterangan }
-                    : item
-            ));
-            triggerToast('Data Imunisasi berhasil diperbarui!');
-            setEditingItem(null);
-        } else {
-            // Create mode
-            const newItem: HistoryItem = {
-                id: Date.now(),
-                tanggal: tanggalEntry,
-                jenis: jenisImunisasi,
-                status,
-                keterangan
-            };
-            setHistory(prev => [newItem, ...prev]);
-            triggerToast('Data Imunisasi baru berhasil ditambahkan!');
+        // 1. Submit Child Measurement / Nutrition Record if fields are filled
+        if (beratBadan || tinggiBadan || lingkarKepala) {
+            createNutritionMutation.mutate({
+                children_id: bayiIdParam || "",
+                measurement_date: tanggalPengukuran || tanggalEntry,
+                weight_kg: beratBadan || null,
+                height_cm: tinggiBadan || null,
+                head_circumference_cm: lingkarKepala || null,
+                age_months: usiaSaatUkur ? parseInt(usiaSaatUkur) : null,
+                nutrition_status: nutritionStatus,
+                midwife_id: midwifeProfile?.id || null,
+                notes: keterangan || null
+            }, {
+                onError: (err: any) => {
+                    console.error("Gagal menyimpan data gizi:", err);
+                }
+            });
         }
 
-        // Reset inputs
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        setTanggalEntry(`${yyyy}-${mm}-${dd}`);
-        setJenisImunisasi(immunizationList[0] || '');
-        setStatus('Selesai');
-        setKeterangan('');
+        // 2. Submit Immunization Record
+        const statusMapInv: Record<'Selesai' | 'Terjadwal' | 'Ditunda', 'completed' | 'scheduled' | 'not_yet'> = {
+            'Selesai': 'completed',
+            'Terjadwal': 'scheduled',
+            'Ditunda': 'not_yet'
+        };
+
+        const selectedVaccine = vaccinesList.find(v => v.name === jenisImunisasi);
+        if (!selectedVaccine) {
+            alert("Pilih jenis imunisasi yang valid!");
+            return;
+        }
+
+        if (editingItem) {
+            // Update mode
+            const originalRecord = immunizationRecordsList.find(r => r.id === editingItem.id);
+            const originalDose = originalRecord?.dose_number || 1;
+
+            updateImmunizationMutation.mutate({
+                id: editingItem.id,
+                payload: {
+                    vaccine_id: selectedVaccine.id,
+                    dose_number: selectedVaccine.name !== editingItem.jenis 
+                        ? (immunizationRecordsList.filter(r => r.vaccine_id === selectedVaccine.id).length + 1)
+                        : originalDose,
+                    date_given: tanggalEntry || null,
+                    status: statusMapInv[status],
+                    notes: keterangan || null,
+                    midwife_id: midwifeProfile?.id || null,
+                    posyandu_id: midwifeProfile?.posyandu_id || null
+                }
+            }, {
+                onSuccess: () => {
+                    triggerToast('Data Imunisasi berhasil diperbarui!');
+                    setEditingItem(null);
+                    setKeterangan('');
+                    setBeratBadan('');
+                    setTinggiBadan('');
+                    setLingkarKepala('');
+                    setUsiaSaatUkur('');
+                },
+                onError: (err: any) => {
+                    alert(err?.response?.data?.message || err?.message || 'Gagal memperbarui data imunisasi');
+                }
+            });
+        } else {
+            // Create mode
+            const existingVacsCount = immunizationRecordsList.filter(
+                (rec) => rec.vaccine_id === selectedVaccine.id
+            ).length;
+            const doseNumber = existingVacsCount + 1;
+
+            createImmunizationMutation.mutate({
+                children_id: bayiIdParam || "",
+                vaccine_id: selectedVaccine.id,
+                dose_number: doseNumber,
+                date_given: tanggalEntry || null,
+                status: statusMapInv[status],
+                notes: keterangan || null,
+                midwife_id: midwifeProfile?.id || null,
+                posyandu_id: midwifeProfile?.posyandu_id || null
+            }, {
+                onSuccess: () => {
+                    triggerToast('Data Imunisasi baru berhasil ditambahkan!');
+                    // Reset inputs
+                    const today = new Date();
+                    const yyyy = today.getFullYear();
+                    const mm = String(today.getMonth() + 1).padStart(2, '0');
+                    const dd = String(today.getDate()).padStart(2, '0');
+                    setTanggalEntry(`${yyyy}-${mm}-${dd}`);
+                    setJenisImunisasi(vaccinesList[0]?.name || '');
+                    setStatus('Selesai');
+                    setKeterangan('');
+                    setBeratBadan('');
+                    setTinggiBadan('');
+                    setLingkarKepala('');
+                    setUsiaSaatUkur('');
+                },
+                onError: (err: any) => {
+                    alert(err?.response?.data?.message || err?.message || 'Gagal menambahkan data imunisasi');
+                }
+            });
+        }
     };
 
     const handleEditItem = (item: HistoryItem) => {
@@ -297,12 +422,20 @@ function BuatDataImunisasiContent() {
         }
     };
 
-    const handleDeleteItem = (id: number) => {
+    const handleDeleteItem = (id: string) => {
         if (editingItem?.id === id) {
             setEditingItem(null);
         }
-        setHistory(prev => prev.filter(item => item.id !== id));
-        triggerToast('Data Imunisasi berhasil dihapus!');
+        if (confirm("Apakah Anda yakin ingin menghapus data imunisasi ini?")) {
+            deleteImmunizationMutation.mutate(id, {
+                onSuccess: () => {
+                    triggerToast('Data Imunisasi berhasil dihapus!');
+                },
+                onError: (err: any) => {
+                    alert(err?.response?.data?.message || err?.message || 'Gagal menghapus data imunisasi');
+                }
+            });
+        }
     };
 
     const getStatusColor = (statusVal: string) => {
@@ -318,15 +451,37 @@ function BuatDataImunisasiContent() {
         }
     };
 
-    const formatDateIndo = (dateStr: string) => {
-        if (!dateStr) return '-';
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-        });
-    };
+    if (isChildLoading) {
+        return (
+            <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
+                <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200 justify-center items-center">
+                    <svg className="animate-spin h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </div>
+        );
+    }
+
+    if (!matchedBaby) {
+        return (
+            <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
+                <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200 justify-center items-center text-center px-6">
+                    <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 mb-4 border border-slate-100">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    <h2 className="font-bold text-slate-800 mb-2">Bayi tidak ditemukan</h2>
+                    <p className="text-sm text-slate-500 mb-6">Data bayi tidak ada atau ID tidak valid.</p>
+                    <Link href="/bidan/data-imunisasi" className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-sm hover:bg-blue-700 transition-colors">
+                        Kembali
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
@@ -349,407 +504,73 @@ function BuatDataImunisasiContent() {
                 {/* Content Container */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10 pt-16 px-6 pb-28">
 
-                    {/* Profile Card */}
-                    <div className="bg-white rounded-[2rem] p-6 shadow-[0_10px_40px_rgb(0,0,0,0.06)] flex flex-col items-center mb-6 border border-slate-100">
-                        <div className="w-24 h-24 rounded-full bg-pink-100 border-[6px] border-white shadow-md flex items-center justify-center mb-4 -mt-16 text-pink-500">
-                            {matchedBaby.kelamin === 'Laki-laki' ? (
-                                <div className="w-24 h-24 rounded-full bg-blue-100 border-[6px] border-white shadow-md flex items-center justify-center text-blue-500 font-bold text-4xl">
-                                    {matchedBaby.nama.charAt(0)}
-                                </div>
-                            ) : (
-                                <div className="w-24 h-24 rounded-full bg-pink-100 border-[6px] border-white shadow-md flex items-center justify-center text-pink-500 font-bold text-4xl">
-                                    {matchedBaby.nama.charAt(0)}
-                                </div>
-                            )}
-                        </div>
-
-                        <h2 className="text-2xl font-bold text-slate-800 mb-1.5 text-center leading-tight">
-                            {matchedBaby.nama}
-                        </h2>
-
-                        <div className="bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full text-xs font-bold mb-5 border border-blue-100">
-                            NIK: {matchedBaby.nik}
-                        </div>
-
-                        <div className="w-full grid grid-cols-3 gap-3 border-t border-slate-100 pt-5">
-                            <div className="flex flex-col items-center p-2.5 bg-slate-50/80 rounded-[1rem] border border-slate-100">
-                                <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Umur</span>
-                                <span className="text-xs font-bold text-slate-800">{matchedBaby.umur}</span>
-                            </div>
-                            <div className="flex flex-col items-center p-2.5 bg-slate-50/80 rounded-[1rem] border border-slate-100">
-                                <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Kelamin</span>
-                                <span className="text-xs font-bold text-slate-800 truncate max-w-full">{matchedBaby.kelamin}</span>
-                            </div>
-                            <div className="flex flex-col items-center p-2.5 bg-slate-50/80 rounded-[1rem] border border-slate-100">
-                                <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Tgl Lahir</span>
-                                <span className="text-[10px] font-bold text-slate-800 truncate max-w-full">{matchedBaby.tanggalLahir.split(' ')[0]} {matchedBaby.tanggalLahir.split(' ')[1].slice(0, 3)}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Administrative Info Card */}
-                    <div className="mb-6">
-                        <h3 className="text-sm font-bold text-slate-800 mb-3 px-2">Data Orang Tua & Lokasi</h3>
-                        <div className="bg-white rounded-[1.5rem] p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100 flex flex-col gap-3">
-                            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                                <span className="text-xs font-semibold text-slate-500">Nama Orang Tua</span>
-                                <span className="text-xs font-bold text-slate-850 text-right">{matchedBaby.orangTua}</span>
-                            </div>
-                            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                                <span className="text-xs font-semibold text-slate-500">Nama Posyandu</span>
-                                <span className="text-xs font-bold text-slate-850 text-right">{matchedBaby.posyandu}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-xs font-semibold text-slate-500">Terakhir Diperbarui</span>
-                                <span className="text-xs font-bold text-slate-850 text-right">{formatDateIndo(matchedBaby.terakhirDiperbarui)}</span>
-                            </div>
-                        </div>
-                    </div>
+                    {/* Profile & Administrative Cards */}
+                    <ChildProfile
+                        child={child!}
+                        calculateAge={calculateAge}
+                        formatDateIndo={formatDateIndo}
+                    />
 
                     {/* History Collapsible Section */}
-                    <div className="mb-6">
-                        <button
-                            onClick={() => setShowHistory(!showHistory)}
-                            className="w-full flex justify-between items-center px-2 py-1 mb-3 transition-colors active:opacity-75 focus:outline-none"
-                        >
-                            <h3 className="text-sm font-bold text-slate-800">Riwayat Imunisasi</h3>
-                            <div className={`p-1.5 rounded-lg bg-slate-100 text-slate-500 transition-transform duration-350 ${showHistory ? 'rotate-180' : ''}`}>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </button>
-
-                        {showHistory && (
-                            <div className="flex flex-col gap-3.5 animate-fade-in">
-                                {history.length > 0 ? (
-                                    history.map((item) => (
-                                        <div
-                                            key={item.id}
-                                            className="bg-white rounded-[1.5rem] p-4 shadow-[0_4px_15px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col gap-3"
-                                        >
-                                            <div className="flex justify-between items-start gap-2">
-                                                <div>
-                                                    <h4 className="text-sm font-extrabold text-slate-800 leading-tight">
-                                                        {item.jenis}
-                                                    </h4>
-                                                    <span className="text-[10px] text-slate-400 font-bold">
-                                                        {formatDateIndo(item.tanggal)}
-                                                    </span>
-                                                </div>
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${getStatusColor(item.status)}`}>
-                                                    {item.status}
-                                                </span>
-                                            </div>
-
-                                            {item.keterangan && (
-                                                <p className="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-100/50 leading-relaxed font-medium">
-                                                    {item.keterangan}
-                                                </p>
-                                            )}
-
-                                            <div className="flex justify-end gap-2.5 border-t border-slate-50 pt-3">
-                                                <button
-                                                    onClick={() => handleEditItem(item)}
-                                                    className="bg-blue-50 text-blue-600 hover:bg-blue-100 text-[11px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteItem(item.id)}
-                                                    className="bg-rose-50 text-rose-600 hover:bg-rose-100 text-[11px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all"
-                                                >
-                                                    Hapus
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="bg-white rounded-3xl p-6 border border-slate-100 text-center text-xs text-slate-400 font-medium">
-                                        Belum ada riwayat imunisasi terdaftar.
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                    <ImmunizationHistory
+                        history={history}
+                        showHistory={showHistory}
+                        setShowHistory={setShowHistory}
+                        formatDateIndo={formatDateIndo}
+                        getStatusColor={getStatusColor}
+                        handleEditItem={handleEditItem}
+                        handleDeleteItem={handleDeleteItem}
+                    />
 
                     {/* Entry Form */}
-                    <div id="imunisasi-form" className="scroll-mt-6">
-                        <h3 className="text-sm font-bold text-slate-800 mb-3 px-2">
-                            {editingItem ? 'Edit Data Imunisasi' : 'Input Data Imunisasi'}
-                        </h3>
-
-                        <form onSubmit={handleFormSubmit} className="bg-white rounded-[1.5rem] p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100 flex flex-col gap-4">
-
-                            {/* Tanggal Entry */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tanggal Entry</label>
-                                <div className="relative h-[3.25rem] w-full overflow-hidden">
-                                    <input
-                                        type="date"
-                                        value={tanggalEntry}
-                                        onChange={(e) => setTanggalEntry(e.target.value)}
-                                        className="absolute inset-0 h-full w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all [color-scheme:light]"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Jenis Imunisasi */}
-                            <div className="flex flex-col gap-1.5">
-                                <div className="flex justify-between items-center">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Jenis Imunisasi</label>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowManageModal(true)}
-                                        className="text-xs font-bold text-blue-600 hover:text-blue-750 transition-colors flex items-center gap-1 active:scale-95 duration-150 cursor-pointer"
-                                    >
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                        Kelola
-                                    </button>
-                                </div>
-                                <div className="relative">
-                                    <select
-                                        value={jenisImunisasi}
-                                        onChange={(e) => setJenisImunisasi(e.target.value)}
-                                        className="w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-705 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all appearance-none"
-                                        required
-                                    >
-                                        {immunizationList.map((imun) => (
-                                            <option key={imun} value={imun}>{imun}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Status */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</label>
-                                <div className="relative">
-                                    <select
-                                        value={status}
-                                        onChange={(e) => setStatus(e.target.value as 'Selesai' | 'Terjadwal' | 'Ditunda')}
-                                        className="w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-705 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all appearance-none"
-                                        required
-                                    >
-                                        <option value="Selesai">Selesai</option>
-                                        <option value="Terjadwal">Terjadwal</option>
-                                        <option value="Ditunda">Ditunda</option>
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Keterangan */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Keterangan / Catatan</label>
-                                <textarea
-                                    value={keterangan}
-                                    onChange={(e) => setKeterangan(e.target.value)}
-                                    placeholder="Masukkan keterangan detail (misalnya: suhu tubuh normal, dll)..."
-                                    className="w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all placeholder-slate-400 min-h-[5rem] resize-none"
-                                />
-                            </div>
-
-                            {/* Form Submission Button */}
-                            <div className="flex gap-3.5 pt-2">
-                                {editingItem && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setEditingItem(null)}
-                                        className="w-1/3 bg-slate-100 text-slate-600 font-bold text-sm py-4 rounded-[1.25rem] hover:bg-slate-200 active:scale-95 transition-all text-center"
-                                    >
-                                        Batal
-                                    </button>
-                                )}
-                                <button
-                                    type="submit"
-                                    className={`font-bold text-sm py-4 rounded-[1.25rem] active:scale-95 transition-all flex justify-center items-center gap-2 ${editingItem
-                                        ? 'w-2/3 bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)] hover:bg-blue-700'
-                                        : 'w-full bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)] hover:bg-blue-700'
-                                        }`}
-                                >
-                                    <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                                    </svg>
-                                    {editingItem ? 'Update Imunisasi' : 'Simpan Data'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                    <ImmunizationForm
+                        editingItem={editingItem}
+                        setEditingItem={setEditingItem}
+                        tanggalEntry={tanggalEntry}
+                        setTanggalEntry={setTanggalEntry}
+                        jenisImunisasi={jenisImunisasi}
+                        setJenisImunisasi={setJenisImunisasi}
+                        status={status}
+                        setStatus={setStatus}
+                        tanggalPengukuran={tanggalPengukuran}
+                        setTanggalPengukuran={setTanggalPengukuran}
+                        usiaSaatUkur={usiaSaatUkur}
+                        setUsiaSaatUkur={setUsiaSaatUkur}
+                        beratBadan={beratBadan}
+                        setBeratBadan={setBeratBadan}
+                        tinggiBadan={tinggiBadan}
+                        setTinggiBadan={setTinggiBadan}
+                        lingkarKepala={lingkarKepala}
+                        setLingkarKepala={setLingkarKepala}
+                        nutritionStatus={nutritionStatus}
+                        setNutritionStatus={setNutritionStatus}
+                        keterangan={keterangan}
+                        setKeterangan={setKeterangan}
+                        vaccinesList={vaccinesList}
+                        setShowManageModal={setShowManageModal}
+                        handleFormSubmit={handleFormSubmit}
+                    />
                 </div>
 
                 {/* Manage Immunization Modal */}
-                {showManageModal && (
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col justify-end animate-fade-in">
-                        <div className="bg-white w-full rounded-t-[2.5rem] p-6 shadow-2xl border-t border-slate-100 flex flex-col max-h-[80%] animate-slide-up overflow-hidden">
-                            {/* Modal Header */}
-                            <div className="flex justify-between items-center pb-4 border-b border-slate-100 shrink-0">
-                                <div>
-                                    <h2 className="text-base font-bold text-slate-800">Kelola Jenis Imunisasi</h2>
-                                    <p className="text-[10px] text-slate-400">Tambah, ubah, atau hapus jenis imunisasi</p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowManageModal(false);
-                                        setSearchQuery('');
-                                        setNewTypeName('');
-                                        setEditingTypeIndex(null);
-                                    }}
-                                    className="p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors cursor-pointer"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-
-                            {/* Modal Content */}
-                            <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-4 custom-scrollbar">
-                                {/* Search bar */}
-                                <div className="relative shrink-0">
-                                    <input
-                                        type="text"
-                                        placeholder="Cari jenis imunisasi..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full box-border pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all placeholder-slate-400"
-                                    />
-                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                        </svg>
-                                    </div>
-                                </div>
-
-                                {/* Form Add New */}
-                                <form onSubmit={handleAddType} className="flex gap-2 shrink-0">
-                                    <input
-                                        type="text"
-                                        placeholder="Tambah imunisasi..."
-                                        value={newTypeName}
-                                        onChange={(e) => setNewTypeName(e.target.value)}
-                                        className="flex-1 box-border px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all placeholder-slate-400"
-                                        required
-                                    />
-                                    <button
-                                        type="submit"
-                                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all active:scale-95 shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer"
-                                    >
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        Tambah
-                                    </button>
-                                </form>
-
-                                {/* List of Types */}
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Daftar Vaksin ({filteredList.length})</label>
-                                    {filteredList.length > 0 ? (
-                                        filteredList.map((item, idx) => {
-                                            const originalIndex = immunizationList.indexOf(item);
-                                            const isEditing = editingTypeIndex === originalIndex;
-
-                                            return (
-                                                <div
-                                                    key={idx}
-                                                    className="flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100/70 border border-slate-150 rounded-xl transition-all"
-                                                >
-                                                    {isEditing ? (
-                                                        <div className="flex-1 flex gap-2 items-center">
-                                                            <input
-                                                                type="text"
-                                                                value={editingTypeName}
-                                                                onChange={(e) => setEditingTypeName(e.target.value)}
-                                                                className="flex-1 box-border px-2 py-1.5 bg-white border border-blue-400 rounded-lg text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
-                                                                autoFocus
-                                                            />
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleUpdateType(originalIndex)}
-                                                                className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition-all cursor-pointer animate-fade-in"
-                                                            >
-                                                                Simpan
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setEditingTypeIndex(null);
-                                                                    setEditingTypeName('');
-                                                                }}
-                                                                className="bg-slate-200 hover:bg-slate-300 text-slate-600 text-[10px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition-all cursor-pointer animate-fade-in"
-                                                            >
-                                                                Batal
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setJenisImunisasi(item);
-                                                                    setShowManageModal(false);
-                                                                    setSearchQuery('');
-                                                                    triggerToast(`Dipilih: ${item}`);
-                                                                }}
-                                                                className="flex-1 text-left text-xs font-bold text-slate-700 hover:text-blue-600 transition-colors cursor-pointer"
-                                                            >
-                                                                {item}
-                                                            </button>
-                                                            <div className="flex gap-1.5 ml-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setEditingTypeIndex(originalIndex);
-                                                                        setEditingTypeName(item);
-                                                                    }}
-                                                                    className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-all active:scale-90 cursor-pointer"
-                                                                    title="Edit nama"
-                                                                >
-                                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                                    </svg>
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleDeleteType(item)}
-                                                                    className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-all active:scale-90 cursor-pointer"
-                                                                    title="Hapus"
-                                                                >
-                                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                    </svg>
-                                                                </button>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <div className="bg-slate-50 rounded-xl p-4 border border-dashed border-slate-200 text-center text-xs text-slate-400 font-medium">
-                                            Tidak ada jenis imunisasi yang cocok.
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <ManageVaccinesModal
+                    showManageModal={showManageModal}
+                    setShowManageModal={setShowManageModal}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    newTypeName={newTypeName}
+                    setNewTypeName={setNewTypeName}
+                    editingTypeId={editingTypeId}
+                    setEditingTypeId={setEditingTypeId}
+                    editingTypeName={editingTypeName}
+                    setEditingTypeName={setEditingTypeName}
+                    filteredList={filteredList}
+                    handleAddType={handleAddType}
+                    handleUpdateType={handleUpdateType}
+                    handleDeleteType={handleDeleteType}
+                    setJenisImunisasi={setJenisImunisasi}
+                    triggerToast={triggerToast}
+                />
 
                 {/* Toast Notification */}
                 {showToast && (

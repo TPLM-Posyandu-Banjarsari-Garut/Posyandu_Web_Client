@@ -14,7 +14,6 @@ export function useGetChildren(params: FetchChildrenParams) {
   return useQuery({
     queryKey: ["children", params],
     queryFn: () => fetchChildren(params),
-    enabled: !!params.posyandu_id, // Fetch only when posyandu_id is resolved
     staleTime: 5000,
   });
 }
