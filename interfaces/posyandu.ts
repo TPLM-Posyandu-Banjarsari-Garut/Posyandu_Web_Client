@@ -1,7 +1,7 @@
 export interface Posyandu {
   id: string;
   name: string;
-  health_center_id: string;
+  health_center_id?: string | null;
   address_line?: string | null;
   rt?: string | null;
   rw?: string | null;
@@ -14,7 +14,7 @@ export interface Posyandu {
 
 export interface CreatePosyanduPayload {
   name: string;
-  health_center_id: string;
+  health_center_id?: string | null;
   address_line?: string | null;
   rt?: string | null;
   rw?: string | null;
