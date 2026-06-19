@@ -1,16 +1,29 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useLogoutOrangTua } from "@/hooks/query/authOrangTua/UseLogoutOrangTua";
 import BottombarOrtu from "@/components/ui/bottombar/orangtua/BottombarOrtu";
-import { useCurrentUser } from "@/hooks/query/auth/useCurrentUser";
+import { useOrangTuaCurrentUser } from "@/hooks/query/authOrangTua/useOrangTuaCurrentUser";
 
 export default function OrangTuaProfile() {
   const router = useRouter();
-  const { data: user } = useCurrentUser();
+  const { data: user, isPending, isError } = useOrangTuaCurrentUser();
   const { mutate: logout, isPending: isLoggingOut } = useLogoutOrangTua();
 
+  useEffect(() => {
+    if (isError || (!isPending && !user)) {
+      router.replace("/orangtua/login");
+    }
+  }, [user, isPending, isError, router]);
 
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "-";
     return new Date(dateStr).toLocaleDateString("id-ID", {
