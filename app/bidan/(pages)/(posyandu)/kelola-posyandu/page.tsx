@@ -13,6 +13,7 @@ import {
 } from '@/hooks/query/posyandu/useManagePosyandu';
 import { Posyandu } from '@/interfaces/posyandu';
 import axios from 'axios';
+import { useConfirm } from '@/providers/ConfirmProvider';
 
 // Helper to parse combined address_line into jalan and patokan
 const parseAddress = (addressLine: string | null | undefined) => {
@@ -25,6 +26,7 @@ const parseAddress = (addressLine: string | null | undefined) => {
 };
 
 export default function KelolaPosyandu() {
+    const confirm = useConfirm();
     // API queries & mutations
     const { data: midwife } = useGetMidwifeProfile();
     const { data: currentPosyandu } = useGetPosyanduById(
@@ -98,8 +100,8 @@ export default function KelolaPosyandu() {
     };
 
     // Delete Posyandu Handler
-    const handleDelete = (id: string, name: string) => {
-        if (confirm(`Apakah Anda yakin ingin menghapus "${name}"?`)) {
+    const handleDelete = async (id: string, name: string) => {
+        if (await confirm(`Apakah Anda yakin ingin menghapus "${name}"?`)) {
             deleteMutation.mutate(id, {
                 onSuccess: () => {
                     triggerToast(`Posyandu "${name}" berhasil dihapus.`);

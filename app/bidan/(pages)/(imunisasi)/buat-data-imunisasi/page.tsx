@@ -8,6 +8,7 @@ import { useGetChildById } from '@/hooks/query/child/useManageChildren';
 import { useGetVaccines, useCreateVaccine, useUpdateVaccine, useDeleteVaccine } from '@/hooks/query/vaccine/useManageVaccines';
 import { useGetMidwifeProfile } from '@/hooks/query/midwife/useMidwifeProfile';
 import { useGetImmunizationRecords, useCreateImmunizationRecord, useUpdateImmunizationRecord, useDeleteImmunizationRecord } from '@/hooks/query/immunization/useManageImmunizationRecords';
+import { useConfirm } from '@/providers/ConfirmProvider';
 import { useCreateNutritionRecord } from '@/hooks/query/nutrition/useManageNutritionRecords';
 import ChildProfile from './ChildProfile';
 import ImmunizationHistory from './ImmunizationHistory';
@@ -22,10 +23,9 @@ interface HistoryItem {
     status: 'Selesai' | 'Terjadwal' | 'Ditunda';
     keterangan: string;
 }
-// pada jenis imunisasi buat bisa create jenis imunisasi,update,delete dan tambahkan search juga jenis imunisasi lalu untuk history imu
-// interface BabyDetail is removed because we map directly from Child API
 
 function BuatDataImunisasiContent() {
+    const confirm = useConfirm();
     const searchParams = useSearchParams();
     const bayiIdParam = searchParams.get('bayiId');
     const namaParam = searchParams.get('nama');
@@ -220,8 +220,8 @@ function BuatDataImunisasiContent() {
         });
     };
 
-    const handleDeleteType = (id: string, nameToDelete: string) => {
-        if (confirm(`Apakah Anda yakin ingin menghapus jenis imunisasi "${nameToDelete}"?`)) {
+    const handleDeleteType = async (id: string, nameToDelete: string) => {
+        if (await confirm(`Apakah Anda yakin ingin menghapus jenis imunisasi "${nameToDelete}"?`)) {
             deleteVaccineMutation.mutate(id, {
                 onSuccess: () => {
                     const remainingList = vaccinesList.filter(item => item.id !== id);
@@ -422,11 +422,11 @@ function BuatDataImunisasiContent() {
         }
     };
 
-    const handleDeleteItem = (id: string) => {
+    const handleDeleteItem = async (id: string) => {
         if (editingItem?.id === id) {
             setEditingItem(null);
         }
-        if (confirm("Apakah Anda yakin ingin menghapus data imunisasi ini?")) {
+        if (await confirm("Apakah Anda yakin ingin menghapus data imunisasi ini?")) {
             deleteImmunizationMutation.mutate(id, {
                 onSuccess: () => {
                     triggerToast('Data Imunisasi berhasil dihapus!');

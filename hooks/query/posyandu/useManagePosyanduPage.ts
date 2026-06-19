@@ -10,6 +10,7 @@ import {
 } from "@/hooks/query/posyandu/useManagePosyandu";
 import { Posyandu } from "@/interfaces/posyandu";
 import axios from "axios";
+import { useConfirm } from "@/providers/ConfirmProvider";
 
 // Helper to parse address_line into jalan and patokan
 const parseAddress = (addressLine: string | null | undefined) => {
@@ -23,6 +24,7 @@ const parseAddress = (addressLine: string | null | undefined) => {
 
 export function useManagePosyanduPage() {
   const logout = useLogoutAdmin();
+  const confirm = useConfirm();
 
   // Search filter & pagination states
   const [searchQuery, setSearchQuery] = useState("");
@@ -103,8 +105,8 @@ export function useManagePosyanduPage() {
   };
 
   // Handle delete
-  const handleDeletePosyandu = (publicId: string, name: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus "${name}"?`)) {
+  const handleDeletePosyandu = async (publicId: string, name: string) => {
+    if (await confirm(`Apakah Anda yakin ingin menghapus "${name}"?`)) {
       deleteMutation.mutate(publicId, {
         onSuccess: () => {
           showToast(`Posyandu "${name}" berhasil dihapus`);

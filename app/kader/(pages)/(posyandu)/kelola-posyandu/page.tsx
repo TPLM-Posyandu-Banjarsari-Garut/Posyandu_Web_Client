@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import BottombarKader from '@/components/ui/bottombar/kader/BottombarKader';
-
+import { useConfirm } from '@/providers/ConfirmProvider';
 interface Posyandu {
     id: number;
     nama: string;
@@ -15,6 +15,8 @@ interface Posyandu {
 }
 
 export default function KelolaPosyandu() {
+    const confirm = useConfirm();
+    
     // Initial premium dummy data
     const [posyanduList, setPosyanduList] = useState<Posyandu[]>([
         {
@@ -103,8 +105,8 @@ export default function KelolaPosyandu() {
     };
 
     // Delete Posyandu Handler
-    const handleDelete = (id: number, name: string) => {
-        if (confirm(`Apakah Anda yakin ingin menghapus "${name}"?`)) {
+    const handleDelete = async (id: number, name: string) => {
+        if (await confirm(`Apakah Anda yakin ingin menghapus "${name}"?`)) {
             setPosyanduList(prev => prev.filter(item => item.id !== id));
             triggerToast(`Posyandu "${name}" berhasil dihapus.`);
         }

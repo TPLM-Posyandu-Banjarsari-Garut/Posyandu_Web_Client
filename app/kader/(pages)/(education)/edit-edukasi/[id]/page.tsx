@@ -13,12 +13,15 @@ import {
     useUpdateEducation,
     useGetEducationById
 } from '@/hooks/query/education/useManageEducations';
+import { useConfirm } from '@/providers/ConfirmProvider';
 
 // Dynamically import ReactQuill to prevent SSR issues
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 export default function EditEdukasiPage() {
     const params = useParams();
+    const router = useRouter();
+    const confirm = useConfirm();
     const id = params.id as string;
     
     const { data: educationResponse, isLoading: isLoadingEducation } = useGetEducationById(id);
@@ -44,7 +47,6 @@ export default function EditEdukasiPage() {
     const updateCategoryMutation = useUpdateEducationCategory();
     const deleteCategoryMutation = useDeleteEducationCategory();
 
-    const router = useRouter();
     const updateEducationMutation = useUpdateEducation();
 
     const [isAddingTema, setIsAddingTema] = useState(false);
@@ -163,8 +165,8 @@ export default function EditEdukasiPage() {
                                             </button>
                                             <button 
                                                 type="button"
-                                                onClick={() => {
-                                                    if (confirm("Apakah Anda yakin ingin menghapus tema ini?")) {
+                                                onClick={async () => {
+                                                    if (await confirm("Apakah Anda yakin ingin menghapus tema ini?")) {
                                                         deleteCategoryMutation.mutate(selectedTema, {
                                                             onSuccess: () => {
                                                                 setSelectedTema('');

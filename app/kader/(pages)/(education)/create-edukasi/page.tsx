@@ -6,11 +6,13 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 import { useGetEducationCategories, useCreateEducationCategory, useUpdateEducationCategory, useDeleteEducationCategory, useCreateEducation } from '@/hooks/query/education/useManageEducations';
+import { useConfirm } from '@/providers/ConfirmProvider';
 
 // Dynamically import ReactQuill to prevent SSR issues (document is not defined)
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 export default function CreateEdukasiPage() {
+    const confirm = useConfirm();
     const [value, setValue] = useState('');
     
     const { data: categoriesResponse, isLoading: isLoadingCategories } = useGetEducationCategories();
@@ -117,8 +119,8 @@ export default function CreateEdukasiPage() {
                                             </button>
                                             <button 
                                                 type="button"
-                                                onClick={() => {
-                                                    if (confirm("Apakah Anda yakin ingin menghapus tema ini?")) {
+                                                onClick={async () => {
+                                                    if (await confirm("Apakah Anda yakin ingin menghapus tema ini?")) {
                                                         deleteCategoryMutation.mutate(selectedTema, {
                                                             onSuccess: () => {
                                                                 setSelectedTema('');

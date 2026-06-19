@@ -1,17 +1,22 @@
 'use client';
 
 import BottombarKader from '@/components/ui/bottombar/kader/BottombarKader';
+import { useConfirm } from '@/providers/ConfirmProvider';
 import DateFilterInput from '@/components/ui/DateFilterInput';
 import { FilterHalf, FilterRow } from '@/components/ui/FilterRow';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useGetEducations, useDeleteEducation, useGetEducationCategories } from '@/hooks/query/education/useManageEducations';
+import SuccessToast from '@/components/ui/SuccessToast';
 
 export default function EdukasiPage() {
+    const confirm = useConfirm();
     const [search, setSearch] = useState('');
     const [category, setCategory] = useState('');
     const [page, setPage] = useState(1);
     const limit = 5;
+    const [toastOpen, setToastOpen] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
 
     const { data: response, isLoading } = useGetEducations({
         page,
@@ -34,9 +39,18 @@ export default function EdukasiPage() {
         return cat ? cat.name : 'Tanpa Kategori';
     };
 
-    const handleDelete = (id: string) => {
-        if (confirm("Apakah Anda yakin ingin menghapus edukasi ini?")) {
-            deleteMutation.mutate(id);
+    const handleDelete = async (id: string) => {
+        if (await confirm("Apakah Anda yakin ingin menghapus edukasi ini?")) {
+            deleteMutation.mutate(id, {
+                onSuccess: () => {
+                    setToastMessage("Edukasi berhasil dihapus");
+                    setToastOpen(true);
+                    setTimeout(() => setToastOpen(false), 2000);
+                },
+                onError: (error: any) => {
+                    alert(`Gagal menghapus edukasi: ${error.message}`);
+                }
+            });
         }
     };
 
@@ -170,6 +184,7 @@ export default function EdukasiPage() {
 
                 <BottombarKader />
             </div>
+            <SuccessToast isOpen={toastOpen} message={toastMessage} />
         </div>
     );
 }

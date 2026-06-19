@@ -4,9 +4,11 @@ import BottombarBidan from '@/components/ui/bottombar/bidan/BottombarBidan';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useGetInventories, useDeleteInventory } from '@/hooks/query/inventory/useManageInventories';
+import { useConfirm } from '@/providers/ConfirmProvider';
 import { InventoryItemType, InventoryCondition, Inventory } from '@/interfaces/inventory';
 
 export default function DataInventaris() {
+    const confirm = useConfirm();
     // Search and Filter State
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('semua');
@@ -22,13 +24,20 @@ export default function DataInventaris() {
     // Backend returns { success, message, data: { data: [], meta: {} } } because of ApiResponse.ok
     const inventarisList = (response?.data as any)?.data || [];
     const meta = (response?.data as any)?.meta;
-    const totalPages = meta?.totalPages || 1;
+    const totalPages = meta?.total_pages || 1;
 
     const deleteMutation = useDeleteInventory();
 
-    const handleDelete = (id: string, name: string) => {
-        if (confirm(`Apakah Anda yakin ingin menghapus inventaris "${name}"?`)) {
-            deleteMutation.mutate({ id });
+    const handleDelete = async (id: string, name: string) => {
+        if (await confirm(`Apakah Anda yakin ingin menghapus inventaris "${name}"?`)) {
+            deleteMutation.mutate({ id }, {
+                onSuccess: () => {
+                    // triggerToast(`Inventaris "${name}" berhasil dihapus.`);
+                },
+                onError: (error) => {
+                    alert(`Gagal menghapus inventaris: ${(error as any).response?.data?.message || error.message}`);
+                }
+            });
         }
     };
 

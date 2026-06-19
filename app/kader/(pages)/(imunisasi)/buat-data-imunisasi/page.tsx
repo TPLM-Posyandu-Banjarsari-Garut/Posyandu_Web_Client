@@ -9,6 +9,7 @@ import { useGetVaccines, useCreateVaccine, useUpdateVaccine, useDeleteVaccine } 
 import { useGetCadreProfile } from '@/hooks/query/cadre/useCadreProfile';
 import { useGetImmunizationRecords, useCreateImmunizationRecord, useUpdateImmunizationRecord, useDeleteImmunizationRecord } from '@/hooks/query/immunization/useManageImmunizationRecords';
 import { useCreateNutritionRecord } from '@/hooks/query/nutrition/useManageNutritionRecords';
+import { useConfirm } from '@/providers/ConfirmProvider';
 import ChildProfile from './ChildProfile';
 import ImmunizationHistory from './ImmunizationHistory';
 import ManageVaccinesModal from './ManageVaccinesModal';
@@ -27,6 +28,7 @@ function BuatDataImunisasiContent() {
     const searchParams = useSearchParams();
     const bayiIdParam = searchParams.get('bayiId');
     const namaParam = searchParams.get('nama');
+    const confirm = useConfirm();
 
     // Fetch real child data
     const { data: childResponse, isLoading: isChildLoading } = useGetChildById(bayiIdParam || "");
@@ -218,8 +220,8 @@ function BuatDataImunisasiContent() {
         });
     };
 
-    const handleDeleteType = (id: string, nameToDelete: string) => {
-        if (confirm(`Apakah Anda yakin ingin menghapus jenis imunisasi "${nameToDelete}"?`)) {
+    const handleDeleteType = async (id: string, nameToDelete: string) => {
+        if (await confirm(`Apakah Anda yakin ingin menghapus jenis imunisasi "${nameToDelete}"?`)) {
             deleteVaccineMutation.mutate(id, {
                 onSuccess: () => {
                     const remainingList = vaccinesList.filter(item => item.id !== id);
@@ -420,11 +422,11 @@ function BuatDataImunisasiContent() {
         }
     };
 
-    const handleDeleteItem = (id: string) => {
+    const handleDeleteItem = async (id: string) => {
         if (editingItem?.id === id) {
             setEditingItem(null);
         }
-        if (confirm("Apakah Anda yakin ingin menghapus data imunisasi ini?")) {
+        if (await confirm("Apakah Anda yakin ingin menghapus data imunisasi ini?")) {
             deleteImmunizationMutation.mutate(id, {
                 onSuccess: () => {
                     triggerToast('Data Imunisasi berhasil dihapus!');

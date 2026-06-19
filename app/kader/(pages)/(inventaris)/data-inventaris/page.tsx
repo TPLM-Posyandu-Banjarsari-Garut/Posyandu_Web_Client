@@ -4,9 +4,11 @@ import BottombarKader from '@/components/ui/bottombar/kader/BottombarKader';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useGetInventories, useDeleteInventory } from '@/hooks/query/inventory/useManageInventories';
+import { useConfirm } from '@/providers/ConfirmProvider';
 import { InventoryItemType, InventoryCondition, Inventory } from '@/interfaces/inventory';
 
 export default function DataInventarisKader() {
+    const confirm = useConfirm();
     // Search and Filter State
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('semua');
@@ -26,9 +28,16 @@ export default function DataInventarisKader() {
 
     const deleteMutation = useDeleteInventory();
 
-    const handleDelete = (id: string, name: string) => {
-        if (confirm(`Apakah Anda yakin ingin menghapus inventaris "${name}"?`)) {
-            deleteMutation.mutate({ id });
+    const handleDelete = async (id: string, name: string) => {
+        if (await confirm(`Apakah Anda yakin ingin menghapus inventaris "${name}"?`)) {
+            deleteMutation.mutate({ id }, {
+                onSuccess: () => {
+                    // Item deleted
+                },
+                onError: (error) => {
+                    alert(`Gagal menghapus inventaris: ${(error as any).response?.data?.message || error.message}`);
+                }
+            });
         }
     };
 

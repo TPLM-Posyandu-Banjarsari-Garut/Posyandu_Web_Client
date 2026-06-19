@@ -11,6 +11,7 @@ import {
 } from "@/hooks/query/userAdmin/UseManageUsers";
 import { BackendRole } from "@/interfaces/user";
 import { createMidwifeProfile, createCadreProfile } from "@/service/user/userService";
+import { useConfirm } from "@/providers/ConfirmProvider";
 
 export interface CreateFormInputs {
   name: string;
@@ -57,6 +58,7 @@ export const roleMapToFrontend = (beRole: string): string => {
 
 export function useManageUsersPage() {
   const logout = useLogoutAdmin();
+  const confirm = useConfirm();
 
   // Search filter & pagination states
   const [searchQuery, setSearchQuery] = useState("");
@@ -146,8 +148,8 @@ export function useManageUsersPage() {
   };
 
   // Handle account deletion
-  const handleDeleteAccount = (publicId: string) => {
-    if (confirm("Apakah Anda yakin ingin menghapus akun ini?")) {
+  const handleDeleteAccount = async (publicId: string) => {
+    if (await confirm("Apakah Anda yakin ingin menghapus akun ini?")) {
       deleteUserMutation.mutate(publicId, {
         onSuccess: () => {
           showToast("Akun berhasil dihapus");
