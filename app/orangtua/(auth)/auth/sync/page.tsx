@@ -24,6 +24,9 @@ function SyncSessionContent() {
         if (token) {
           // Set cookie manually on the frontend domain
           document.cookie = `better-auth.session_token=${token}; path=/; max-age=2592000`; // 30 days
+          if (window.location.protocol === "https:") {
+            document.cookie = `__Secure-better-auth.session_token=${token}; path=/; secure; max-age=2592000`;
+          }
           router.replace("/orangtua/home");
         } else {
           setError("Gagal menyinkronkan sesi: Token tidak ditemukan.");
