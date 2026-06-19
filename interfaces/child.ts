@@ -16,6 +16,26 @@ export interface Child {
   updated_at?: string;
   mother_name?: string | null;
   parent_user_id?: string | null;
+  posyandu_detail?: {
+    name?: string;
+    village_name?: string;
+    address_line?: string;
+    rt?: string;
+    rw?: string;
+  } | null;
+  latest_nutrition?: {
+    measurement_date?: string;
+    weight_kg?: string;
+    height_cm?: string;
+    head_circumference_cm?: string;
+    nutrition_status?: string;
+    age_months?: number;
+  } | null;
+  latest_vitamin?: {
+    date_given?: string;
+    distribution_period?: string;
+    distribution_year?: number;
+  } | null;
 }
 
 export interface CreateChildPayload {

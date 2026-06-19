@@ -230,35 +230,30 @@ function DetailBayiContent() {
     { label: "Kabupaten / Kota", value: "Garut" },
     { label: "Kecamatan", value: "Banjarsari" },
     { label: "Puskesmas", value: "Puskesmas Banjarsari" },
-    { label: "Desa / Kelurahan", value: "Banjarsari" },
-    { label: "Nama Posyandu", value: posyanduName },
-    { label: "RT / RW", value: "001 / 002" },
-    { label: "Alamat", value: "Jl. Raya Banjarsari No. 10" },
+    { label: "Desa / Kelurahan", value: child.posyandu_detail?.village_name || "Banjarsari" },
+    { label: "Nama Posyandu", value: child.posyandu_detail?.name || posyanduName || "-" },
+    { label: "RT / RW", value: (child.posyandu_detail?.rt && child.posyandu_detail?.rw) ? `${child.posyandu_detail.rt} / ${child.posyandu_detail.rw}` : "-" },
+    { label: "Alamat", value: child.posyandu_detail?.address_line || "-" },
   ];
 
   const dataPengukuran = [
-    { label: "Tanggal Pengukuran", value: "15 Mei 2026" },
-    { label: "Usia Saat Ukur", value: "6 Bulan 5 Hari" },
-    { label: "Berat Badan Sekarang", value: "7.5 kg" },
-    { label: "Tinggi Badan Sekarang", value: "65 cm" },
-    { label: "Cara Ukur", value: "Telentang" },
-    { label: "Lingkar Lengan Atas", value: "14 cm" },
+    { label: "Tanggal Pengukuran", value: child.latest_nutrition?.measurement_date ? new Date(child.latest_nutrition.measurement_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : "-" },
+    { label: "Usia Saat Ukur", value: child.latest_nutrition?.age_months != null ? `${child.latest_nutrition.age_months} Bulan` : "-" },
+    { label: "Berat Badan Sekarang", value: child.latest_nutrition?.weight_kg ? `${child.latest_nutrition.weight_kg} kg` : "-" },
+    { label: "Tinggi Badan Sekarang", value: child.latest_nutrition?.height_cm ? `${child.latest_nutrition.height_cm} cm` : "-" },
+    { label: "Lingkar Kepala", value: child.latest_nutrition?.head_circumference_cm ? `${child.latest_nutrition.head_circumference_cm} cm` : "-" },
   ];
 
   const statusGizi = [
-    { label: "Berat Badan / Umur", value: "Normal", zs: "0.5" },
-    { label: "Tinggi Badan / Umur", value: "Normal", zs: "0.2" },
-    { label: "Berat Badan / Tinggi Badan", value: "Normal", zs: "0.3" },
-    { label: "Naik Berat Badan", value: "Ya (N)" },
+    { label: "Status Gizi", value: child.latest_nutrition?.nutrition_status ? child.latest_nutrition.nutrition_status.toUpperCase() : "-", zs: null },
   ];
 
   const programPemantauan = [
-    { label: "Jumlah Vitamin A", value: "1 Kapsul Biru" },
-    { label: "KPSP", value: "Sesuai" },
-    { label: "Buku KIA", value: "Memiliki" },
-    { label: "Kelas Ibu Balita", value: "Mengikuti" },
-    { label: "MBG (Makan Bergizi Gratis)", value: "Ya" },
-    { label: "Detail Tambahan", value: "Kondisi umum sangat baik, aktif bergerak." },
+    { label: "Pemberian Vitamin", value: child.latest_vitamin ? `Diberikan (Bulan ${child.latest_vitamin.distribution_period} ${child.latest_vitamin.distribution_year})` : "-" },
+    { label: "KPSP", value: "-" },
+    { label: "Buku KIA", value: "-" },
+    { label: "Kelas Ibu Balita", value: "-" },
+    { label: "MBG (Makan Bergizi Gratis)", value: "-" },
   ];
 
   return (
