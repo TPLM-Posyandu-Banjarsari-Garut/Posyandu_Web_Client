@@ -21,7 +21,17 @@ function getErrorMessage(error: unknown): string {
     if (!error.response) {
       return "Tidak dapat terhubung ke server. Pastikan koneksi internet aktif dan coba lagi.";
     }
-    const data = error.response.data as { message?: string; error?: string } | undefined;
+    const data = error.response.data as { message?: string; error?: string; code?: string } | undefined;
+    
+    // Check for "User already exists" error from better-auth
+    if (
+      data?.code === "USER_ALREADY_EXISTS" || 
+      data?.message?.toLowerCase().includes("already exists") ||
+      data?.error?.toLowerCase().includes("already exists")
+    ) {
+      return "Email sudah terdaftar. Gunakan email lain.";
+    }
+
     return data?.message ?? data?.error ?? "Terjadi kesalahan saat pendaftaran";
   }
   if (error instanceof Error) {
@@ -32,7 +42,7 @@ function getErrorMessage(error: unknown): string {
 
 export function useRegisterOrangTua() {
   const router = useRouter();
-  
+
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [apiError, setApiError] = useState("");
@@ -82,7 +92,7 @@ export function useRegisterOrangTua() {
           setShowSuccess(true);
           // Set session storage item for OTP page to know which email to verify
           sessionStorage.setItem("verify_email", data.email);
-          
+
           setTimeout(() => {
             router.push("/orangtua/otp");
           }, 1500);
