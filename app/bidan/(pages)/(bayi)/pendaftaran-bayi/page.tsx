@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useGetMidwifeProfile } from "@/hooks/query/midwife/useMidwifeProfile";
 import { useCreateChild } from "@/hooks/query/child/useManageChildren";
+import { useGetUsers } from "@/hooks/query/userAdmin/UseManageUsers";
+import { useGetPosyandus } from "@/hooks/query/posyandu/useManagePosyandu";
 import { CreateChildPayload } from "@/interfaces/child";
 import axios from "axios";
 
 interface ChildFormInputs {
+  posyandu_id: string;
   name: string;
   identity_number: string;
-  gender: "L" | "P" | "";
+  gender: "male" | "female" | "";
   birth_date: string;
   place_of_birth: string;
   birth_order: string;
@@ -23,7 +26,7 @@ interface ChildFormInputs {
   child_category: string;
   // Visual-only fields (or metadata for logs)
   mother_name?: string;
-  father_name?: string;
+  mother_id?: string;
   address?: string;
 }
 
@@ -31,6 +34,21 @@ export default function PendaftaranBayi() {
   const router = useRouter();
   const [apiError, setApiError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+
+  const [motherSearch, setMotherSearch] = useState("");
+  const [showMotherDropdown, setShowMotherDropdown] = useState(false);
+
+  // Fetch parent users for mother search
+  const { data: motherUsersData, isLoading: isMotherLoading } = useGetUsers({
+    role: "parent",
+    search: motherSearch || undefined,
+    limit: 10,
+  });
+
+  // Fetch all posyandus for dropdown selection
+  const { data: posyandusData, isLoading: isPosyandusLoading } = useGetPosyandus({
+    limit: 100,
+  });
 
   // Load Midwife profile to get posyandu_id
   const { data: midwife, isLoading: isMidwifeLoading } = useGetMidwifeProfile();
@@ -46,6 +64,7 @@ export default function PendaftaranBayi() {
     formState: { errors },
   } = useForm<ChildFormInputs>({
     defaultValues: {
+      posyandu_id: "",
       name: "",
       identity_number: "",
       gender: "",
@@ -58,28 +77,36 @@ export default function PendaftaranBayi() {
       birth_head_circumference: "",
       child_category: "toddler",
       mother_name: "",
-      father_name: "",
+      mother_id: "",
       address: "",
     },
   });
 
+  // Set default posyandu_id once midwife profile is loaded
+  useEffect(() => {
+    if (midwife?.posyandu_id) {
+      setValue("posyandu_id", midwife.posyandu_id);
+    }
+  }, [midwife, setValue]);
+
   const selectedGender = watch("gender");
   const selectedBloodType = watch("blood_type");
   const birthDateValue = watch("birth_date");
+  const motherNameValue = watch("mother_name");
 
   const onSubmit = handleSubmit((data) => {
-    if (!midwife?.posyandu_id) {
-      setApiError("ID Posyandu Bidan tidak terdeteksi. Silakan coba masuk kembali.");
+    if (!data.posyandu_id) {
+      setApiError("Posyandu wajib dipilih.");
       return;
     }
 
     setApiError("");
 
     const payload: CreateChildPayload = {
-      posyandu_id: midwife.posyandu_id,
+      posyandu_id: data.posyandu_id,
       name: data.name,
       identity_number: data.identity_number,
-      gender: data.gender as "L" | "P",
+      gender: data.gender as "male" | "female",
       birth_date: data.birth_date ? data.birth_date : null,
       place_of_birth: data.place_of_birth || null,
       birth_order: data.birth_order ? parseInt(data.birth_order) : null,
@@ -90,6 +117,7 @@ export default function PendaftaranBayi() {
         ? parseFloat(data.birth_head_circumference).toFixed(2)
         : null,
       child_category: data.child_category || null,
+      parent_user_id: data.mother_id || null,
     };
 
     createMutation.mutate(payload, {
@@ -102,8 +130,35 @@ export default function PendaftaranBayi() {
       onError: (err: any) => {
         let msg = "Gagal mendaftarkan data bayi.";
         if (axios.isAxiosError(err)) {
-          const resData = err.response?.data as { message?: string } | undefined;
-          msg = resData?.message || msg;
+          const resData = err.response?.data as 
+            | { message?: string; errors?: Record<string, string[]> } 
+            | undefined;
+          
+          if (resData?.errors) {
+            const errorDetails = Object.entries(resData.errors)
+              .map(([field, msgs]) => {
+                const IndonesianFieldNames: Record<string, string> = {
+                  posyandu_id: "Posyandu",
+                  name: "Nama Lengkap",
+                  identity_number: "NIK",
+                  gender: "Jenis Kelamin",
+                  birth_date: "Tanggal Lahir",
+                  place_of_birth: "Tempat Lahir",
+                  birth_order: "Anak Ke-",
+                  blood_type: "Gol. Darah",
+                  birth_weight: "BB Lahir",
+                  birth_length: "TB Lahir",
+                  birth_head_circumference: "LK Lahir",
+                  child_category: "Kategori Anak"
+                };
+                const fieldName = IndonesianFieldNames[field] || field;
+                return `${fieldName}: ${msgs.join(", ")}`;
+              })
+              .join(", ");
+            msg = `${resData.message} (${errorDetails})`;
+          } else {
+            msg = resData?.message || msg;
+          }
         } else if (err instanceof Error) {
           msg = err.message;
         }
@@ -168,6 +223,28 @@ export default function PendaftaranBayi() {
               </h2>
               
               <div className="space-y-4">
+
+                {/* Pilih Posyandu */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">
+                    Posyandu <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    {...register("posyandu_id", { required: "Posyandu wajib dipilih" })}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all font-semibold text-slate-700"
+                  >
+                    <option value="">Pilih Posyandu</option>
+                    {isPosyandusLoading ? (
+                      <option disabled>Memuat daftar posyandu...</option>
+                    ) : (
+                      posyandusData?.data.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
                 
                 {/* Nama Lengkap */}
                 <div>
@@ -199,6 +276,10 @@ export default function PendaftaranBayi() {
                         value: 16,
                         message: "NIK maksimal 16 karakter",
                       },
+                      pattern: {
+                        value: /^\d+$/,
+                        message: "NIK harus berupa angka saja",
+                      },
                     })}
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all font-semibold"
                     placeholder="16 digit NIK"
@@ -217,8 +298,8 @@ export default function PendaftaranBayi() {
                       className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all font-semibold text-slate-700"
                     >
                       <option value="">Pilih</option>
-                      <option value="L">Laki-laki</option>
-                      <option value="P">Perempuan</option>
+                      <option value="male">Laki-laki</option>
+                      <option value="female">Perempuan</option>
                     </select>
                   </div>
 
@@ -272,7 +353,13 @@ export default function PendaftaranBayi() {
                     </label>
                     <input
                       type="number"
-                      {...register("birth_order")}
+                      min="1"
+                      {...register("birth_order", {
+                        min: {
+                          value: 1,
+                          message: "Anak Ke- harus minimal 1",
+                        },
+                      })}
                       className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all font-semibold"
                       placeholder="1"
                     />
@@ -287,7 +374,12 @@ export default function PendaftaranBayi() {
                     </label>
                     <input
                       type="text"
-                      {...register("birth_weight")}
+                      {...register("birth_weight", {
+                        pattern: {
+                          value: /^\d{1,3}(\.\d{1,2})?$/,
+                          message: "Format BB Lahir tidak valid (contoh: 3.25 atau 10)",
+                        },
+                      })}
                       className="w-full px-3 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all font-semibold"
                       placeholder="kg"
                     />
@@ -298,7 +390,12 @@ export default function PendaftaranBayi() {
                     </label>
                     <input
                       type="text"
-                      {...register("birth_length")}
+                      {...register("birth_length", {
+                        pattern: {
+                          value: /^\d{1,3}(\.\d{1,2})?$/,
+                          message: "Format TB Lahir tidak valid (contoh: 50.5 atau 48)",
+                        },
+                      })}
                       className="w-full px-3 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all font-semibold"
                       placeholder="cm"
                     />
@@ -309,7 +406,12 @@ export default function PendaftaranBayi() {
                     </label>
                     <input
                       type="text"
-                      {...register("birth_head_circumference")}
+                      {...register("birth_head_circumference", {
+                        pattern: {
+                          value: /^\d{1,3}(\.\d{1,2})?$/,
+                          message: "Format LK Lahir tidak valid (contoh: 34.2)",
+                        },
+                      })}
                       className="w-full px-3 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all font-semibold"
                       placeholder="cm"
                     />
@@ -350,7 +452,7 @@ export default function PendaftaranBayi() {
             </div>
 
             {/* 2. Data Orang Tua (Metadata / Form support) */}
-            <div className="bg-white p-5 rounded-[1.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100">
+            <div className="bg-white p-5 rounded-[1.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100 relative">
               <h2 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs">
                   2
@@ -358,28 +460,111 @@ export default function PendaftaranBayi() {
                 Data Orang Tua
               </h2>
               <div className="space-y-4">
-                <div>
+                
+                {/* Nama Ibu */}
+                <div className="relative">
                   <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">
                     Nama Ibu
                   </label>
-                  <input
-                    type="text"
-                    {...register("mother_name")}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-sm transition-all font-semibold"
-                    placeholder="Nama Ibu Kandung"
-                  />
+                  
+                  {/* Dropdown Toggle Trigger Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMotherDropdown(true);
+                      setMotherSearch("");
+                    }}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-sm transition-all font-semibold text-left flex justify-between items-center"
+                  >
+                    <span className={motherNameValue ? "text-slate-800" : "text-slate-400"}>
+                      {motherNameValue || "Pilih Ibu Kandung"}
+                    </span>
+                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Backdrop to close dropdown when clicking outside */}
+                  {showMotherDropdown && (
+                    <div 
+                      className="fixed inset-0 z-20 cursor-default" 
+                      onClick={() => setShowMotherDropdown(false)}
+                    />
+                  )}
+
+                  {/* Dropdown Card */}
+                  {showMotherDropdown && (
+                    <div className="absolute left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 p-3 z-30 flex flex-col gap-2 max-h-60 overflow-hidden">
+                      {/* Search Bar inside Dropdown */}
+                      <div className="relative shrink-0">
+                        <input
+                          type="text"
+                          value={motherSearch}
+                          onChange={(e) => setMotherSearch(e.target.value)}
+                          placeholder="Cari nama ibu..."
+                          className="w-full pl-9 pr-4 py-2 rounded-lg bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-xs font-semibold"
+                          autoFocus
+                        />
+                        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Parent Users List Container */}
+                      <div className="overflow-y-auto custom-scrollbar flex-1 space-y-1 pr-1">
+                        {isMotherLoading ? (
+                          <div className="py-4 text-center text-xs font-semibold text-slate-400 flex justify-center items-center gap-1.5">
+                            <svg className="animate-spin h-3.5 w-3.5 text-purple-600" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            Mencari...
+                          </div>
+                        ) : motherUsersData?.data && motherUsersData.data.length > 0 ? (
+                          motherUsersData.data.map((user) => (
+                            <button
+                              key={user.id}
+                              type="button"
+                              onClick={() => {
+                                setValue("mother_name", user.name);
+                                setValue("mother_id", user.id);
+                                setShowMotherDropdown(false);
+                              }}
+                              className="w-full px-3 py-2 rounded-lg text-left hover:bg-purple-50 text-xs font-semibold transition-colors flex flex-col gap-0.5"
+                            >
+                              <span className="text-slate-800 font-bold">{user.name}</span>
+                              <span className="text-slate-400 text-[10px]">{user.email}</span>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="py-4 text-center text-xs font-semibold text-slate-400">
+                            Orang tua tidak ditemukan
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Clear Button */}
+                      {motherNameValue && (
+                        <div className="border-t border-slate-100 pt-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setValue("mother_name", "");
+                              setValue("mother_id", "");
+                              setShowMotherDropdown(false);
+                            }}
+                            className="w-full py-1.5 text-center text-xs font-bold text-rose-600 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors"
+                          >
+                            Hapus Pilihan
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-1">
-                    Nama Ayah
-                  </label>
-                  <input
-                    type="text"
-                    {...register("father_name")}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-sm transition-all font-semibold"
-                    placeholder="Nama Ayah Kandung"
-                  />
-                </div>
+
               </div>
             </div>
 

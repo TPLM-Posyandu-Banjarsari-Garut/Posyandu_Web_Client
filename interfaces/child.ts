@@ -3,7 +3,7 @@ export interface Child {
   posyandu_id: string;
   name: string;
   identity_number: string;
-  gender: "L" | "P";
+  gender: "male" | "female";
   child_category?: string | null;
   place_of_birth?: string | null;
   birth_date?: string | null;
@@ -14,13 +14,15 @@ export interface Child {
   birth_head_circumference?: string | null;
   created_at?: string;
   updated_at?: string;
+  mother_name?: string | null;
+  parent_user_id?: string | null;
 }
 
 export interface CreateChildPayload {
   posyandu_id: string;
   name: string;
   identity_number: string;
-  gender: "L" | "P";
+  gender: "male" | "female";
   child_category?: string | null;
   place_of_birth?: string | null;
   birth_date?: string | null;
@@ -29,4 +31,6 @@ export interface CreateChildPayload {
   birth_weight?: string | null;
   birth_length?: string | null;
   birth_head_circumference?: string | null;
+  parent_user_id?: string | null;
+  mother_name?: string | null;
 }

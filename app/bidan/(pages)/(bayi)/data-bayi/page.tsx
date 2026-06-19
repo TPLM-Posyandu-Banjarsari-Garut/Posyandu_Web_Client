@@ -5,26 +5,50 @@ import Link from "next/link";
 import BottombarBidan from "@/components/ui/bottombar/bidan/BottombarBidan";
 import { useGetMidwifeProfile } from "@/hooks/query/midwife/useMidwifeProfile";
 import { useGetChildren } from "@/hooks/query/child/useManageChildren";
+import axios from "axios";
 
 export default function DataBayi() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Debounce search query
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
+      setCurrentPage(1); // Reset page to 1 on search change
     }, 450);
     return () => clearTimeout(handler);
   }, [search]);
 
   // Load Midwife's profile to resolve posyandu_id
-  const { data: midwife, isLoading: isMidwifeLoading } = useGetMidwifeProfile();
+  const { data: midwife, isLoading: isMidwifeLoading, error: midwifeError } = useGetMidwifeProfile();
 
   // Load children under this posyandu
-  const { data: response, isLoading: isChildrenLoading } = useGetChildren({
-    posyandu_id: midwife?.posyandu_id,
+  const { data: response, isLoading: isChildrenLoading, error: childrenError } = useGetChildren({
+    posyandu_id: midwife?.posyandu_id || "",
     search: debouncedSearch,
+    page: currentPage,
+    limit: 5,
+  });
+
+  const getErrorMessage = (err: any) => {
+    if (!err) return "";
+    if (axios.isAxiosError(err)) {
+      return (err.response?.data as { message?: string })?.message || err.message;
+    }
+    return err.message || "Terjadi kesalahan";
+  };
+
+  const apiError = getErrorMessage(midwifeError) || getErrorMessage(childrenError);
+
+  console.log("data-bayi debug:", {
+    midwife,
+    isMidwifeLoading,
+    midwifeError: midwifeError ? { message: midwifeError.message, response: (midwifeError as any).response?.data } : null,
+    response,
+    isChildrenLoading,
+    childrenError: childrenError ? { message: childrenError.message, response: (childrenError as any).response?.data } : null,
   });
 
   const childrenList = response?.data?.data || [];
@@ -47,8 +71,8 @@ export default function DataBayi() {
     return `${months} Bulan`;
   };
 
-  const formatGender = (gender: "L" | "P") => {
-    return gender === "L" ? "Laki-laki" : "Perempuan";
+  const formatGender = (gender: "male" | "female") => {
+    return gender === "male" ? "Laki-laki" : "Perempuan";
   };
 
   const isLoading = isMidwifeLoading || isChildrenLoading;
@@ -75,8 +99,23 @@ export default function DataBayi() {
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar bg-slate-50">
           
+          {apiError && (
+            <div className="bg-rose-50 border border-rose-100 text-rose-700 text-xs font-bold p-4 rounded-2xl flex items-center gap-3 mb-6 shadow-sm">
+              <div className="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <span>{apiError}</span>
+            </div>
+          )}
+
           {/* Search Bar */}
-          <div className="mb-6 relative">
+          <div className="mb-3 relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -89,6 +128,35 @@ export default function DataBayi() {
               className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)]"
               placeholder="Cari nama atau NIK bayi..."
             />
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage <= 1 || isLoading}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-white border border-slate-200 rounded-[1.25rem] text-xs font-extrabold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white disabled:cursor-not-allowed transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] cursor-pointer"
+            >
+              <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+              </svg>
+              Sebelumnya
+            </button>
+            
+            <span className="text-xs font-extrabold text-slate-500 whitespace-nowrap">
+              Hal. {currentPage} dari {response?.data?.meta?.total_pages || 1}
+            </span>
+
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, response?.data?.meta?.total_pages || 1))}
+              disabled={currentPage >= (response?.data?.meta?.total_pages || 1) || isLoading}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-white border border-slate-200 rounded-[1.25rem] text-xs font-extrabold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white disabled:cursor-not-allowed transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)] cursor-pointer"
+            >
+              Selanjutnya
+              <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
 
           <div className="flex flex-col gap-4">
