@@ -3,45 +3,39 @@
 import BottombarKader from '@/components/ui/bottombar/kader/BottombarKader';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useGetInventories, useDeleteInventory } from '@/hooks/query/inventory/useManageInventories';
+import { InventoryItemType, InventoryCondition, Inventory } from '@/interfaces/inventory';
 
-// Define TS Interface for Inventory Item
-interface InventarisItem {
-    id: number;
-    nama: string;
-    kategori: 'vaksin' | 'barang' | 'makanan';
-    stok: number;
-    status: 'Tersedia' | 'Tidak Tersedia';
-}
-
-export default function DataInventaris() {
-    // Dummy Data
-    const [inventarisList] = useState<InventarisItem[]>([
-        { id: 1, nama: 'Vaksin BCG (Tuberkulosis)', kategori: 'vaksin', stok: 45, status: 'Tersedia' },
-        { id: 2, nama: 'Timbangan Bayi Digital', kategori: 'barang', stok: 3, status: 'Tersedia' },
-        { id: 3, nama: 'PMT Biskuit Balita', kategori: 'makanan', stok: 120, status: 'Tersedia' },
-        { id: 4, nama: 'Vaksin DPT-HB-Hib', kategori: 'vaksin', stok: 0, status: 'Tidak Tersedia' },
-        { id: 5, nama: 'Pita Pengukur LILA', kategori: 'barang', stok: 15, status: 'Tersedia' },
-        { id: 6, nama: 'Vitamin A Merah (200.000 IU)', kategori: 'makanan', stok: 85, status: 'Tersedia' },
-        { id: 7, nama: 'Vaksin Polio (OPV)', kategori: 'vaksin', stok: 0, status: 'Tidak Tersedia' },
-        { id: 8, nama: 'Alat Ukur Tinggi Badan (Microtoise)', kategori: 'barang', stok: 2, status: 'Tersedia' },
-        { id: 9, nama: 'Vitamin A Biru (100.000 IU)', kategori: 'makanan', stok: 8, status: 'Tersedia' }, // Low stock sample
-    ]);
-
+export default function DataInventarisKader() {
     // Search and Filter State
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('semua');
+    const [page, setPage] = useState(1);
+    const limit = 10;
 
-    // Filter Logic
-    const filteredInventaris = inventarisList.filter((item) => {
-        const matchesSearch = item.nama.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = selectedCategory === 'semua' || item.kategori === selectedCategory;
-        return matchesSearch && matchesCategory;
-    });
+    const queryParams: any = { page, limit, search: searchTerm || undefined };
+    if (selectedCategory !== 'semua') {
+        queryParams.item_type = selectedCategory as InventoryItemType;
+    }
+
+    const { data: response, isLoading } = useGetInventories(queryParams);
+    // Backend returns { success, message, data: { data: [], meta: {} } } because of ApiResponse.ok
+    const inventarisList = (response?.data as any)?.data || [];
+    const meta = (response?.data as any)?.meta;
+    const totalPages = meta?.totalPages || 1;
+
+    const deleteMutation = useDeleteInventory();
+
+    const handleDelete = (id: string, name: string) => {
+        if (confirm(`Apakah Anda yakin ingin menghapus inventaris "${name}"?`)) {
+            deleteMutation.mutate({ id });
+        }
+    };
 
     // Helper functions for badges and icons based on category
     const getCategoryStyles = (category: string) => {
         switch (category) {
-            case 'vaksin':
+            case 'vaccine':
                 return {
                     bg: 'bg-purple-50 text-purple-700 border-purple-100',
                     label: 'Vaksin',
@@ -51,33 +45,24 @@ export default function DataInventaris() {
                         </svg>
                     )
                 };
-            case 'barang':
-                return {
-                    bg: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-                    label: 'Barang',
-                    icon: (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                        </svg>
-                    )
-                };
-            case 'makanan':
+            case 'vitamin':
                 return {
                     bg: 'bg-amber-50 text-amber-700 border-amber-100',
-                    label: 'Makanan',
+                    label: 'Vitamin',
                     icon: (
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
                         </svg>
                     )
                 };
+            case 'general':
             default:
                 return {
-                    bg: 'bg-slate-50 text-slate-700 border-slate-100',
-                    label: 'Lainnya',
+                    bg: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+                    label: 'Barang',
                     icon: (
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4M8 4h8l-1 1v5" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                         </svg>
                     )
                 };
@@ -101,7 +86,7 @@ export default function DataInventaris() {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto px-6 pt-6 pb-28 bg-slate-50">
+                <div className="flex-1 overflow-y-auto px-6 pt-6 pb-28 custom-scrollbar bg-slate-50">
                     
                     {/* Search & Filter Container */}
                     <div className="flex flex-col gap-3 mb-6">
@@ -115,7 +100,7 @@ export default function DataInventaris() {
                             <input
                                 type="text"
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
                                 className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)]"
                                 placeholder="Cari nama item inventaris..."
                             />
@@ -130,13 +115,13 @@ export default function DataInventaris() {
                             </div>
                             <select
                                 value={selectedCategory}
-                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
                                 className="w-full pl-11 pr-10 py-3 bg-white border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)]"
                             >
                                 <option value="semua">Semua Kategori</option>
-                                <option value="vaksin">Vaksin</option>
-                                <option value="barang">Barang</option>
-                                <option value="makanan">Makanan</option>
+                                <option value="vaccine">Vaksin</option>
+                                <option value="general">Barang</option>
+                                <option value="vitamin">Vitamin</option>
                             </select>
                             <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                                 <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,12 +131,36 @@ export default function DataInventaris() {
                         </div>
                     </div>
 
+                    {/* Pagination */}
+                    <div className="flex justify-between items-center mb-4">
+                        <button 
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors shadow-sm"
+                        >
+                            Sebelumnnya
+                        </button>
+                        <span className="text-sm font-medium text-slate-500">
+                            Hal {page} dari {totalPages || 1}
+                        </span>
+                        <button 
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page >= totalPages}
+                            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors shadow-sm"
+                        >
+                            Selanjutnya
+                        </button>
+                    </div>
+
                     {/* Inventory Stack */}
                     <div className="flex flex-col gap-4">
-                        {filteredInventaris.length > 0 ? (
-                            filteredInventaris.map((item) => {
-                                const cat = getCategoryStyles(item.kategori);
-                                const isOut = item.stok === 0;
+                        {isLoading ? (
+                            <div className="text-center py-10 text-slate-500 text-sm">Memuat data...</div>
+                        ) : inventarisList.length > 0 ? (
+                            inventarisList.map((item: Inventory) => {
+                                const cat = getCategoryStyles(item.item_type);
+                                const isOut = item.quantity === 0 || item.condition === 'out_of_stock';
+                                const isAvailable = item.quantity > 0 && item.condition !== 'out_of_stock';
 
                                 return (
                                     <div
@@ -165,11 +174,26 @@ export default function DataInventaris() {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <h2 className="text-sm font-bold text-slate-800 leading-tight mb-1 break-words">
-                                                    {item.nama}
+                                                    {item.item_name}
                                                 </h2>
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${cat.bg}`}>
                                                     {cat.label}
                                                 </span>
+                                                {item.condition === 'major_damage' && (
+                                                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider bg-rose-50 text-rose-700 border-rose-100">
+                                                        Rusak Berat
+                                                    </span>
+                                                )}
+                                                {item.condition === 'minor_damage' && (
+                                                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider bg-amber-50 text-amber-700 border-amber-100">
+                                                        Rusak Ringan
+                                                    </span>
+                                                )}
+                                                {item.condition === 'under_repair' && (
+                                                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider bg-blue-50 text-blue-700 border-blue-100">
+                                                        Diperbaiki
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
 
@@ -181,7 +205,7 @@ export default function DataInventaris() {
                                                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">
                                                     Status
                                                 </span>
-                                                {item.status === 'Tersedia' ? (
+                                                {isAvailable ? (
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/50">
                                                         Tersedia
                                                     </span>
@@ -204,19 +228,28 @@ export default function DataInventaris() {
                                                     <span className={`text-sm font-extrabold ${
                                                         isOut ? 'text-rose-600' : 'text-slate-700'
                                                     }`}>
-                                                        {item.stok}
+                                                        {item.quantity}
                                                     </span>
-                                                    <span className="text-xs text-slate-500 font-medium">pcs</span>
+                                                    <span className="text-xs text-slate-500 font-medium">{item.unit}</span>
                                                 </div>
                                             </div>
 
-                                            {/* Action Button */}
-                                            <Link 
-                                                href={`/kader/edit-inventaris?id=${item.id}`} 
-                                                className="bg-slate-200/60 text-slate-700 hover:bg-slate-200 active:scale-95 text-xs font-bold px-3 py-2 rounded-xl transition-all"
-                                            >
-                                                Edit
-                                            </Link>
+                                            {/* Actions */}
+                                            <div className="flex gap-2">
+                                                <Link 
+                                                    href={`/kader/edit-inventaris/${item.id}`} 
+                                                    className="bg-amber-50 text-amber-600 hover:bg-amber-100 active:scale-95 text-xs font-bold px-3 py-2 rounded-xl transition-all"
+                                                >
+                                                    Edit
+                                                </Link>
+                                                <button
+                                                    onClick={() => handleDelete(item.id, item.item_name)}
+                                                    disabled={deleteMutation.isPending && deleteMutation.variables?.id === item.id}
+                                                    className="bg-rose-50 text-rose-600 hover:bg-rose-100 active:scale-95 text-xs font-bold px-3 py-2 rounded-xl transition-all disabled:opacity-50"
+                                                >
+                                                    {deleteMutation.isPending && deleteMutation.variables?.id === item.id ? 'Menghapus...' : 'Hapus'}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 );

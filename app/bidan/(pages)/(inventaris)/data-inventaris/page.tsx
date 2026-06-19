@@ -4,7 +4,7 @@ import BottombarBidan from '@/components/ui/bottombar/bidan/BottombarBidan';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useGetInventories, useDeleteInventory } from '@/hooks/query/inventory/useManageInventories';
-import { InventoryItemType, InventoryCondition } from '@/interfaces/inventory';
+import { InventoryItemType, InventoryCondition, Inventory } from '@/interfaces/inventory';
 
 export default function DataInventaris() {
     // Search and Filter State
@@ -157,7 +157,7 @@ export default function DataInventaris() {
                         {isLoading ? (
                             <div className="text-center py-10 text-slate-500 text-sm">Memuat data...</div>
                         ) : inventarisList.length > 0 ? (
-                            inventarisList.map((item) => {
+                            inventarisList.map((item: Inventory) => {
                                 const cat = getCategoryStyles(item.item_type);
                                 const isOut = item.quantity === 0 || item.condition === 'out_of_stock';
                                 const isAvailable = item.quantity > 0 && item.condition !== 'out_of_stock';

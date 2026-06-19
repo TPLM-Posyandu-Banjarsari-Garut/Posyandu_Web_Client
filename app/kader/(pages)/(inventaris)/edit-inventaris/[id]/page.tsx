@@ -1,11 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useCreateInventory } from '@/hooks/query/inventory/useManageInventories';
-import { useGetCadreProfile } from '@/hooks/query/cadre/useCadreProfile';
+import { useGetInventoryById, useUpdateInventory } from '@/hooks/query/inventory/useManageInventories';
 import { InventoryItemType, InventoryCondition, InventoryUnit } from '@/interfaces/inventory';
 
 const textInputClassName =
@@ -25,15 +24,17 @@ interface InventoryFormValues {
     expiryDate: string;
 }
 
-export default function BuatDataInventarisKader() {
+export default function EditDataInventarisKader() {
     const router = useRouter();
+    const params = useParams();
+    const id = params.id as string;
 
-    const { data: profile } = useGetCadreProfile();
-    const posyandu_id = profile?.posyandu_id || '';
+    const { data: inventoryResponse, isLoading } = useGetInventoryById(id);
+    const inventory = inventoryResponse?.data;
 
-    const createInventoryMutation = useCreateInventory();
+    const updateInventoryMutation = useUpdateInventory();
 
-    const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<InventoryFormValues>({
+    const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<InventoryFormValues>({
         defaultValues: {
             nama: '',
             kategori: 'vaccine',
@@ -48,6 +49,21 @@ export default function BuatDataInventarisKader() {
 
     const [error, setError] = useState('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    useEffect(() => {
+        if (inventory) {
+            reset({
+                nama: inventory.item_name,
+                kategori: inventory.item_type,
+                unit: inventory.unit,
+                kondisi: inventory.condition,
+                stok: inventory.quantity,
+                deskripsi: inventory.description || '',
+                batchNumber: inventory.batch_number || '',
+                expiryDate: inventory.expiry_date ? new Date(inventory.expiry_date).toISOString().split('T')[0] : '',
+            });
+        }
+    }, [inventory, reset]);
 
     const stokWatch = watch('stok');
     const kondisiWatch = watch('kondisi');
@@ -64,21 +80,18 @@ export default function BuatDataInventarisKader() {
     const onSubmit = (data: InventoryFormValues) => {
         setError('');
 
-        if (!posyandu_id) {
-            setError('Data Posyandu belum dimuat. Silakan tunggu atau muat ulang halaman.');
-            return;
-        }
-
-        createInventoryMutation.mutate({
-            posyandu_id,
-            item_name: data.nama,
-            item_type: data.kategori,
-            quantity: data.stok === '' ? 0 : Number(data.stok),
-            unit: data.unit,
-            condition: data.kondisi,
-            description: data.deskripsi || undefined,
-            batch_number: data.batchNumber || undefined,
-            expiry_date: data.expiryDate || undefined,
+        updateInventoryMutation.mutate({
+            id: id,
+            payload: {
+                item_name: data.nama,
+                item_type: data.kategori,
+                quantity: data.stok === '' ? 0 : Number(data.stok),
+                unit: data.unit,
+                condition: data.kondisi,
+                description: data.deskripsi || undefined,
+                batch_number: data.batchNumber || undefined,
+                expiry_date: data.expiryDate || undefined,
+            }
         }, {
             onSuccess: () => {
                 setShowSuccessModal(true);
@@ -87,10 +100,35 @@ export default function BuatDataInventarisKader() {
                 }, 1500);
             },
             onError: (err: any) => {
-                setError(err?.response?.data?.message || err?.message || 'Gagal menyimpan data inventaris.');
+                setError(err?.response?.data?.message || err?.message || 'Gagal menyimpan perubahan.');
             }
         });
     };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
+                <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col justify-center items-center">
+                    <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
+                    <div className="text-slate-500 font-medium text-sm mt-3">Memuat form edit...</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!inventory && !isLoading) {
+        return (
+            <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
+                <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col justify-center items-center gap-4">
+                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div className="text-slate-800 font-bold text-lg">Inventaris Tidak Ditemukan</div>
+                    <Link href="/kader/data-inventaris" className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-[1.25rem] text-sm font-bold">Kembali ke Daftar</Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
@@ -104,7 +142,7 @@ export default function BuatDataInventarisKader() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
                             </svg>
                         </Link>
-                        <h1 className="text-xl font-bold text-slate-800">Buat Inventaris</h1>
+                        <h1 className="text-xl font-bold text-slate-800">Edit Inventaris</h1>
                     </div>
                 </div>
 
@@ -253,10 +291,10 @@ export default function BuatDataInventarisKader() {
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            disabled={createInventoryMutation.isPending}
+                            disabled={updateInventoryMutation.isPending}
                             className="mt-auto w-full bg-blue-600 text-white font-bold text-sm py-4 rounded-[1.25rem] hover:bg-blue-700 active:scale-95 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.3)] flex justify-center items-center gap-2 disabled:opacity-50"
                         >
-                            {createInventoryMutation.isPending ? (
+                            {updateInventoryMutation.isPending ? (
                                 <>
                                     <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -269,7 +307,7 @@ export default function BuatDataInventarisKader() {
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
                                     </svg>
-                                    <span>Simpan Inventaris</span>
+                                    <span>Simpan Perubahan</span>
                                 </>
                             )}
                         </button>
@@ -287,7 +325,7 @@ export default function BuatDataInventarisKader() {
                             </div>
                             <h2 className="text-base font-bold text-slate-800 mb-1">Berhasil Disimpan</h2>
                             <p className="text-xs text-slate-400 leading-normal">
-                                Data inventaris baru berhasil didaftarkan ke sistem.
+                                Perubahan data inventaris berhasil disimpan ke sistem.
                             </p>
                         </div>
                     </div>

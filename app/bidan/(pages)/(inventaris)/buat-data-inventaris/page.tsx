@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { useCreateInventory } from '@/hooks/query/inventory/useManageInventories';
 import { useGetMidwifeProfile } from '@/hooks/query/midwife/useMidwifeProfile';
 import { InventoryItemType, InventoryCondition, InventoryUnit } from '@/interfaces/inventory';
@@ -13,6 +14,17 @@ const textInputClassName =
 const selectClassName =
     'w-full min-w-0 max-w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all appearance-none';
 
+interface InventoryFormValues {
+    nama: string;
+    kategori: InventoryItemType;
+    unit: InventoryUnit;
+    kondisi: InventoryCondition;
+    stok: number | '';
+    deskripsi: string;
+    batchNumber: string;
+    expiryDate: string;
+}
+
 export default function BuatDataInventaris() {
     const router = useRouter();
 
@@ -22,31 +34,35 @@ export default function BuatDataInventaris() {
 
     const createInventoryMutation = useCreateInventory();
 
-    // Form states
-    const [nama, setNama] = useState('');
-    const [kategori, setKategori] = useState<InventoryItemType>('vaccine');
-    const [unit, setUnit] = useState<InventoryUnit>('pcs');
-    const [kondisi, setKondisi] = useState<InventoryCondition>('good');
-    const [stok, setStok] = useState<number | ''>('');
-    const [deskripsi, setDeskripsi] = useState('');
-    const [batchNumber, setBatchNumber] = useState('');
-    const [expiryDate, setExpiryDate] = useState('');
+    const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<InventoryFormValues>({
+        defaultValues: {
+            nama: '',
+            kategori: 'vaccine',
+            unit: 'pcs',
+            kondisi: 'good',
+            stok: '',
+            deskripsi: '',
+            batchNumber: '',
+            expiryDate: '',
+        }
+    });
 
-    // Validation & loading states
     const [error, setError] = useState('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+    const stokWatch = watch('stok');
+    const kondisiWatch = watch('kondisi');
+
     // Auto-update status based on stock count
     useEffect(() => {
-        if (stok === 0) {
-            setKondisi('out_of_stock');
-        } else if (stok !== '' && stok > 0 && kondisi === 'out_of_stock') {
-            setKondisi('good');
+        if (String(stokWatch) === '0') {
+            setValue('kondisi', 'out_of_stock');
+        } else if (stokWatch !== '' && Number(stokWatch) > 0 && kondisiWatch === 'out_of_stock') {
+            setValue('kondisi', 'good');
         }
-    }, [stok, kondisi]);
+    }, [stokWatch, kondisiWatch, setValue]);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const onSubmit = (data: InventoryFormValues) => {
         setError('');
 
         if (!posyandu_id) {
@@ -54,30 +70,16 @@ export default function BuatDataInventaris() {
             return;
         }
 
-        // Basic validation
-        if (!nama.trim()) {
-            setError('Nama item tidak boleh kosong');
-            return;
-        }
-        if (stok === '') {
-            setError('Jumlah stok tidak boleh kosong');
-            return;
-        }
-        if (stok < 0) {
-            setError('Jumlah stok tidak boleh negatif');
-            return;
-        }
-
         createInventoryMutation.mutate({
             posyandu_id,
-            item_name: nama,
-            item_type: kategori,
-            quantity: stok,
-            unit,
-            condition: kondisi,
-            description: deskripsi || undefined,
-            batch_number: batchNumber || undefined,
-            expiry_date: expiryDate || undefined,
+            item_name: data.nama,
+            item_type: data.kategori,
+            quantity: data.stok === '' ? 0 : Number(data.stok),
+            unit: data.unit,
+            condition: data.kondisi,
+            description: data.deskripsi || undefined,
+            batch_number: data.batchNumber || undefined,
+            expiry_date: data.expiryDate || undefined,
             managed_by_midwife_id,
         }, {
             onSuccess: () => {
@@ -110,7 +112,7 @@ export default function BuatDataInventaris() {
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar bg-slate-50 flex flex-col">
-                    <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 rounded-[1.5rem] border border-slate-100 bg-white p-6 shadow-[0_4px_15px_rgb(0,0,0,0.03)]">
+                    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col gap-5 rounded-[1.5rem] border border-slate-100 bg-white p-6 shadow-[0_4px_15px_rgb(0,0,0,0.03)]">
                         
                         {/* Error Alert */}
                         {error && (
@@ -127,11 +129,11 @@ export default function BuatDataInventaris() {
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Item</label>
                             <input
                                 type="text"
-                                value={nama}
-                                onChange={(e) => setNama(e.target.value)}
+                                {...register('nama', { required: 'Nama item tidak boleh kosong' })}
                                 className={textInputClassName}
                                 placeholder="Masukkan nama vaksin, alat, dll..."
                             />
+                            {errors.nama && <span className="text-[10px] font-bold text-rose-500">{errors.nama.message}</span>}
                         </div>
 
                         {/* Select Kategori & Unit */}
@@ -140,8 +142,7 @@ export default function BuatDataInventaris() {
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kategori</label>
                                 <div className="relative">
                                     <select
-                                        value={kategori}
-                                        onChange={(e) => setKategori(e.target.value as InventoryItemType)}
+                                        {...register('kategori')}
                                         className={selectClassName}
                                     >
                                         <option value="vaccine">Vaksin</option>
@@ -160,8 +161,7 @@ export default function BuatDataInventaris() {
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Satuan</label>
                                 <div className="relative">
                                     <select
-                                        value={unit}
-                                        onChange={(e) => setUnit(e.target.value as InventoryUnit)}
+                                        {...register('unit')}
                                         className={selectClassName}
                                     >
                                         <option value="pcs">Pcs</option>
@@ -184,12 +184,15 @@ export default function BuatDataInventaris() {
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Jumlah Stok</label>
                             <input
                                 type="number"
-                                value={stok}
-                                onChange={(e) => setStok(e.target.value === '' ? '' : parseInt(e.target.value))}
+                                {...register('stok', { 
+                                    required: 'Jumlah stok tidak boleh kosong',
+                                    min: { value: 0, message: 'Jumlah stok tidak boleh negatif' }
+                                })}
                                 className={textInputClassName}
                                 placeholder="Masukkan jumlah stok..."
                                 min="0"
                             />
+                            {errors.stok && <span className="text-[10px] font-bold text-rose-500">{errors.stok.message}</span>}
                         </div>
 
                         {/* Select Kondisi */}
@@ -197,10 +200,9 @@ export default function BuatDataInventaris() {
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kondisi</label>
                             <div className="relative">
                                 <select
-                                    value={kondisi}
-                                    onChange={(e) => setKondisi(e.target.value as InventoryCondition)}
+                                    {...register('kondisi')}
                                     className={selectClassName}
-                                    disabled={stok === 0}
+                                    disabled={String(stokWatch) === '0'}
                                 >
                                     <option value="good">Baik</option>
                                     <option value="minor_damage">Rusak Ringan</option>
@@ -214,7 +216,7 @@ export default function BuatDataInventaris() {
                                     </svg>
                                 </div>
                             </div>
-                            {stok === 0 && (
+                            {String(stokWatch) === '0' && (
                                 <p className="text-[10px] font-bold text-rose-500">
                                     * Kondisi otomatis diatur ke &quot;Habis&quot; karena stok kosong.
                                 </p>
@@ -227,8 +229,7 @@ export default function BuatDataInventaris() {
                         <div className="flex flex-col gap-2">
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Deskripsi Tambahan</label>
                             <textarea
-                                value={deskripsi}
-                                onChange={(e) => setDeskripsi(e.target.value)}
+                                {...register('deskripsi')}
                                 className={textInputClassName + ' min-h-[80px]'}
                                 placeholder="Opsional: Keterangan barang..."
                             />
@@ -239,15 +240,13 @@ export default function BuatDataInventaris() {
                             <div className="flex gap-2">
                                 <input
                                     type="text"
-                                    value={batchNumber}
-                                    onChange={(e) => setBatchNumber(e.target.value)}
+                                    {...register('batchNumber')}
                                     className={textInputClassName}
                                     placeholder="No. Batch"
                                 />
                                 <input
                                     type="date"
-                                    value={expiryDate}
-                                    onChange={(e) => setExpiryDate(e.target.value)}
+                                    {...register('expiryDate')}
                                     className={textInputClassName}
                                 />
                             </div>
