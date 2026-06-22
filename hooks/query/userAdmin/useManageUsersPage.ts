@@ -21,6 +21,16 @@ export interface CreateFormInputs {
   posyanduId?: string;
 }
 
+interface CustomError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
+
 // Helpers untuk memetakan role dari UI ke database
 export const roleMapToBackend = (feRole: string): BackendRole => {
   switch (feRole) {
@@ -140,7 +150,7 @@ export function useManageUsersPage() {
         onSuccess: () => {
           showToast("Status verifikasi berhasil diperbarui!");
         },
-        onError: (err: any) => {
+        onError: (err: CustomError) => {
           alert(err.response?.data?.message ?? err.message ?? "Gagal memperbarui status verifikasi");
         },
       }
@@ -154,7 +164,7 @@ export function useManageUsersPage() {
         onSuccess: () => {
           showToast("Akun berhasil dihapus");
         },
-        onError: (err: any) => {
+        onError: (err: CustomError) => {
           alert(err.response?.data?.message ?? err.message ?? "Gagal menghapus akun");
         },
       });
@@ -192,14 +202,15 @@ export function useManageUsersPage() {
             resetCreate();
             setIsModalOpen(false);
             showToast("Akun baru dan profil tugas berhasil dibuat!");
-          } catch (error: any) {
+          } catch (error) {
+            const err = error as CustomError;
             setFormError(
               "Akun dibuat, tetapi gagal mengasosiasikan Posyandu: " +
-              (error.response?.data?.message ?? error.message)
+              (err.response?.data?.message ?? err.message)
             );
           }
         },
-        onError: (err: any) => {
+        onError: (err: CustomError) => {
           setFormError(err.response?.data?.message ?? err.message ?? "Gagal membuat akun");
         },
       }

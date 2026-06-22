@@ -14,5 +14,9 @@ export async function loginBidan(
 }
 
 export async function logoutBidan(): Promise<void> {
-  await api.post("/api/auth/sign-out");
+  // Panggil Next.js API Route yang proper:
+  // 1. Hapus cache token dari validate-session layer
+  // 2. Sign-out server-side ke backend
+  // 3. Hapus cookie browser dengan bersih
+  await api.post("/api/auth/logout");
 }

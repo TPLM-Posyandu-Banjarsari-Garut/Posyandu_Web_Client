@@ -1,6 +1,7 @@
 import { adminApi } from "@/service/auth/adminAuthService";
 import { Posyandu } from "@/interfaces/posyandu";
-
+import { Midwife } from "@/interfaces/midwife";
+import { Cadre } from "@/interfaces/cadre";
 import { ApiResponse } from "@/interfaces/api";
 import {
   BackendRole,
@@ -63,8 +64,8 @@ export async function createMidwifeProfile(payload: {
   user_id: string;
   posyandu_id: string;
   status?: string;
-}): Promise<any> {
-  const { data } = await adminApi.post<ApiResponse<any>>("/api/midwifes", payload);
+}): Promise<Midwife> {
+  const { data } = await adminApi.post<ApiResponse<Midwife>>("/api/midwifes", payload);
   return data.data;
 }
 
@@ -72,7 +73,7 @@ export async function createCadreProfile(payload: {
   user_id: string;
   posyandu_id: string;
   status?: string;
-}): Promise<any> {
-  const { data } = await adminApi.post<ApiResponse<any>>("/api/cadres", payload);
+}): Promise<Cadre> {
+  const { data } = await adminApi.post<ApiResponse<Cadre>>("/api/cadres", payload);
   return data.data;
 }
