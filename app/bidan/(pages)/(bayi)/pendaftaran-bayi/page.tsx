@@ -51,7 +51,7 @@ export default function PendaftaranBayi() {
   });
 
   // Load Midwife profile to get posyandu_id
-  const { data: midwife, isLoading: isMidwifeLoading } = useGetMidwifeProfile();
+  const { data: midwife, isLoading: isMidwifeLoading, error: midwifeError } = useGetMidwifeProfile();
 
   // Create Child Mutation
   const createMutation = useCreateChild();
@@ -82,12 +82,21 @@ export default function PendaftaranBayi() {
     },
   });
 
-  // Set default posyandu_id once midwife profile is loaded
+  // Set default posyandu_id once midwife profile and posyandus list are loaded
   useEffect(() => {
-    if (midwife?.posyandu_id) {
+    if (midwife?.posyandu_id && posyandusData?.data && posyandusData.data.length > 0) {
       setValue("posyandu_id", midwife.posyandu_id);
     }
-  }, [midwife, setValue]);
+  }, [midwife, posyandusData, setValue]);
+
+  // Set API error if midwife profile fails to load
+  useEffect(() => {
+    if (midwifeError) {
+      setApiError(midwifeError.message || "Gagal memuat profil Bidan.");
+    }
+  }, [midwifeError]);
+
+
 
   const selectedGender = watch("gender");
   const selectedBloodType = watch("blood_type");
