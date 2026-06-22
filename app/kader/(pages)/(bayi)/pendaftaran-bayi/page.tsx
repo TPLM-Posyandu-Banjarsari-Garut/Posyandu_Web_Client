@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useCurrentUser } from "@/hooks/query/auth/useCurrentUser";
+import { useGetCadreProfile } from "@/hooks/query/cadre/useCadreProfile";
 import { useCreateChild } from "@/hooks/query/child/useManageChildren";
 import { useGetUsers } from "@/hooks/query/userAdmin/UseManageUsers";
-import { useGetPosyandus } from "@/hooks/query/posyandu/useManagePosyandu";
+import { useGetPosyandus, useGetPosyanduById } from "@/hooks/query/posyandu/useManagePosyandu";
 import { CreateChildPayload } from "@/interfaces/child";
 import axios from "axios";
 
@@ -53,6 +54,15 @@ export default function PendaftaranBayi() {
   // Load user profile
   const { data: user, isLoading: isUserLoading } = useCurrentUser();
 
+  // Load Cadre profile to get posyandu_id
+  const { data: cadre, isLoading: isCadreLoading, error: cadreError } = useGetCadreProfile();
+
+  // Fetch assigned posyandu details directly if cadre has one
+  const { data: assignedPosyandu } = useGetPosyanduById(
+    cadre?.posyandu_id || "",
+    !!cadre?.posyandu_id
+  );
+
   // Create Child Mutation
   const createMutation = useCreateChild();
 
@@ -82,7 +92,19 @@ export default function PendaftaranBayi() {
     },
   });
 
-  // Kader will select posyandu manually from the dropdown
+  // Set default posyandu_id once cadre profile is loaded
+  useEffect(() => {
+    if (cadre?.posyandu_id) {
+      setValue("posyandu_id", cadre.posyandu_id);
+    }
+  }, [cadre, setValue]);
+
+  // Set API error if cadre profile fails to load
+  useEffect(() => {
+    if (cadreError) {
+      setApiError(cadreError.message || "Gagal memuat profil Kader.");
+    }
+  }, [cadreError]);
 
   const selectedGender = watch("gender");
   const selectedBloodType = watch("blood_type");
@@ -122,7 +144,7 @@ export default function PendaftaranBayi() {
           router.push("/kader/data-bayi");
         }, 1500);
       },
-      onError: (err: any) => {
+      onError: (err: unknown) => {
         let msg = "Gagal mendaftarkan data bayi.";
         if (axios.isAxiosError(err)) {
           const resData = err.response?.data as
@@ -162,7 +184,7 @@ export default function PendaftaranBayi() {
     });
   });
 
-  const isPending = isUserLoading || createMutation.isPending;
+  const isPending = isUserLoading || isCadreLoading || createMutation.isPending;
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
@@ -225,19 +247,30 @@ export default function PendaftaranBayi() {
                     Posyandu <span className="text-rose-500">*</span>
                   </label>
                   <select
-                    className="w-full px-4 py-3 rounded-xl bg-slate-100 border border-slate-200 focus:outline-none text-sm transition-all font-semibold text-slate-500 pointer-events-none appearance-none"
+                    className={`w-full px-4 py-3 rounded-xl bg-slate-100 border border-slate-200 focus:outline-none text-sm transition-all font-semibold pointer-events-none appearance-none ${
+                      watch("posyandu_id") ? "text-slate-800" : "text-slate-400"
+                    }`}
                     tabIndex={-1}
                     {...register("posyandu_id", { required: "Posyandu wajib dipilih" })}
+                    value={watch("posyandu_id") || ""}
+                    onChange={(e) => setValue("posyandu_id", e.target.value)}
                   >
                     <option value="">Pilih Posyandu</option>
+                    {assignedPosyandu && (
+                      <option value={assignedPosyandu.id}>
+                        {assignedPosyandu.name}
+                      </option>
+                    )}
                     {isPosyandusLoading ? (
                       <option disabled>Memuat daftar posyandu...</option>
                     ) : (
-                      posyandusData?.data.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))
+                      posyandusData?.data
+                        ?.filter((p) => p.id !== cadre?.posyandu_id)
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))
                     )}
                   </select>
                 </div>

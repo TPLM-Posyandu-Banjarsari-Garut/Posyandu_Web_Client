@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { useGetMidwifeProfile } from "@/hooks/query/midwife/useMidwifeProfile";
 import { useCreateChild } from "@/hooks/query/child/useManageChildren";
 import { useGetUsers } from "@/hooks/query/userAdmin/UseManageUsers";
-import { useGetPosyandus } from "@/hooks/query/posyandu/useManagePosyandu";
+import { useGetPosyandus, useGetPosyanduById } from "@/hooks/query/posyandu/useManagePosyandu";
 import { CreateChildPayload } from "@/interfaces/child";
 import axios from "axios";
 
@@ -53,6 +53,12 @@ export default function PendaftaranBayi() {
   // Load Midwife profile to get posyandu_id
   const { data: midwife, isLoading: isMidwifeLoading, error: midwifeError } = useGetMidwifeProfile();
 
+  // Fetch assigned posyandu details directly if midwife has one
+  const { data: assignedPosyandu } = useGetPosyanduById(
+    midwife?.posyandu_id || "",
+    !!midwife?.posyandu_id
+  );
+
   // Create Child Mutation
   const createMutation = useCreateChild();
 
@@ -82,12 +88,12 @@ export default function PendaftaranBayi() {
     },
   });
 
-  // Set default posyandu_id once midwife profile and posyandus list are loaded
+  // Set default posyandu_id once midwife profile is loaded
   useEffect(() => {
-    if (midwife?.posyandu_id && posyandusData?.data && posyandusData.data.length > 0) {
+    if (midwife?.posyandu_id) {
       setValue("posyandu_id", midwife.posyandu_id);
     }
-  }, [midwife, posyandusData, setValue]);
+  }, [midwife, setValue]);
 
   // Set API error if midwife profile fails to load
   useEffect(() => {
@@ -95,8 +101,6 @@ export default function PendaftaranBayi() {
       setApiError(midwifeError.message || "Gagal memuat profil Bidan.");
     }
   }, [midwifeError]);
-
-
 
   const selectedGender = watch("gender");
   const selectedBloodType = watch("blood_type");
@@ -136,7 +140,7 @@ export default function PendaftaranBayi() {
           router.push("/bidan/data-bayi");
         }, 1500);
       },
-      onError: (err: any) => {
+      onError: (err: unknown) => {
         let msg = "Gagal mendaftarkan data bayi.";
         if (axios.isAxiosError(err)) {
           const resData = err.response?.data as 
@@ -239,19 +243,30 @@ export default function PendaftaranBayi() {
                     Posyandu <span className="text-rose-500">*</span>
                   </label>
                   <select
-                    className="w-full px-4 py-3 rounded-xl bg-slate-100 border border-slate-200 focus:outline-none text-sm transition-all font-semibold text-slate-500 pointer-events-none appearance-none"
+                    className={`w-full px-4 py-3 rounded-xl bg-slate-100 border border-slate-200 focus:outline-none text-sm transition-all font-semibold pointer-events-none appearance-none ${
+                      watch("posyandu_id") ? "text-slate-800" : "text-slate-400"
+                    }`}
                     tabIndex={-1}
                     {...register("posyandu_id", { required: "Posyandu wajib dipilih" })}
+                    value={watch("posyandu_id") || ""}
+                    onChange={(e) => setValue("posyandu_id", e.target.value)}
                   >
                     <option value="">Pilih Posyandu</option>
+                    {assignedPosyandu && (
+                      <option value={assignedPosyandu.id}>
+                        {assignedPosyandu.name}
+                      </option>
+                    )}
                     {isPosyandusLoading ? (
                       <option disabled>Memuat daftar posyandu...</option>
                     ) : (
-                      posyandusData?.data.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))
+                      posyandusData?.data
+                        ?.filter((p) => p.id !== midwife?.posyandu_id)
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))
                     )}
                   </select>
                 </div>

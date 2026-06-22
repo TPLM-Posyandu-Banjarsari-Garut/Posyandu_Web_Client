@@ -765,7 +765,7 @@ function DetailBayiContent() {
               {/* Bottom Action buttons */}
               <div className="flex flex-col gap-3 pb-10">
                 <Link
-                  href={`/kader/riwayat-imunisasi?bayiId=${child.id}`}
+                  href={`/kader/buat-data-imunisasi?bayiId=${child.id}`}
                   className="w-full bg-blue-600 text-white rounded-[1.25rem] py-4 font-bold shadow-[0_8px_20px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:-translate-y-0.5 transition-all text-center block text-sm"
                 >
                   Lihat / Input Riwayat Imunisasi

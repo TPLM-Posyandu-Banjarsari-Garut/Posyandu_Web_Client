@@ -165,7 +165,7 @@ export default function DetailBayi() {
                     </div>
 
                     <div className="flex flex-col gap-3 pb-10">
-                        <Link href="/orangtua/riwayat-imunisasi" className="w-full bg-blue-600 text-white rounded-[1.25rem] py-4 font-bold shadow-[0_8px_20px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:-translate-y-0.5 transition-all text-center">
+                        <Link href="/orangtua/buat-data-imunisasi?bayiId=1&nama=Ahmad%20Rafli" className="w-full bg-blue-600 text-white rounded-[1.25rem] py-4 font-bold shadow-[0_8px_20px_rgba(37,99,235,0.25)] hover:bg-blue-700 hover:-translate-y-0.5 transition-all text-center">
                             Lihat Riwayat Imunisasi
                         </Link>
                         <button className="w-full bg-white text-blue-600 border-[2.5px] border-blue-100 rounded-[1.25rem] py-3.5 font-bold hover:bg-blue-50 hover:border-blue-200 transition-colors">
