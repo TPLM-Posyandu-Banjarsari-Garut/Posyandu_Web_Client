@@ -4,60 +4,76 @@ import BottombarOrtu from '@/components/ui/bottombar/orangtua/BottombarOrtu';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
-
-interface EdukasiDetail {
-    id: number;
-    tema: string;
-    judul: string;
-    estimasiBaca: string;
-    kontenParagraf: string[];
-}
+import {
+    useGetOrangTuaEducationById,
+    useGetOrangTuaEducationCategories,
+} from '@/hooks/query/orangtua/useOrangTuaChildren';
+import axios from 'axios';
+import 'react-quill-new/dist/quill.snow.css';
 
 function BacaEdukasiContent() {
     const searchParams = useSearchParams();
-    const idParam = searchParams.get('id');
+    const idParam = searchParams.get('id') || "";
 
-    const edukasiDb: Record<number, EdukasiDetail> = {
-        1: {
-            id: 1,
-            tema: 'Kesehatan Ibu',
-            judul: 'Pentingnya Gizi Selama Kehamilan',
-            estimasiBaca: '4 menit baca',
-            kontenParagraf: [
-                'Selama masa kehamilan, kebutuhan nutrisi ibu hamil meningkat secara signifikan untuk mendukung tumbuh kembang janin secara optimal dan menjaga stamina ibu sendiri. Pemenuhan gizi yang seimbang merupakan faktor utama dalam mencegah risiko kelahiran prematur atau bayi lahir dengan berat badan rendah.',
-                'Salah satu nutrisi paling penting di trimester pertama adalah Asam Folat, yang sangat krusial untuk mencegah kelainan tabung saraf otak bayi. Ibu hamil dapat memenuhi kebutuhan ini dengan mengonsumsi sayuran berdaun hijau gelap seperti bayam, brokoli, serta buah sitrus dan kacang-kacangan secara rutin.',
-                'Selain itu, pemenuhan Zat Besi untuk memproduksi sel darah merah juga tidak kalah krusial agar terhindar dari anemia. Kalsium, Vitamin D, dan Asam Lemak Omega-3 dari susu, produk olahan keju, tahu, serta ikan salmon juga sangat direkomendasikan demi mendukung pembentukan tulang dan mengoptimalkan perkembangan sel otak janin.',
-                'Ibu hamil juga sangat disarankan untuk menerapkan pola makan sehat dengan porsi kecil namun sering demi meminimalkan mual. Cukupi kebutuhan hidrasi harian dengan minum minimal 2.5 liter air putih setiap hari, serta pastikan untuk menghindari makanan mentah, membatasi konsumsi kafein, dan mengonsumsi suplemen tambahan hanya sesuai petunjuk dokter kandungan atau bidan.'
-            ]
-        },
-        2: {
-            id: 2,
-            tema: 'Kesehatan Bayi',
-            judul: 'Jadwal Imunisasi Dasar Anak',
-            estimasiBaca: '5 menit baca',
-            kontenParagraf: [
-                'Imunisasi merupakan langkah preventif medis paling aman dan terbukti efektif untuk membangun kekebalan tubuh anak terhadap serangan kuman dan virus penyebab infeksi berat. Memberikan imunisasi secara lengkap dan tepat waktu sangat dianjurkan demi memastikan tumbuh kembang sang buah hati terproteksi maksimal.',
-                'Proses imunisasi dimulai langsung saat bayi lahir (usia 0 bulan) dengan suntikan Hepatitis B untuk mencegah kerusakan hati. Dilanjutkan pada umur 1 bulan dengan imunisasi BCG untuk mencegah tuberkulosis paru yang parah, dan imunisasi Polio tetes pertama agar terhindar dari kelumpuhan kaki yang permanen.',
-                'Pada masa usia 2 hingga 4 bulan, anak akan menerima rangkaian imunisasi kombinasi DPT-HB-Hib sebanyak tiga kali berturut-turut untuk membentenginya dari difteri, pertusis, tetanus, hepatitis B, meningitis, dan pneumonia. Selain itu, pada rentang usia ini juga diberikan imunisasi Polio tetes susulan, vaksin PCV, serta vaksin Rotavirus secara terjadwal.',
-                'Terakhir, pada fase usia 9 bulan, anak dijadwalkan menerima vaksin MR (Measles & Rubella) demi melindunginya dari campak dan rubella yang rentan memicu radang paru-paru hingga radang otak. Selaku orang tua, sangat disarankan untuk tetap tenang jika anak mengalami demam ringan setelah divaksin, cukup kompres air dingin dan berikan ASI lebih sering.'
-            ]
-        },
-        3: {
-            id: 3,
-            tema: 'Pola Asuh',
-            judul: 'Cara Mengatasi Anak Tantrum',
-            estimasiBaca: '3 menit baca',
-            kontenParagraf: [
-                'Tantrum merupakan fase perkembangan psikososial yang sangat wajar dialami oleh anak usia balita. Kondisi ini biasanya timbul karena ketidakmampuan anak dalam mengomunikasikan rasa frustrasi, rasa lelah, rasa lapar, ataupun kemauan mereka yang tidak terpenuhi menggunakan bahasa verbal secara lancar.',
-                'Langkah paling bijak saat mendapati anak sedang mengalami tantrum adalah dengan tetap tenang dan tidak terpancing ikut marah. Ketenangan emosi dari orang tua bertindak sebagai jangkar emosional yang sangat membantu anak untuk merasa aman dan segera menenangkan sistem sarafnya kembali.',
-                'Selama tantrum berlangsung, pastikan juga lingkungan sekitar anak dalam keadaan aman dari sudut meja yang tajam atau benda-benda pecah belah. Berikan validasi empati secara lembut, misalnya dengan menyatakan bahwa Anda memahami rasa kesal mereka, lalu tawarkan pelukan hangat setelah emosi histeris mereka berangsur-angsur mereda.',
-                'Sebaliknya, sangat penting untuk menghindari tindakan membentak, memukul fisik, atau justru membiarkan anak berlama-lama sendirian tanpa perhatian. Jangan pula tergesa-gesa menuruti segala keinginan awalnya hanya karena merasa malu dilihat orang sekitar, sebab hal ini akan mendidik anak bahwa tantrum adalah senjata ampuh untuk mengontrol kemauan orang tua.'
-            ]
-        }
+    const { data: educationResponse, isLoading, error } = useGetOrangTuaEducationById(idParam);
+    const { data: categoriesResponse } = useGetOrangTuaEducationCategories();
+
+    const categories = categoriesResponse?.data?.data || [];
+    const getCategoryName = (id: string) => {
+        const cat = categories.find(c => c.id === id);
+        return cat ? cat.name : 'Tanpa Kategori';
     };
 
-    const activeId = Number(idParam) && edukasiDb[Number(idParam)] ? Number(idParam) : 1;
-    const artikel = edukasiDb[activeId];
+    const getErrorMessage = (err: unknown): string => {
+        if (!err) return "";
+        if (axios.isAxiosError(err)) {
+            return (err.response?.data as { message?: string })?.message || err.message;
+        }
+        if (err instanceof Error) {
+            return err.message;
+        }
+        return "Terjadi kesalahan";
+    };
+
+    const apiError = getErrorMessage(error);
+    const artikel = educationResponse?.data;
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
+                <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200 justify-center items-center">
+                    <svg className="animate-spin h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </div>
+        );
+    }
+
+    if (apiError || !artikel) {
+        return (
+            <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
+                <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200 justify-center items-center text-center px-6">
+                    <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 mb-4 border border-slate-100">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    <h2 className="font-bold text-slate-800 mb-2">Artikel tidak ditemukan</h2>
+                    <p className="text-sm text-slate-500 mb-6">{apiError || "Edukasi tidak ada atau ID tidak valid."}</p>
+                    <Link href="/orangtua/edukasi" className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-sm hover:bg-blue-700 transition-colors">
+                        Kembali
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
+    const readTime = artikel.read_time ? `${artikel.read_time} menit baca` : '-';
+    
+    // Replace non-breaking spaces (&nbsp;) with standard spaces to allow proper browser word wrapping
+    const cleanContent = artikel.content.replace(/&nbsp;/gi, ' ');
 
     return (
         <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
@@ -86,25 +102,50 @@ function BacaEdukasiContent() {
                         {/* Topic Tag & Reading Time */}
                         <div className="flex justify-between items-center mb-4">
                             <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">
-                                {artikel.tema}
+                                {getCategoryName(artikel.category_id)}
                             </span>
                             <span className="text-[10px] font-semibold text-slate-400">
-                                ⏱️ {artikel.estimasiBaca}
+                                ⏱️ {readTime}
                             </span>
                         </div>
 
                         {/* Title */}
                         <h1 className="text-xl font-extrabold text-slate-800 mb-5 leading-snug pb-4 border-b border-slate-100">
-                            {artikel.judul}
+                            {artikel.title}
                         </h1>
 
-                        {/* Content Body (Paragraphs only) */}
-                        <div className="flex flex-col gap-4 text-sm text-slate-650 leading-relaxed font-medium">
-                            {artikel.kontenParagraf.map((paragraf, index) => (
-                                <p key={index} className="text-justify">
-                                    {paragraf}
-                                </p>
-                            ))}
+                        {/* Custom styles override for Quill content to look premium */}
+                        <style>{`
+                            .ql-editor img {
+                                max-width: 100%;
+                                height: auto;
+                                border-radius: 1rem;
+                                margin: 1.25rem auto;
+                                display: block;
+                                box-shadow: 0 4px 15px rgb(0,0,0,0.05);
+                            }
+                            .ql-editor p {
+                                margin-bottom: 0.85rem;
+                                line-height: 1.65;
+                                font-size: 0.9rem;
+                                color: #475569; /* text-slate-600 */
+                                text-align: justify;
+                            }
+                            .ql-editor h1, .ql-editor h2, .ql-editor h3 {
+                                margin-top: 1.25rem;
+                                margin-bottom: 0.6rem;
+                                font-weight: 750;
+                                color: #1e293b; /* text-slate-800 */
+                                line-height: 1.35;
+                            }
+                        `}</style>
+
+                        {/* Article Body using Quill styles for consistency */}
+                        <div className="ql-snow">
+                            <div 
+                                className="ql-editor p-0 text-slate-700 leading-relaxed text-[15px]" 
+                                dangerouslySetInnerHTML={{ __html: cleanContent }}
+                            />
                         </div>
 
                     </div>

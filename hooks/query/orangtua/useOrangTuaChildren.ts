@@ -9,6 +9,9 @@ import {
   fetchOrangTuaImmunizationRecords,
   fetchOrangTuaVaccines,
   fetchOrangTuaNutritionRecords,
+  fetchOrangTuaEducations,
+  fetchOrangTuaEducationById,
+  fetchOrangTuaEducationCategories,
   FetchOrangTuaChildrenResponse,
   FetchPosyandusResponse,
   FetchOrangTuaImmunizationRecordsResponse,
@@ -16,6 +19,12 @@ import {
   FetchOrangTuaNutritionRecordsResponse,
 } from "@/service/orangtua/orangTuaChildService";
 import { Child, CreateChildPayload } from "@/interfaces/child";
+import {
+  FetchEducationsParams,
+  FetchEducationsResponse,
+  EducationResponse,
+  FetchEducationCategoriesResponse,
+} from "@/interfaces/education";
 
 export function useGetOrangTuaChildren(params?: {
   search?: string;
@@ -98,5 +107,30 @@ export function useGetOrangTuaNutritionRecords(params?: {
     queryKey: ["orangtua-nutrition-records", params],
     queryFn: () => fetchOrangTuaNutritionRecords(params),
     staleTime: 5000,
+  });
+}
+
+export function useGetOrangTuaEducations(params?: FetchEducationsParams) {
+  return useQuery<FetchEducationsResponse, Error>({
+    queryKey: ["orangtua-educations", params],
+    queryFn: () => fetchOrangTuaEducations(params),
+    staleTime: 5000,
+  });
+}
+
+export function useGetOrangTuaEducationById(id: string) {
+  return useQuery<EducationResponse, Error>({
+    queryKey: ["orangtua-education", id],
+    queryFn: () => fetchOrangTuaEducationById(id),
+    enabled: !!id,
+    staleTime: 5000,
+  });
+}
+
+export function useGetOrangTuaEducationCategories() {
+  return useQuery<FetchEducationCategoriesResponse, Error>({
+    queryKey: ["orangtua-education-categories"],
+    queryFn: fetchOrangTuaEducationCategories,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }

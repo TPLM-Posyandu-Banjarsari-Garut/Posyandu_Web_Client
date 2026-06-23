@@ -5,6 +5,12 @@ import { Posyandu } from "@/interfaces/posyandu";
 import { Vaccine } from "@/interfaces/vaccine";
 import { ImmunizationRecord } from "@/interfaces/immunization";
 import { NutritionRecord } from "@/interfaces/nutrition";
+import {
+  FetchEducationsParams,
+  FetchEducationsResponse,
+  EducationResponse,
+  FetchEducationCategoriesResponse,
+} from "@/interfaces/education";
 
 export interface FetchOrangTuaChildrenResponse {
   data: Child[];
@@ -141,4 +147,33 @@ export async function fetchOrangTuaNutritionRecords(params?: {
     }
   );
   return data.data;
+}
+
+export async function fetchOrangTuaEducations(
+  params?: FetchEducationsParams
+): Promise<FetchEducationsResponse> {
+  const { data } = await orangTuaApi.get<FetchEducationsResponse>("/api/educations", {
+    params: {
+      ...params,
+      limit: params?.limit || 10,
+      page: params?.page || 1,
+    },
+  });
+  return data;
+}
+
+export async function fetchOrangTuaEducationById(
+  id: string
+): Promise<EducationResponse> {
+  const { data } = await orangTuaApi.get<EducationResponse>(`/api/educations/${id}`);
+  return data;
+}
+
+export async function fetchOrangTuaEducationCategories(): Promise<FetchEducationCategoriesResponse> {
+  const { data } = await orangTuaApi.get<FetchEducationCategoriesResponse>("/api/education-categories", {
+    params: {
+      limit: 100, // Fetch all categories
+    }
+  });
+  return data;
 }
