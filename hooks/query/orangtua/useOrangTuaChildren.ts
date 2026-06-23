@@ -12,11 +12,17 @@ import {
   fetchOrangTuaEducations,
   fetchOrangTuaEducationById,
   fetchOrangTuaEducationCategories,
+  fetchOrangTuaAvailableSlots,
+  createOrangTuaBooking,
+  fetchOrangTuaConsultations,
+  fetchOrangTuaPregnancyRecords,
   FetchOrangTuaChildrenResponse,
   FetchPosyandusResponse,
   FetchOrangTuaImmunizationRecordsResponse,
   FetchOrangTuaVaccinesResponse,
   FetchOrangTuaNutritionRecordsResponse,
+  FetchOrangTuaConsultationsResponse,
+  FetchOrangTuaPregnancyRecordsResponse,
 } from "@/service/orangtua/orangTuaChildService";
 import { Child, CreateChildPayload } from "@/interfaces/child";
 import {
@@ -25,6 +31,8 @@ import {
   EducationResponse,
   FetchEducationCategoriesResponse,
 } from "@/interfaces/education";
+import { Consultation, CreateBookingPayload, AvailableSlot } from "@/interfaces/consultation";
+import { PregnancyRecord } from "@/interfaces/pregnancy";
 
 export function useGetOrangTuaChildren(params?: {
   search?: string;
@@ -134,3 +142,54 @@ export function useGetOrangTuaEducationCategories() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
+
+export function useGetOrangTuaAvailableSlots(
+  posyandu_id: string,
+  consultation_type: string,
+  date: string,
+  enabled: boolean = true
+) {
+  return useQuery<AvailableSlot[], Error>({
+    queryKey: ["orangtua-available-slots", posyandu_id, consultation_type, date],
+    queryFn: () => fetchOrangTuaAvailableSlots(posyandu_id, consultation_type, date),
+    enabled: enabled && !!posyandu_id && !!consultation_type && !!date,
+    staleTime: 15000, // 15 seconds
+  });
+}
+
+export function useCreateOrangTuaBooking() {
+  const queryClient = useQueryClient();
+  return useMutation<Consultation, Error, CreateBookingPayload>({
+    mutationFn: (payload: CreateBookingPayload) => createOrangTuaBooking(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orangtua-consultations"] });
+      queryClient.invalidateQueries({ queryKey: ["orangtua-available-slots"] });
+    },
+  });
+}
+
+export function useGetOrangTuaConsultations(params?: {
+  status?: string;
+  consultation_type?: string;
+  page?: number;
+  limit?: number;
+}) {
+  return useQuery<FetchOrangTuaConsultationsResponse, Error>({
+    queryKey: ["orangtua-consultations", params],
+    queryFn: () => fetchOrangTuaConsultations(params),
+    staleTime: 5000,
+  });
+}
+
+export function useGetOrangTuaPregnancyRecords(params?: {
+  is_active?: boolean;
+  page?: number;
+  limit?: number;
+}) {
+  return useQuery<FetchOrangTuaPregnancyRecordsResponse, Error>({
+    queryKey: ["orangtua-pregnancy-records", params],
+    queryFn: () => fetchOrangTuaPregnancyRecords(params),
+    staleTime: 5000,
+  });
+}
+

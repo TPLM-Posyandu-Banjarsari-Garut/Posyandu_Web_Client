@@ -5,6 +5,7 @@ interface BookingDetails {
   layanan: string;
   date: string;
   time: string;
+  queue_number?: number;
 }
 
 interface KonfirmasiBookingProps {
@@ -14,6 +15,10 @@ interface KonfirmasiBookingProps {
 }
 
 export default function KonfirmasiBooking({ bookingDetails, onHome, onViewQueue }: KonfirmasiBookingProps) {
+  const displayQueue = bookingDetails.queue_number
+    ? `Q-${String(bookingDetails.queue_number).padStart(3, '0')}`
+    : '-';
+
   return (
     <div className="flex flex-col items-center pt-4 pb-6">
       {/* Checkmark Icon */}
@@ -28,7 +33,7 @@ export default function KonfirmasiBooking({ bookingDetails, onHome, onViewQueue 
         Booking Anda berhasil!
       </h2>
       <p className="text-xs text-slate-500 font-semibold text-center leading-relaxed max-w-[280px] mb-6">
-        Tunjukkan nomor antrean ini saat tiba di puskesmas.
+        Tunjukkan nomor antrean ini saat tiba di Posyandu.
       </p>
 
       {/* Queue Ticket Card */}
@@ -36,12 +41,12 @@ export default function KonfirmasiBooking({ bookingDetails, onHome, onViewQueue 
         <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
           Nomor Antrean
         </span>
-        <span className="text-5xl font-extrabold text-[#1E3050] tracking-wide mt-2 mb-3">
-          A-038
+        <span className="text-4xl font-extrabold text-[#1E3050] tracking-wide mt-2 mb-3">
+          {displayQueue}
         </span>
         <div>
           <span className="inline-block bg-[#314A85] text-white text-[10px] font-extrabold px-3.5 py-1 rounded-full uppercase tracking-wider">
-            BPJS
+            Antrean Aktif
           </span>
         </div>
 
@@ -50,7 +55,7 @@ export default function KonfirmasiBooking({ bookingDetails, onHome, onViewQueue 
         {/* Detail List */}
         <div className="flex flex-col gap-3.5">
           <div className="flex justify-between items-start text-xs font-semibold gap-4">
-            <span className="text-slate-450 shrink-0">Puskesmas</span>
+            <span className="text-slate-450 shrink-0">Posyandu</span>
             <span className="text-[#1E3050] font-bold text-right">{bookingDetails.puskesmas}</span>
           </div>
           <div className="flex justify-between items-start text-xs font-semibold gap-4">

@@ -11,6 +11,8 @@ import {
   EducationResponse,
   FetchEducationCategoriesResponse,
 } from "@/interfaces/education";
+import { Consultation, CreateBookingPayload, AvailableSlot } from "@/interfaces/consultation";
+import { PregnancyRecord } from "@/interfaces/pregnancy";
 
 export interface FetchOrangTuaChildrenResponse {
   data: Child[];
@@ -177,3 +179,89 @@ export async function fetchOrangTuaEducationCategories(): Promise<FetchEducation
   });
   return data;
 }
+
+export interface FetchOrangTuaConsultationsResponse {
+  data: Consultation[];
+  meta: {
+    page: number;
+    limit: number;
+    total_items: number;
+    total_pages: number;
+  };
+}
+
+export interface FetchOrangTuaPregnancyRecordsResponse {
+  data: PregnancyRecord[];
+  meta: {
+    page: number;
+    limit: number;
+    total_items: number;
+    total_pages: number;
+  };
+}
+
+export async function fetchOrangTuaAvailableSlots(
+  posyandu_id: string,
+  consultation_type: string,
+  date: string
+): Promise<AvailableSlot[]> {
+  const { data } = await orangTuaApi.get<ApiResponse<AvailableSlot[]>>(
+    "/api/consultations/slots/available",
+    {
+      params: {
+        posyandu_id,
+        consultation_type,
+        date,
+      },
+    }
+  );
+  return data.data;
+}
+
+export async function createOrangTuaBooking(
+  payload: CreateBookingPayload
+): Promise<Consultation> {
+  const { data } = await orangTuaApi.post<ApiResponse<Consultation>>(
+    "/api/consultations",
+    payload
+  );
+  return data.data;
+}
+
+export async function fetchOrangTuaConsultations(params?: {
+  status?: string;
+  consultation_type?: string;
+  page?: number;
+  limit?: number;
+}): Promise<FetchOrangTuaConsultationsResponse> {
+  const { data } = await orangTuaApi.get<ApiResponse<FetchOrangTuaConsultationsResponse>>(
+    "/api/consultations",
+    {
+      params: {
+        ...params,
+        limit: params?.limit || 10,
+        page: params?.page || 1,
+      },
+    }
+  );
+  return data.data;
+}
+
+export async function fetchOrangTuaPregnancyRecords(params?: {
+  is_active?: boolean;
+  page?: number;
+  limit?: number;
+}): Promise<FetchOrangTuaPregnancyRecordsResponse> {
+  const { data } = await orangTuaApi.get<ApiResponse<FetchOrangTuaPregnancyRecordsResponse>>(
+    "/api/pregnancy-records",
+    {
+      params: {
+        ...params,
+        limit: params?.limit || 10,
+        page: params?.page || 1,
+      },
+    }
+  );
+  return data.data;
+}
+
