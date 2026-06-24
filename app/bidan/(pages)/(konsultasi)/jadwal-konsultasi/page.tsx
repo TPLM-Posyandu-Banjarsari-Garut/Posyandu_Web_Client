@@ -17,6 +17,10 @@ export default function JadwalKonsultasiPage() {
     const [status, setStatus] = useState('');
     const [date, setDate] = useState('');
     const [page, setPage] = useState(1);
+    
+    // Modal state for modern confirm dialog
+    const [confirmDialog, setConfirmDialog] = useState<{isOpen: boolean, publicId: string, newStatus: string, message: string} | null>(null);
+    const [cancellationReason, setCancellationReason] = useState('');
 
     const { data: profile, isLoading: isLoadingProfile } = useGetMidwifeProfile();
     const midwife_id = profile?.id;
@@ -27,7 +31,7 @@ export default function JadwalKonsultasiPage() {
             status: status || undefined,
             search: search || undefined,
             page,
-            limit: 50
+            limit: 5
         },
         !!midwife_id
     );
@@ -101,12 +105,30 @@ export default function JadwalKonsultasiPage() {
     };
 
     const handleUpdateStatus = (publicId: string, newStatus: string) => {
-        if (confirm(`Apakah Anda yakin ingin mengubah status janji temu ini menjadi ${getStatusLabel(newStatus)}?`)) {
+        setConfirmDialog({
+            isOpen: true,
+            publicId,
+            newStatus,
+            message: `Apakah Anda yakin ingin mengubah status janji temu ini menjadi ${getStatusLabel(newStatus)}?`
+        });
+    };
+
+    const confirmStatusUpdate = () => {
+        const isConfirmDisabled = confirmDialog?.newStatus === 'cancelled' && !cancellationReason.trim();
+        if (confirmDialog && !isConfirmDisabled) {
             updateStatusMutation.mutate({
-                publicId,
-                status: newStatus,
+                publicId: confirmDialog.publicId,
+                status: confirmDialog.newStatus,
+                ...(confirmDialog.newStatus === 'cancelled' && { cancellation_reason: cancellationReason })
             });
+            setConfirmDialog(null);
+            setCancellationReason('');
         }
+    };
+
+    const closeDialog = () => {
+        setConfirmDialog(null);
+        setCancellationReason('');
     };
 
     return (
@@ -165,6 +187,29 @@ export default function JadwalKonsultasiPage() {
                             </FilterHalf>
                         </FilterRow>
                     </div>
+
+                    {/* Pagination Controls */}
+                    {filteredConsultations.length > 0 && !isLoadingConsultations && !error && (
+                        <div className="flex justify-between items-center pb-4 mb-2 px-2 border-b border-slate-200">
+                            <button 
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${page === 1 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-blue-600 border border-blue-100 hover:bg-blue-50 cursor-pointer shadow-sm'}`}
+                            >
+                                Sebelumnya
+                            </button>
+                            <span className="text-xs font-bold text-slate-600 bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
+                                Halaman {page}
+                            </span>
+                            <button 
+                                onClick={() => setPage(p => p + 1)}
+                                disabled={consultations.length < 5}
+                                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${consultations.length < 5 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-blue-600 border border-blue-100 hover:bg-blue-50 cursor-pointer shadow-sm'}`}
+                            >
+                                Selanjutnya
+                            </button>
+                        </div>
+                    )}
 
                     {/* Stack Data */}
                     <div className="flex flex-col gap-4">
@@ -254,10 +299,10 @@ export default function JadwalKonsultasiPage() {
                                         {item.status === 'confirmed' && (
                                             <div className="flex gap-2 mt-2 pt-4 border-t border-slate-100">
                                                 <button
-                                                    onClick={() => handleUpdateStatus(item.id, 'in_progress')}
+                                                    onClick={() => handleUpdateStatus(item.id, 'completed')}
                                                     className="flex-1 bg-emerald-600 text-white text-xs font-bold px-4 py-3 rounded-xl hover:bg-emerald-700 active:scale-95 transition-all flex justify-center items-center gap-1.5 shadow-sm cursor-pointer"
                                                 >
-                                                    Mulai Periksa
+                                                    Selesai
                                                 </button>
                                                 <button
                                                     onClick={() => handleUpdateStatus(item.id, 'cancelled')}
@@ -294,6 +339,44 @@ export default function JadwalKonsultasiPage() {
 
                 <BottombarBidan />
             </div>
+
+            {/* Custom Modern Confirm Dialog */}
+            {confirmDialog && confirmDialog.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
+                        <h3 className="text-base font-extrabold text-slate-800 mb-2">Konfirmasi Status</h3>
+                        <p className={`text-xs font-medium text-slate-500 leading-relaxed ${confirmDialog.newStatus === 'cancelled' ? 'mb-3' : 'mb-6'}`}>{confirmDialog.message}</p>
+                        
+                        {confirmDialog.newStatus === 'cancelled' && (
+                            <div className="mb-6">
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5">Alasan Pembatalan <span className="text-red-500">*</span></label>
+                                <textarea 
+                                    className="w-full border border-slate-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none h-20 bg-slate-50"
+                                    placeholder="Masukkan alasan pembatalan..."
+                                    value={cancellationReason}
+                                    onChange={(e) => setCancellationReason(e.target.value)}
+                                ></textarea>
+                            </div>
+                        )}
+                        
+                        <div className="flex gap-2">
+                            <button
+                                onClick={closeDialog}
+                                className="flex-1 px-4 py-3 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={confirmStatusUpdate}
+                                disabled={confirmDialog.newStatus === 'cancelled' && !cancellationReason.trim()}
+                                className={`flex-1 px-4 py-3 text-xs font-bold text-white rounded-xl shadow-[0_4px_12px_rgba(37,99,235,0.2)] transition-all ${confirmDialog.newStatus === 'cancelled' && !cancellationReason.trim() ? 'bg-blue-400 cursor-not-allowed opacity-70' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'}`}
+                            >
+                                Lanjutkan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

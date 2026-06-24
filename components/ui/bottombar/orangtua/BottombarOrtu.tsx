@@ -8,15 +8,15 @@ export default function BottombarOrtu() {
         <span className="text-[10px] font-bold">Beranda</span>
       </Link>
       <Link href="/orangtua/ajukan-konsultasi" className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-blue-600 transition-colors">
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-        <span className="text-[10px] font-bold">Jadwal</span>
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <span className="text-[10px] font-bold">History</span>
       </Link>
 
       {/* Center Floating Action Button */}
       <div className="relative -top-6 flex justify-center">
-        <button className="w-14 h-14 bg-gradient-to-tr from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white shadow-[0_8px_20px_rgba(79,70,229,0.4)] border-[4px] border-white hover:scale-105 active:scale-95 transition-all">
+        <Link href="/orangtua/booking-layanan" className="w-14 h-14 bg-gradient-to-tr from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white shadow-[0_8px_20px_rgba(79,70,229,0.4)] border-[4px] border-white hover:scale-105 active:scale-95 transition-all">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
-        </button>
+        </Link>
       </div>
 
       <Link href="/orangtua/edukasi" className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-blue-600 transition-colors">

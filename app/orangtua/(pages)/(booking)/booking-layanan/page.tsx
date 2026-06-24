@@ -9,7 +9,7 @@ import PilihLayanan from '../(section)/PilihLayanan';
 import PilihBidan from '../(section)/PilihBidan';
 import PilihWaktu from '../(section)/PilihWaktu';
 import KonfirmasiBooking from '../(section)/KonfirmasiBooking';
-import { useCreateOrangTuaBooking, useGetOrangTuaPosyanduById } from '@/hooks/query/orangtua/useOrangTuaChildren';
+import { useCreateOrangTuaBooking, useGetOrangTuaPosyanduById, useGetOrangTuaConsultations } from '@/hooks/query/orangtua/useOrangTuaChildren';
 
 interface BookingData {
   posyandu_id: string;
@@ -28,6 +28,17 @@ export default function BookingLayananPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Fetch parent consultations to prevent duplicate active bookings
+  const { data: consultationsResponse, isLoading: isLoadingConsultations } = useGetOrangTuaConsultations({
+    limit: 10,
+    page: 1
+  });
+
+  const activeBookings = consultationsResponse?.data?.filter((item: any) => 
+    ['pending', 'confirmed', 'in_progress'].includes(item.status)
+  ) || [];
+  const hasActiveBooking = activeBookings.length > 0;
   
   // Selections state
   const [bookingData, setBookingData] = useState<BookingData>({
@@ -191,22 +202,45 @@ export default function BookingLayananPage() {
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto pb-28 custom-scrollbar">
           
-          {/* Progress Indicator (hidden in Step 5) */}
-          {step < 5 && (
-            <div className="flex gap-2.5 px-6 pt-5 pb-2 shrink-0">
-              {[1, 2, 3, 4].map((s) => {
-                const isActive = s <= step;
-                return (
-                  <div
-                    key={s}
-                    className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
-                      isActive ? 'bg-blue-600' : 'bg-[#E2E8F0]'
-                    }`}
-                  />
-                );
-              })}
+          {isLoadingConsultations ? (
+            <div className="flex flex-col items-center justify-center py-32 h-full">
+               <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+               <span className="text-sm font-bold text-slate-500">Memeriksa status booking...</span>
             </div>
-          )}
+          ) : hasActiveBooking && step !== 5 ? (
+            <div className="px-6 py-10 flex flex-col items-center justify-center text-center mt-10">
+               <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-5 shadow-inner">
+                   <svg className="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+               </div>
+               <h2 className="text-xl font-extrabold text-slate-800 mb-2">Booking Sedang Berjalan</h2>
+               <p className="text-sm font-medium text-slate-500 mb-8 leading-relaxed px-4">
+                   Anda masih memiliki jadwal konsultasi yang belum diselesaikan oleh Bidan. Harap tunggu hingga selesai sebelum membuat booking baru.
+               </p>
+               <button
+                   onClick={handleGoToQueue}
+                   className="w-full max-w-[200px] bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-full active:scale-95 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.25)] text-sm tracking-wide"
+               >
+                   Lihat Antrean Saya
+               </button>
+            </div>
+          ) : (
+            <>
+              {/* Progress Indicator (hidden in Step 5) */}
+              {step < 5 && (
+                <div className="flex gap-2.5 px-6 pt-5 pb-2 shrink-0">
+                  {[1, 2, 3, 4].map((s) => {
+                    const isActive = s <= step;
+                    return (
+                      <div
+                        key={s}
+                        className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
+                          isActive ? 'bg-blue-600' : 'bg-[#E2E8F0]'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+              )}
 
           {/* Error Message Box */}
           {errorMessage && (
@@ -292,6 +326,8 @@ export default function BookingLayananPage() {
               />
             )}
           </div>
+          </>
+          )}
         </div>
 
         {/* Bottombar */}
