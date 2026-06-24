@@ -48,54 +48,84 @@ export default function EdukasiViewPage() {
         );
     }
 
+    const readTime = education.read_time ? `${education.read_time} menit baca` : '-';
+    const cleanContent = education.content?.replace(/&nbsp;/gi, ' ') || '';
+
     return (
         <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
             <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200">
-                
-                {/* Header */}
-                <div className="bg-white px-6 pt-8 pb-4 flex justify-between items-center z-10 sticky top-0 shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <Link href="/bidan/edukasi" className="p-2 -ml-2 rounded-full hover:bg-slate-100 transition-colors">
-                            <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-                        </Link>
-                        <h1 className="text-xl font-bold text-slate-800">Detail Edukasi</h1>
-                    </div>
-                    <Link href={`/bidan/edit-edukasi/${education.id}`} className="px-3 py-2 bg-amber-50 text-amber-600 rounded-xl text-xs font-bold hover:bg-amber-100 transition-colors">
+
+                {/* Header Background */}
+                <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-br from-blue-500 to-indigo-600 z-0 rounded-t-[2rem] rounded-b-[2.5rem]"></div>
+
+                {/* Sticky Header Nav */}
+                <div className="relative z-10 px-6 pt-8 flex items-center justify-between">
+                    <Link href="/bidan/edukasi" className="p-2 -ml-2 rounded-full bg-white/20 text-white backdrop-blur-md hover:bg-white/30 transition-colors">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </Link>
+                    <h1 className="text-lg font-bold text-white tracking-wide">Detail Edukasi</h1>
+                    <Link href={`/bidan/edit-edukasi/${education.id}`} className="px-4 py-1.5 bg-white text-indigo-600 rounded-full text-xs font-bold hover:bg-blue-50 shadow-sm transition-colors">
                         Edit
                     </Link>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar bg-slate-50">
-                    <div className="bg-white rounded-[1.5rem] p-6 shadow-[0_4px_15px_rgb(0,0,0,0.03)] border border-slate-100 flex flex-col gap-6">
+                {/* Content Container */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10 pt-16 px-6 pb-6">
+
+                    {/* Article Container */}
+                    <div className="bg-white rounded-[2rem] p-6 shadow-[0_10px_40px_rgb(0,0,0,0.06)] border border-slate-100 flex flex-col mb-6 mt-4">
                         
-                        <div className="flex flex-col gap-3">
-                            <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full w-fit uppercase tracking-wider">
+                        {/* Topic Tag & Reading Time */}
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">
                                 {getCategoryName(education.category_id)}
                             </span>
-                            <h2 className="text-[22px] font-extrabold text-slate-800 leading-snug">
-                                {education.title}
-                            </h2>
-                            <div className="flex items-center gap-2 mt-1 text-slate-500">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                <span className="text-xs font-medium">
-                                    {new Date(education.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                </span>
-                            </div>
+                            <span className="text-[10px] font-semibold text-slate-400">
+                                ⏱️ {readTime}
+                            </span>
                         </div>
 
-                        <div className="w-full h-px bg-slate-100"></div>
+                        {/* Title */}
+                        <h1 className="text-xl font-extrabold text-slate-800 mb-5 leading-snug pb-4 border-b border-slate-100">
+                            {education.title}
+                        </h1>
+
+                        {/* Custom styles override for Quill content to look premium */}
+                        <style>{`
+                            .ql-editor img {
+                                max-width: 100%;
+                                height: auto;
+                                border-radius: 1rem;
+                                margin: 1.25rem auto;
+                                display: block;
+                                box-shadow: 0 4px 15px rgb(0,0,0,0.05);
+                            }
+                            .ql-editor p {
+                                margin-bottom: 0.85rem;
+                                line-height: 1.65;
+                                font-size: 0.9rem;
+                                color: #475569; /* text-slate-600 */
+                                text-align: justify;
+                            }
+                            .ql-editor h1, .ql-editor h2, .ql-editor h3 {
+                                margin-top: 1.25rem;
+                                margin-bottom: 0.6rem;
+                                font-weight: 750;
+                                color: #1e293b; /* text-slate-800 */
+                                line-height: 1.35;
+                            }
+                        `}</style>
 
                         {/* Article Body using Quill styles for consistency */}
-                        <div 
-                            className="ql-snow"
-                        >
+                        <div className="ql-snow">
                             <div 
                                 className="ql-editor p-0 text-slate-700 leading-relaxed text-[15px]" 
-                                dangerouslySetInnerHTML={{ __html: education.content }}
+                                dangerouslySetInnerHTML={{ __html: cleanContent }}
                             />
                         </div>
-                        
+
                     </div>
                 </div>
 
