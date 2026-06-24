@@ -6,6 +6,7 @@ import { useGetOrangTuaAvailableSlots } from '@/hooks/query/orangtua/useOrangTua
 interface PilihWaktuProps {
   posyandu_id: string;
   consultation_type: string;
+  midwife_id: string | null;
   onSelect: (dateStr: string, timeStr: string) => void;
   onNext: () => void;
 }
@@ -13,6 +14,7 @@ interface PilihWaktuProps {
 export default function PilihWaktu({
   posyandu_id,
   consultation_type,
+  midwife_id,
   onSelect,
   onNext,
 }: PilihWaktuProps) {
@@ -52,6 +54,7 @@ export default function PilihWaktu({
     posyandu_id,
     consultation_type,
     selectedDateStr,
+    midwife_id,
     !!posyandu_id && !!consultation_type
   );
 

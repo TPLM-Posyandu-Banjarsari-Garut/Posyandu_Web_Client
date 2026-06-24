@@ -13,6 +13,7 @@ import {
 } from "@/interfaces/education";
 import { Consultation, CreateBookingPayload, AvailableSlot } from "@/interfaces/consultation";
 import { PregnancyRecord } from "@/interfaces/pregnancy";
+import { Midwife } from "@/interfaces/midwife";
 
 export interface FetchOrangTuaChildrenResponse {
   data: Child[];
@@ -63,6 +64,11 @@ export async function fetchOrangTuaPosyandus(params?: {
   const { data } = await orangTuaApi.get<ApiResponse<FetchPosyandusResponse>>("/api/posyandus", {
     params,
   });
+  return data.data;
+}
+
+export async function fetchOrangTuaPosyanduById(id: string): Promise<Posyandu> {
+  const { data } = await orangTuaApi.get<ApiResponse<Posyandu>>(`/api/posyandus/${id}`);
   return data.data;
 }
 
@@ -203,7 +209,8 @@ export interface FetchOrangTuaPregnancyRecordsResponse {
 export async function fetchOrangTuaAvailableSlots(
   posyandu_id: string,
   consultation_type: string,
-  date: string
+  date: string,
+  midwife_id?: string | null
 ): Promise<AvailableSlot[]> {
   const { data } = await orangTuaApi.get<ApiResponse<AvailableSlot[]>>(
     "/api/consultations/slots/available",
@@ -212,6 +219,7 @@ export async function fetchOrangTuaAvailableSlots(
         posyandu_id,
         consultation_type,
         date,
+        midwife_id: midwife_id || undefined,
       },
     }
   );
@@ -260,6 +268,30 @@ export async function fetchOrangTuaPregnancyRecords(params?: {
         limit: params?.limit || 10,
         page: params?.page || 1,
       },
+    }
+  );
+  return data.data;
+}
+
+export interface FetchOrangTuaMidwivesResponse {
+  data: Midwife[];
+  meta: {
+    page: number;
+    limit: number;
+    total_items: number;
+    total_pages: number;
+  };
+}
+
+export async function fetchOrangTuaMidwives(params?: {
+  posyandu_id?: string;
+  limit?: number;
+  page?: number;
+}): Promise<FetchOrangTuaMidwivesResponse> {
+  const { data } = await orangTuaApi.get<ApiResponse<FetchOrangTuaMidwivesResponse>>(
+    "/api/midwifes",
+    {
+      params,
     }
   );
   return data.data;

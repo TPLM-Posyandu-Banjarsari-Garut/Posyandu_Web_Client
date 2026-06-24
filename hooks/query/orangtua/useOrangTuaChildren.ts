@@ -6,6 +6,7 @@ import {
   fetchOrangTuaChildById,
   createOrangTuaChild,
   fetchOrangTuaPosyandus,
+  fetchOrangTuaPosyanduById,
   fetchOrangTuaImmunizationRecords,
   fetchOrangTuaVaccines,
   fetchOrangTuaNutritionRecords,
@@ -16,6 +17,7 @@ import {
   createOrangTuaBooking,
   fetchOrangTuaConsultations,
   fetchOrangTuaPregnancyRecords,
+  fetchOrangTuaMidwives,
   FetchOrangTuaChildrenResponse,
   FetchPosyandusResponse,
   FetchOrangTuaImmunizationRecordsResponse,
@@ -23,6 +25,7 @@ import {
   FetchOrangTuaNutritionRecordsResponse,
   FetchOrangTuaConsultationsResponse,
   FetchOrangTuaPregnancyRecordsResponse,
+  FetchOrangTuaMidwivesResponse,
 } from "@/service/orangtua/orangTuaChildService";
 import { Child, CreateChildPayload } from "@/interfaces/child";
 import {
@@ -33,6 +36,7 @@ import {
 } from "@/interfaces/education";
 import { Consultation, CreateBookingPayload, AvailableSlot } from "@/interfaces/consultation";
 import { PregnancyRecord } from "@/interfaces/pregnancy";
+import { Posyandu } from "@/interfaces/posyandu";
 
 export function useGetOrangTuaChildren(params?: {
   search?: string;
@@ -147,11 +151,12 @@ export function useGetOrangTuaAvailableSlots(
   posyandu_id: string,
   consultation_type: string,
   date: string,
+  midwife_id?: string | null,
   enabled: boolean = true
 ) {
   return useQuery<AvailableSlot[], Error>({
-    queryKey: ["orangtua-available-slots", posyandu_id, consultation_type, date],
-    queryFn: () => fetchOrangTuaAvailableSlots(posyandu_id, consultation_type, date),
+    queryKey: ["orangtua-available-slots", posyandu_id, consultation_type, date, midwife_id],
+    queryFn: () => fetchOrangTuaAvailableSlots(posyandu_id, consultation_type, date, midwife_id),
     enabled: enabled && !!posyandu_id && !!consultation_type && !!date,
     staleTime: 15000, // 15 seconds
   });
@@ -190,6 +195,28 @@ export function useGetOrangTuaPregnancyRecords(params?: {
     queryKey: ["orangtua-pregnancy-records", params],
     queryFn: () => fetchOrangTuaPregnancyRecords(params),
     staleTime: 5000,
+  });
+}
+
+export function useGetOrangTuaMidwives(params?: {
+  posyandu_id?: string;
+  limit?: number;
+  page?: number;
+}) {
+  return useQuery<FetchOrangTuaMidwivesResponse, Error>({
+    queryKey: ["orangtua-midwives", params],
+    queryFn: () => fetchOrangTuaMidwives(params),
+    enabled: !!params?.posyandu_id,
+    staleTime: 60000,
+  });
+}
+
+export function useGetOrangTuaPosyanduById(id: string, enabled: boolean = true) {
+  return useQuery<Posyandu, Error>({
+    queryKey: ["orangtua-posyandu", id],
+    queryFn: () => fetchOrangTuaPosyanduById(id),
+    enabled: enabled && !!id,
+    staleTime: 60000,
   });
 }
 

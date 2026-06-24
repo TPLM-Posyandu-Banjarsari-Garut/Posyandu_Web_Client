@@ -36,6 +36,7 @@ export interface CreateBookingPayload {
   pregnancy_record_id?: string | null;
   children_id?: string | null;
   notes?: string | null;
+  midwife_id?: string | null;
 }
 
 export interface AvailableSlot {

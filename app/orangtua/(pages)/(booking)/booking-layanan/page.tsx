@@ -1,14 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AppBarBooking from '@/components/ui/appbar/AppBarBooking';
 import BottombarOrtu from '@/components/ui/bottombar/orangtua/BottombarOrtu';
 import PilihPukesmas from '../(section)/PilihPukesmas';
 import PilihLayanan from '../(section)/PilihLayanan';
+import PilihBidan from '../(section)/PilihBidan';
 import PilihWaktu from '../(section)/PilihWaktu';
 import KonfirmasiBooking from '../(section)/KonfirmasiBooking';
-import { useCreateOrangTuaBooking } from '@/hooks/query/orangtua/useOrangTuaChildren';
+import { useCreateOrangTuaBooking, useGetOrangTuaPosyanduById } from '@/hooks/query/orangtua/useOrangTuaChildren';
+
+interface BookingData {
+  posyandu_id: string;
+  posyandu_name: string;
+  consultation_type: 'pregnancy' | 'child_development' | 'general' | '';
+  children_id: string | null;
+  pregnancy_record_id: string | null;
+  midwife_id: string | null;
+  midwife_name: string | null;
+  date: string;
+  time: string;
+  queue_number?: number;
+}
 
 export default function BookingLayananPage() {
   const router = useRouter();
@@ -16,16 +30,33 @@ export default function BookingLayananPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   // Selections state
-  const [bookingData, setBookingData] = useState({
+  const [bookingData, setBookingData] = useState<BookingData>({
     posyandu_id: '',
     posyandu_name: '',
-    consultation_type: '' as 'pregnancy' | 'child_development' | 'general' | '',
-    children_id: null as string | null,
-    pregnancy_record_id: null as string | null,
+    consultation_type: '',
+    children_id: null,
+    pregnancy_record_id: null,
+    midwife_id: null,
+    midwife_name: null,
     date: '', // format YYYY-MM-DD
     time: '', // format HH:MM
-    queue_number: undefined as number | undefined
+    queue_number: undefined
   });
+
+  // Query details if posyandu_id is set but name is empty
+  const { data: prefilledPosyanduDetail } = useGetOrangTuaPosyanduById(
+    bookingData.posyandu_id,
+    !!bookingData.posyandu_id && !bookingData.posyandu_name
+  );
+
+  useEffect(() => {
+    if (prefilledPosyanduDetail && !bookingData.posyandu_name) {
+      setBookingData(prev => ({
+        ...prev,
+        posyandu_name: prefilledPosyanduDetail.name
+      }));
+    }
+  }, [prefilledPosyanduDetail, bookingData.posyandu_name]);
 
   const { mutateAsync: createBooking, isPending } = useCreateOrangTuaBooking();
 
@@ -35,21 +66,36 @@ export default function BookingLayananPage() {
       posyandu_id: id,
       posyandu_name: name
     }));
-    setStep(2);
+    setStep(3); // Go to midwife selection step
   };
 
   const handleSelectLayanan = (
     type: 'pregnancy' | 'child_development' | 'general',
     children_id: string | null,
-    pregnancy_record_id: string | null
+    pregnancy_record_id: string | null,
+    posyandu_id?: string | null,
+    posyandu_name?: string | null
   ) => {
     setBookingData(prev => ({
       ...prev,
       consultation_type: type,
       children_id,
-      pregnancy_record_id
+      pregnancy_record_id,
+      posyandu_id: posyandu_id || '',
+      posyandu_name: posyandu_name || '',
+      midwife_id: null,
+      midwife_name: null
     }));
-    setStep(3);
+    setStep(2); // Go to posyandu step
+  };
+
+  const handleSelectBidan = (id: string, name: string) => {
+    setBookingData(prev => ({
+      ...prev,
+      midwife_id: id,
+      midwife_name: name
+    }));
+    setStep(4); // Go to time selection step
   };
 
   const handleSelectWaktu = (dateStr: string, timeStr: string) => {
@@ -71,20 +117,27 @@ export default function BookingLayananPage() {
         scheduled_at: utcDate.toISOString(),
         pregnancy_record_id: bookingData.pregnancy_record_id,
         children_id: bookingData.children_id,
+        midwife_id: bookingData.midwife_id,
         notes: "Dibuat oleh orang tua melalui portal",
       };
 
       const result = await createBooking(payload);
       
-      // Update queue number and move to step 4
+      // Update queue number and move to step 5
       setBookingData(prev => ({
         ...prev,
         queue_number: result.queue_number
       }));
-      setStep(4);
-    } catch (err: any) {
+      setStep(5);
+    } catch (err: unknown) {
       console.error(err);
-      const msg = err.response?.data?.message || err.message || "Gagal membuat booking. Silakan coba lagi.";
+      let msg = "Gagal membuat booking. Silakan coba lagi.";
+      if (err && typeof err === 'object' && 'response' in err) {
+        const errorObj = err as { response?: { data?: { message?: string } } };
+        msg = errorObj.response?.data?.message || msg;
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
       setErrorMessage(msg);
     }
   };
@@ -93,7 +146,11 @@ export default function BookingLayananPage() {
     if (step === 2) {
       setStep(1);
     } else if (step === 3) {
+      // Go back to Step 2
       setStep(2);
+    } else if (step === 4) {
+      // Go back to Step 3
+      setStep(3);
     } else {
       router.back();
     }
@@ -109,7 +166,7 @@ export default function BookingLayananPage() {
 
   // Determine AppBar title
   const getAppBarTitle = () => {
-    if (step === 4) return 'Booking Berhasil';
+    if (step === 5) return 'Booking Berhasil';
     return 'Booking Layanan';
   };
 
@@ -128,14 +185,14 @@ export default function BookingLayananPage() {
         <AppBarBooking 
           title={getAppBarTitle()} 
           onBack={handleBack} 
-          showBack={step !== 4} 
+          showBack={step !== 5} 
         />
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto pb-28 custom-scrollbar">
           
-          {/* Progress Indicator (hidden in Step 4) */}
-          {step < 4 && (
+          {/* Progress Indicator (hidden in Step 5) */}
+          {step < 5 && (
             <div className="flex gap-2.5 px-6 pt-5 pb-2 shrink-0">
               {[1, 2, 3, 4].map((s) => {
                 const isActive = s <= step;
@@ -161,18 +218,53 @@ export default function BookingLayananPage() {
           {/* Conditional Steps Rendering */}
           <div className="px-6 py-4">
             {step === 1 && (
-              <PilihPukesmas onSelect={handleSelectPuskesmas} />
-            )}
-            
-            {step === 2 && (
               <PilihLayanan onSelect={handleSelectLayanan} />
             )}
             
+            {step === 2 && (
+              bookingData.posyandu_id ? (
+                <div className="flex flex-col gap-5">
+                  <div>
+                    <h2 className="text-sm font-extrabold text-[#1E3050] tracking-wide mb-1">Posyandu Terpilih</h2>
+                    <p className="text-xs font-semibold text-slate-500 font-sans">Posyandu telah ditentukan secara otomatis untuk anak/kehamilan Anda.</p>
+                  </div>
+                  <div className="bg-white rounded-2xl py-4.5 px-5 border border-blue-100 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 text-sm font-extrabold shrink-0">
+                        P
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-sm font-bold text-[#1E3050] truncate">{bookingData.posyandu_name || 'Memuat nama posyandu...'}</h3>
+                        <p className="text-xs text-slate-500 font-semibold mt-1">Sesuai dengan Posyandu terdaftar Anda</p>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setStep(3)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-4 rounded-full active:scale-98 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.2)] text-xs.5 uppercase tracking-wider text-center cursor-pointer"
+                  >
+                    Lanjut
+                  </button>
+                </div>
+              ) : (
+                <PilihPukesmas onSelect={handleSelectPuskesmas} />
+              )
+            )}
+
             {step === 3 && (
+              <PilihBidan 
+                posyandu_id={bookingData.posyandu_id} 
+                onSelect={handleSelectBidan} 
+                onBack={() => setStep(2)} 
+              />
+            )}
+            
+            {step === 4 && (
               <div className={isPending ? 'pointer-events-none opacity-60' : ''}>
                 <PilihWaktu 
                   posyandu_id={bookingData.posyandu_id}
                   consultation_type={bookingData.consultation_type}
+                  midwife_id={bookingData.midwife_id}
                   onSelect={handleSelectWaktu} 
                   onNext={handleNextWaktu} 
                 />
@@ -185,11 +277,12 @@ export default function BookingLayananPage() {
               </div>
             )}
             
-            {step === 4 && (
+            {step === 5 && (
               <KonfirmasiBooking 
                 bookingDetails={{
                   puskesmas: bookingData.posyandu_name,
                   layanan: getLayananLabel(bookingData.consultation_type),
+                  bidan: bookingData.midwife_name,
                   date: bookingData.date,
                   time: bookingData.time,
                   queue_number: bookingData.queue_number

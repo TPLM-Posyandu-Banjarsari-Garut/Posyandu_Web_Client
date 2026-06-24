@@ -211,9 +211,9 @@ export async function middleware(request: NextRequest) {
     // Kloning headers dari request asal
     const requestHeaders = new Headers(request.headers);
 
-    // Ubah Origin dan Referer ke URL API agar lolos validasi keamanan Better Auth (Same-Origin)
-    requestHeaders.set("origin", apiUrlObj.origin);
-    requestHeaders.set("referer", API_URL);
+    // Jangan ubah Origin dan Referer agar Better Auth menerima origin asli client (misal: http://localhost:3001) yang terdaftar di trustedOrigins
+    // requestHeaders.set("origin", apiUrlObj.origin);
+    // requestHeaders.set("referer", API_URL);
 
     // Ubah Host header agar sesuai dengan host backend production
     requestHeaders.set("host", apiUrlObj.host);

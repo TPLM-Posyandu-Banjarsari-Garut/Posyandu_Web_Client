@@ -6,6 +6,7 @@ interface BookingDetails {
   date: string;
   time: string;
   queue_number?: number;
+  bidan?: string | null;
 }
 
 interface KonfirmasiBookingProps {
@@ -62,6 +63,12 @@ export default function KonfirmasiBooking({ bookingDetails, onHome, onViewQueue 
             <span className="text-slate-450 shrink-0">Layanan</span>
             <span className="text-[#1E3050] font-bold text-right">{bookingDetails.layanan}</span>
           </div>
+          {bookingDetails.bidan && (
+            <div className="flex justify-between items-start text-xs font-semibold gap-4">
+              <span className="text-slate-450 shrink-0">Bidan</span>
+              <span className="text-[#1E3050] font-bold text-right">{bookingDetails.bidan}</span>
+            </div>
+          )}
           <div className="flex justify-between items-start text-xs font-semibold gap-4">
             <span className="text-slate-450 shrink-0">Tanggal</span>
             <span className="text-[#1E3050] font-bold text-right">{bookingDetails.date}</span>
