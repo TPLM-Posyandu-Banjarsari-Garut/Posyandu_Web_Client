@@ -181,12 +181,13 @@ export async function middleware(request: NextRequest) {
   // ═══════════════════════════════════════════════════════════════════════════
   if (pathname.startsWith("/orangtua")) {
     const isLoginPage = pathname === "/orangtua/login";
+    const isOtpPage = pathname === "/orangtua/otp";
 
     const sessionToken =
       request.cookies.get("better-auth.session_token")?.value ??
       request.cookies.get("__Secure-better-auth.session_token")?.value;
 
-    if (!sessionToken && !isLoginPage) {
+    if (!sessionToken && !isLoginPage && !isOtpPage) {
       const loginUrl = new URL("/orangtua/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
