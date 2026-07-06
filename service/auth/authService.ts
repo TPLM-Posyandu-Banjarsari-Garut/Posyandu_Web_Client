@@ -46,3 +46,12 @@ export async function fetchCurrentUser(): Promise<SessionUser> {
   const { data } = await api.get<AuthMeResponse>("/api/auth/me");
   return data.data.user;
 }
+
+export interface UpdateUserPayload {
+  image?: string;
+  name?: string;
+}
+
+export async function updateUserProfile(payload: UpdateUserPayload): Promise<void> {
+  await api.post("/api/auth/update-user", payload);
+}
