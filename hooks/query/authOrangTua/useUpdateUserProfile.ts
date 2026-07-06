@@ -8,6 +8,7 @@ export const useUpdateUserProfile = () => {
     mutationFn: (payload: UpdateUserPayload) => updateUserProfile(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orangtua-current-user"] });
+      queryClient.invalidateQueries({ queryKey: ["current-user"] });
     },
   });
 };
