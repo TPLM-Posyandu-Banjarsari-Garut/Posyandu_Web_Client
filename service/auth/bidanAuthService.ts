@@ -1,4 +1,4 @@
-import { api } from "@/service/auth/authService";
+import { api, API_URL } from "@/service/auth/authService";
 import { BidanLoginPayload, BidanLoginResponse } from "@/interfaces/auth";
 
 export { api as bidanApi };
@@ -13,10 +13,18 @@ export async function loginBidan(
   return data;
 }
 
+import axios from "axios";
+
 export async function logoutBidan(): Promise<void> {
-  // Panggil Next.js API Route yang proper:
-  // 1. Hapus cache token dari validate-session layer
-  // 2. Sign-out server-side ke backend
-  // 3. Hapus cookie browser dengan bersih
-  await api.post("/api/auth/logout");
+  const backendUrl =
+    API_URL ||
+    (process.env.NODE_ENV === "development"
+      ? "http://localhost:3000"
+      : "https://api.posyandubanjarsari.my.id");
+
+  await axios.post(
+    `${backendUrl}/api/auth/sign-out`,
+    {},
+    { withCredentials: true }
+  );
 }
