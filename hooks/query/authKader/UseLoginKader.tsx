@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
@@ -49,6 +49,7 @@ export function useLoginKader() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormInputs>({
     defaultValues: {
@@ -57,6 +58,14 @@ export function useLoginKader() {
       rememberMe: false,
     },
   });
+
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail_kader");
+    if (rememberedEmail) {
+      setValue("email", rememberedEmail);
+      setValue("rememberMe", true);
+    }
+  }, [setValue]);
 
   const loginMutation = useMutation<void, Error, LoginKaderVariables>({
     mutationFn: async ({ email, password }) => {
@@ -91,6 +100,11 @@ export function useLoginKader() {
       },
       {
         onSuccess: () => {
+          if (data.rememberMe) {
+            localStorage.setItem("rememberedEmail_kader", data.email);
+          } else {
+            localStorage.removeItem("rememberedEmail_kader");
+          }
           setShowSuccess(true);
           setTimeout(() => {
             router.push("/kader/home");
