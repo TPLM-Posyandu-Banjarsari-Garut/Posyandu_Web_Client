@@ -1,12 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useResetPasswordBidan } from "@/hooks/query/authBidan/useResetPasswordBidan";
 import { ResetPasswordOTPPayload } from "@/interfaces/auth";
 
 export default function OTPResetPasswordBidan() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-100"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>}>
+      <OTPResetPasswordBidanContent />
+    </Suspense>
+  );
+}
+
+function OTPResetPasswordBidanContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";

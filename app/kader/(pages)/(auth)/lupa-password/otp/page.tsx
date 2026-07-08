@@ -1,12 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useResetPasswordKader } from "@/hooks/query/authKader/useResetPasswordKader";
 import { ResetPasswordOTPPayload } from "@/interfaces/auth";
 
 export default function OTPResetPasswordKader() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-100"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>}>
+      <OTPResetPasswordKaderContent />
+    </Suspense>
+  );
+}
+
+function OTPResetPasswordKaderContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
