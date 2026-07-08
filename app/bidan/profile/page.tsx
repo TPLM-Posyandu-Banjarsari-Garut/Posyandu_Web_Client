@@ -8,6 +8,7 @@ import BottombarBidan from "@/components/ui/bottombar/bidan/BottombarBidan";
 import { useCurrentUser } from "@/hooks/query/auth/useCurrentUser";
 import { useUploadMedia } from "@/hooks/query/media/useUploadMedia";
 import { useUpdateUserProfile } from "@/hooks/query/authOrangTua/useUpdateUserProfile";
+import { useChangePassword } from "@/hooks/query/auth/useChangePassword";
 
 export default function BidanProfile() {
   const router = useRouter();
@@ -20,6 +21,13 @@ export default function BidanProfile() {
   const [updateError, setUpdateError] = useState("");
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { mutateAsync: updatePassword, isPending: isUpdatingPassword } = useChangePassword();
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "-";
@@ -62,6 +70,45 @@ export default function BidanProfile() {
       }
     } finally {
        if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess(false);
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("Semua kolom kata sandi harus diisi");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Kata sandi baru dan konfirmasi tidak cocok");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordError("Kata sandi baru minimal 8 karakter");
+      return;
+    }
+
+    try {
+      await updatePassword({
+        currentPassword,
+        newPassword
+      });
+      setPasswordSuccess(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setPasswordSuccess(false), 4000);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setPasswordError(err.response?.data?.message || err.message);
+      } else if (err instanceof Error) {
+        setPasswordError(err.message);
+      } else {
+        setPasswordError("Terjadi kesalahan saat mengubah kata sandi");
+      }
     }
   };
 
@@ -236,6 +283,70 @@ export default function BidanProfile() {
                   <span className="text-sm font-bold text-slate-700">{formatDate(user?.updatedAt)}</span>
                 </div>
               </div>
+
+              {/* Security Section (Change Password) */}
+              <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest px-1 mt-4">Keamanan</h3>
+              
+              <div className="bg-slate-50 border border-slate-100 rounded-[1.25rem] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                <form onSubmit={handleUpdatePassword} className="flex flex-col gap-3">
+                  {passwordError && (
+                    <div className="text-rose-500 text-xs mb-1 font-medium px-2 py-1.5 bg-rose-50 rounded-md border border-rose-100">
+                      {passwordError}
+                    </div>
+                  )}
+                  {passwordSuccess && (
+                    <div className="text-emerald-600 text-xs mb-1 font-medium px-2 py-1.5 bg-emerald-50 rounded-md border border-emerald-100">
+                      Kata sandi berhasil diubah!
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider ml-1">Kata Sandi Lama</label>
+                    <input 
+                      type="password" 
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
+                      placeholder="Masukkan kata sandi saat ini"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider ml-1">Kata Sandi Baru</label>
+                    <input 
+                      type="password" 
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
+                      placeholder="Minimal 8 karakter"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider ml-1">Konfirmasi Kata Sandi Baru</label>
+                    <input 
+                      type="password" 
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
+                      placeholder="Ulangi kata sandi baru"
+                    />
+                  </div>
+
+                  <button 
+                    type="submit"
+                    disabled={isUpdatingPassword}
+                    className="mt-2 w-full bg-blue-600 text-white text-sm font-extrabold py-2.5 rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-70 flex items-center justify-center shadow-md shadow-blue-500/20"
+                  >
+                    {isUpdatingPassword ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                      "Simpan Kata Sandi"
+                    )}
+                  </button>
+                </form>
+              </div>
+
             </div>
 
             {/* Logout Action button */}

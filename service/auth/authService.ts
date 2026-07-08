@@ -55,3 +55,13 @@ export interface UpdateUserPayload {
 export async function updateUserProfile(payload: UpdateUserPayload): Promise<void> {
   await api.post("/api/auth/update-user", payload);
 }
+
+export interface ChangePasswordPayload {
+  newPassword: string;
+  currentPassword?: string;
+  revokeOtherSessions?: boolean;
+}
+
+export async function changePassword(payload: ChangePasswordPayload): Promise<void> {
+  await api.post("/api/auth/change-password", payload);
+}
