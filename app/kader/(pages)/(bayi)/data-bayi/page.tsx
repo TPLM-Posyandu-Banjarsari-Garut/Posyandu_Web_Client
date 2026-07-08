@@ -41,14 +41,6 @@ export default function DataBayi() {
 
   const apiError = getErrorMessage(childrenError);
 
-  console.log("data-bayi debug:", {
-    cadre,
-    isCadreLoading,
-    response,
-    isChildrenLoading,
-    childrenError: childrenError ? { message: childrenError.message, response: (childrenError as any).response?.data } : null,
-  });
-
   const childrenList = response?.data?.data || [];
 
   const calculateAge = (birthDateStr?: string | null) => {

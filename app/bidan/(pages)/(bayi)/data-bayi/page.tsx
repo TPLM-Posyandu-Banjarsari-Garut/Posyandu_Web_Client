@@ -42,15 +42,6 @@ export default function DataBayi() {
 
   const apiError = getErrorMessage(midwifeError) || getErrorMessage(childrenError);
 
-  console.log("data-bayi debug:", {
-    midwife,
-    isMidwifeLoading,
-    midwifeError: midwifeError ? { message: midwifeError.message, response: (midwifeError as any).response?.data } : null,
-    response,
-    isChildrenLoading,
-    childrenError: childrenError ? { message: childrenError.message, response: (childrenError as any).response?.data } : null,
-  });
-
   const childrenList = response?.data?.data || [];
 
   const calculateAge = (birthDateStr?: string | null) => {

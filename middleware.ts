@@ -82,6 +82,7 @@ export async function middleware(request: NextRequest) {
   // ═══════════════════════════════════════════════════════════════════════════
   if (pathname.startsWith("/admin")) {
     const isLoginPage = pathname === "/admin/login";
+    const isLupaPassword = pathname.startsWith("/admin/lupa-password");
 
     const sessionToken =
       request.cookies.get("better-auth.session_token")?.value ??
@@ -89,12 +90,12 @@ export async function middleware(request: NextRequest) {
 
     // Tahap 1: Jika tidak ada cookie sama sekali → redirect cepat (tanpa hit backend)
     if (!sessionToken) {
-      if (isLoginPage) return NextResponse.next();
+      if (isLoginPage || isLupaPassword) return NextResponse.next();
       return redirectToLogin(request, "/admin/login", "no_session", pathname);
     }
 
     // Tahap 2: Ada cookie → validasi token sungguhan ke backend (via cache layer)
-    if (!isLoginPage) {
+    if (!isLoginPage && !isLupaPassword) {
       const { valid, role } = await validateSessionToken(request, sessionToken);
 
       if (!valid) {
@@ -118,17 +119,18 @@ export async function middleware(request: NextRequest) {
   // ═══════════════════════════════════════════════════════════════════════════
   if (pathname.startsWith("/bidan")) {
     const isLoginPage = pathname === "/bidan/login";
+    const isLupaPassword = pathname.startsWith("/bidan/lupa-password");
 
     const sessionToken =
       request.cookies.get("better-auth.session_token")?.value ??
       request.cookies.get("__Secure-better-auth.session_token")?.value;
 
     if (!sessionToken) {
-      if (isLoginPage) return NextResponse.next();
+      if (isLoginPage || isLupaPassword) return NextResponse.next();
       return redirectToLogin(request, "/bidan/login", "no_session", pathname);
     }
 
-    if (!isLoginPage) {
+    if (!isLoginPage && !isLupaPassword) {
       const { valid, role } = await validateSessionToken(request, sessionToken);
 
       if (!valid) {
@@ -149,17 +151,18 @@ export async function middleware(request: NextRequest) {
   // ═══════════════════════════════════════════════════════════════════════════
   if (pathname.startsWith("/kader")) {
     const isLoginPage = pathname === "/kader/login";
+    const isLupaPassword = pathname.startsWith("/kader/lupa-password");
 
     const sessionToken =
       request.cookies.get("better-auth.session_token")?.value ??
       request.cookies.get("__Secure-better-auth.session_token")?.value;
 
     if (!sessionToken) {
-      if (isLoginPage) return NextResponse.next();
+      if (isLoginPage || isLupaPassword) return NextResponse.next();
       return redirectToLogin(request, "/kader/login", "no_session", pathname);
     }
 
-    if (!isLoginPage) {
+    if (!isLoginPage && !isLupaPassword) {
       const { valid, role } = await validateSessionToken(request, sessionToken);
 
       if (!valid) {
@@ -182,12 +185,13 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/orangtua")) {
     const isLoginPage = pathname === "/orangtua/login";
     const isOtpPage = pathname === "/orangtua/otp";
+    const isLupaPassword = pathname.startsWith("/orangtua/lupa-password");
 
     const sessionToken =
       request.cookies.get("better-auth.session_token")?.value ??
       request.cookies.get("__Secure-better-auth.session_token")?.value;
 
-    if (!sessionToken && !isLoginPage && !isOtpPage) {
+    if (!sessionToken && !isLoginPage && !isOtpPage && !isLupaPassword) {
       const loginUrl = new URL("/orangtua/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
