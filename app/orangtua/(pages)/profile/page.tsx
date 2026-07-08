@@ -17,7 +17,7 @@ export default function OrangTuaProfile() {
 
   const { mutateAsync: uploadMedia, isPending: isUploading } = useUploadMedia();
   const { mutateAsync: updateProfile, isPending: isUpdating } = useUpdateUserProfile();
-  
+
   const [updateError, setUpdateError] = useState("");
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,19 +70,19 @@ export default function OrangTuaProfile() {
       const imageUrl = urls[0];
 
       await updateProfile({ image: imageUrl });
-      
+
       setUpdateSuccess(true);
       setTimeout(() => setUpdateSuccess(false), 3000);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-         setUpdateError(err.response?.data?.message || err.message);
+        setUpdateError(err.response?.data?.message || err.message);
       } else if (err instanceof Error) {
-         setUpdateError(err.message);
+        setUpdateError(err.message);
       } else {
-         setUpdateError("Terjadi kesalahan saat mengunggah gambar");
+        setUpdateError("Terjadi kesalahan saat mengunggah gambar");
       }
     } finally {
-       if (fileInputRef.current) fileInputRef.current.value = "";
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -129,10 +129,10 @@ export default function OrangTuaProfile() {
     <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
       {/* Mobile Container */}
       <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200">
-        
+
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto pb-28 custom-scrollbar">
-          
+
           {/* Header section with gradient */}
           <div className="bg-gradient-to-br from-blue-500 to-indigo-600 px-6 pt-10 pb-16 flex flex-col relative z-0 shrink-0">
             {/* Back Button */}
@@ -152,7 +152,7 @@ export default function OrangTuaProfile() {
 
           {/* Overlapping Content Box */}
           <div className="bg-white rounded-t-[2.5rem] -mt-8 pt-8 px-6 pb-6 flex-1 flex flex-col relative z-10">
-            
+
             {/* Avatar & Profile Identity Card */}
             <div className="bg-slate-50 border border-slate-100 rounded-[1.5rem] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col items-center text-center mb-6 -mt-14 relative bg-white/95 backdrop-blur-md">
               <div className="relative group">
@@ -162,7 +162,7 @@ export default function OrangTuaProfile() {
                       <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                     </div>
                   ) : user?.image ? (
-                    <img 
+                    <img
                       src={(() => {
                         if (user.image.startsWith('{')) {
                           try {
@@ -172,9 +172,9 @@ export default function OrangTuaProfile() {
                           }
                         }
                         return user.image;
-                      })()} 
-                      alt={user?.name || "Profile"} 
-                      className="w-full h-full object-cover rounded-full" 
+                      })()}
+                      alt={user?.name || "Profile"}
+                      className="w-full h-full object-cover rounded-full"
                     />
                   ) : (
                     <div className="w-full h-full rounded-full bg-blue-200 flex items-center justify-center text-blue-600">
@@ -299,7 +299,7 @@ export default function OrangTuaProfile() {
 
               {/* Security Section (Change Password) */}
               <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest px-1 mt-4">Keamanan</h3>
-              
+
               <div className="bg-slate-50 border border-slate-100 rounded-[1.25rem] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
                 <form onSubmit={handleUpdatePassword} className="flex flex-col gap-3">
                   {passwordError && (
@@ -315,19 +315,19 @@ export default function OrangTuaProfile() {
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider ml-1">Kata Sandi Lama</label>
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
                       placeholder="Masukkan kata sandi saat ini"
                     />
                   </div>
-                  
+
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider ml-1">Kata Sandi Baru</label>
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
@@ -337,8 +337,8 @@ export default function OrangTuaProfile() {
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider ml-1">Konfirmasi Kata Sandi Baru</label>
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
@@ -346,7 +346,7 @@ export default function OrangTuaProfile() {
                     />
                   </div>
 
-                  <button 
+                  <button
                     type="submit"
                     disabled={isUpdatingPassword}
                     className="mt-2 w-full bg-blue-600 text-white text-sm font-extrabold py-2.5 rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-70 flex items-center justify-center shadow-md shadow-blue-500/20"
@@ -387,7 +387,7 @@ export default function OrangTuaProfile() {
                 )}
               </button>
             </div>
-            
+
           </div>
         </div>
 
