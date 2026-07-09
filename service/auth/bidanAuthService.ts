@@ -13,20 +13,8 @@ export async function loginBidan(
   return data;
 }
 
-import axios from "axios";
-
 export async function logoutBidan(): Promise<void> {
-  const backendUrl =
-    API_URL ||
-    (process.env.NODE_ENV === "development"
-      ? "http://localhost:3000"
-      : "https://api.posyandubanjarsari.my.id");
-
-  await axios.post(
-    `${backendUrl}/api/auth/sign-out`,
-    {},
-    { withCredentials: true }
-  );
+  await api.post("/api/auth/sign-out");
 }
 
 export async function requestPasswordResetOTP(email: string): Promise<any> {
