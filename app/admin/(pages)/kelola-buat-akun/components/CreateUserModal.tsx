@@ -119,12 +119,12 @@ export default function CreateUserModal({
                 {...register('password', {
                   required: 'Password tidak boleh kosong',
                   minLength: {
-                    value: 8,
-                    message: 'Password minimal harus 8 karakter',
+                    value: 12,
+                    message: 'Password minimal harus 12 karakter',
                   },
                 })}
                 className={`${inputClass} pr-11`}
-                placeholder="Masukkan minimal 8 karakter..."
+                placeholder="Masukkan minimal 12 karakter..."
               />
               <button
                 type="button"
