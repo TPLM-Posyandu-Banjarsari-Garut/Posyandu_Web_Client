@@ -92,8 +92,25 @@ export default function PilihBidan({ posyandu_id, onSelect, onBack }: PilihBidan
                 className="w-full text-left bg-white rounded-2xl py-4 px-5 border border-[#EBE8D8] hover:border-blue-400 hover:shadow-sm active:scale-[0.99] transition-all flex items-center justify-between shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
               >
                 <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 text-sm font-extrabold shrink-0">
-                    {displayName.charAt(0).toUpperCase()}
+                  <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 text-sm font-extrabold shrink-0 overflow-hidden">
+                    {midwife.image ? (
+                      <img
+                        src={(() => {
+                          if (midwife.image.startsWith('{')) {
+                            try {
+                              return JSON.parse(midwife.image).url;
+                            } catch (e) {
+                              return midwife.image;
+                            }
+                          }
+                          return midwife.image;
+                        })()}
+                        alt={displayName}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    ) : (
+                      displayName.charAt(0).toUpperCase()
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <h3 className="text-sm font-bold text-[#1E3050] tracking-wide leading-tight truncate">{displayName}</h3>

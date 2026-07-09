@@ -9,4 +9,5 @@ export interface Midwife {
   updated_at: string;
   name?: string;
   email?: string;
+  image?: string | null;
 }
