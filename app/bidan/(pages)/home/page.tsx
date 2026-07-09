@@ -53,11 +53,28 @@ export default function Home() {
           <div className="relative z-10 px-6 pt-10 pb-6">
             {/* User Profile */}
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-14 h-14 rounded-full bg-white shadow-sm p-1 border border-blue-100">
+              <div className="w-14 h-14 rounded-full bg-white shadow-sm p-1 border border-blue-100 shrink-0">
                 <div className="w-full h-full rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
-                  <svg className="w-8 h-8 text-blue-500 mt-2" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
+                  {user?.image ? (
+                    <img
+                      src={(() => {
+                        if (user.image.startsWith('{')) {
+                          try {
+                            return JSON.parse(user.image).url;
+                          } catch (e) {
+                            return user.image;
+                          }
+                        }
+                        return user.image;
+                      })()}
+                      alt={user?.name || "Profile"}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <svg className="w-8 h-8 text-blue-500 mt-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
+                  )}
                 </div>
               </div>
               <div>
