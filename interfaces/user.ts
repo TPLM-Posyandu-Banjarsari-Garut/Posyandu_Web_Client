@@ -30,4 +30,14 @@ export interface CreateUserPayload {
   phone_number?: string | null;
   role: BackendRole;
   status?: "active" | "suspended";
+  parent_data?: {
+    identity_number?: string | null;
+  };
+  cadre_data?: {
+    posyandu_id: string;
+  };
+  midwife_data?: {
+    posyandu_id: string;
+    identity_number: string;
+  };
 }

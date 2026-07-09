@@ -9,8 +9,7 @@ import {
   useDeleteUser,
   useUpdateUser,
 } from "@/hooks/query/userAdmin/UseManageUsers";
-import { BackendRole } from "@/interfaces/user";
-import { createMidwifeProfile, createCadreProfile } from "@/service/user/userService";
+import { BackendRole, CreateUserPayload } from "@/interfaces/user";
 import { useConfirm } from "@/providers/ConfirmProvider";
 
 export interface CreateFormInputs {
@@ -19,6 +18,7 @@ export interface CreateFormInputs {
   password: string;
   role: "orang tua" | "kader" | "bidan" | "admin desa";
   posyanduId?: string;
+  identityNumber?: string;
 }
 
 interface CustomError {
@@ -118,6 +118,7 @@ export function useManageUsersPage() {
       password: "",
       role: "orang tua",
       posyanduId: "",
+      identityNumber: "",
     },
   });
 
@@ -176,39 +177,27 @@ export function useManageUsersPage() {
     setFormError("");
     const targetRole = roleMapToBackend(data.role);
 
-    createUserMutation.mutate(
+    const payload: CreateUserPayload = {
+      name: data.name,
+      email: data.email,
+      password: data.password,
+      role: targetRole,
+    };
+
+    if (targetRole === "cadre" && data.posyanduId) {
+      payload.cadre_data = { posyandu_id: data.posyanduId };
+    }
+
+    if (targetRole === "midwife" && data.posyanduId && data.identityNumber) {
+      payload.midwife_data = { posyandu_id: data.posyanduId, identity_number: data.identityNumber };
+    }
+
+    createUserMutation.mutate(payload,
       {
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        role: targetRole,
-      },
-      {
-        onSuccess: async (createdUser) => {
-          try {
-            if (targetRole === "midwife" && data.posyanduId) {
-              await createMidwifeProfile({
-                user_id: createdUser.id,
-                posyandu_id: data.posyanduId,
-                status: "active",
-              });
-            } else if (targetRole === "cadre" && data.posyanduId) {
-              await createCadreProfile({
-                user_id: createdUser.id,
-                posyandu_id: data.posyanduId,
-                status: "active",
-              });
-            }
-            resetCreate();
-            setIsModalOpen(false);
-            showToast("Akun baru dan profil tugas berhasil dibuat!");
-          } catch (error) {
-            const err = error as CustomError;
-            setFormError(
-              "Akun dibuat, tetapi gagal mengasosiasikan Posyandu: " +
-              (err.response?.data?.message ?? err.message)
-            );
-          }
+        onSuccess: async () => {
+          resetCreate();
+          setIsModalOpen(false);
+          showToast("Akun baru berhasil dibuat!");
         },
         onError: (err: CustomError) => {
           setFormError(err.response?.data?.message ?? err.message ?? "Gagal membuat akun");
