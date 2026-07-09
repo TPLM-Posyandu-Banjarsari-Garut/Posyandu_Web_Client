@@ -1,15 +1,33 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import axios from "axios";
 import { useLogoutOrangTua } from "@/hooks/query/authOrangTua/UseLogoutOrangTua";
 import BottombarOrtu from "@/components/ui/bottombar/orangtua/BottombarOrtu";
 import { useOrangTuaCurrentUser } from "@/hooks/query/authOrangTua/useOrangTuaCurrentUser";
+import { useUploadMedia } from "@/hooks/query/media/useUploadMedia";
+import { useUpdateUserProfile } from "@/hooks/query/authOrangTua/useUpdateUserProfile";
+import { useChangePassword } from "@/hooks/query/auth/useChangePassword";
 
 export default function OrangTuaProfile() {
   const router = useRouter();
   const { data: user, isPending, isError } = useOrangTuaCurrentUser();
   const { mutate: logout, isPending: isLoggingOut } = useLogoutOrangTua();
+
+  const { mutateAsync: uploadMedia, isPending: isUploading } = useUploadMedia();
+  const { mutateAsync: updateProfile, isPending: isUpdating } = useUpdateUserProfile();
+
+  const [updateError, setUpdateError] = useState("");
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { mutateAsync: updatePassword, isPending: isUpdatingPassword } = useChangePassword();
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   useEffect(() => {
     if (isError || (!isPending && !user)) {
@@ -39,14 +57,82 @@ export default function OrangTuaProfile() {
     logout();
   };
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUpdateError("");
+    setUpdateSuccess(false);
+
+    try {
+      const urls = await uploadMedia([file]);
+      if (urls.length === 0) throw new Error("Gagal mengunggah gambar");
+      const imageUrl = urls[0];
+
+      await updateProfile({ image: imageUrl });
+
+      setUpdateSuccess(true);
+      setTimeout(() => setUpdateSuccess(false), 3000);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setUpdateError(err.response?.data?.message || err.message);
+      } else if (err instanceof Error) {
+        setUpdateError(err.message);
+      } else {
+        setUpdateError("Terjadi kesalahan saat mengunggah gambar");
+      }
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess(false);
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("Semua kolom kata sandi harus diisi");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Kata sandi baru dan konfirmasi tidak cocok");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordError("Kata sandi baru minimal 8 karakter");
+      return;
+    }
+
+    try {
+      await updatePassword({
+        currentPassword,
+        newPassword
+      });
+      setPasswordSuccess(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setPasswordSuccess(false), 4000);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setPasswordError(err.response?.data?.message || err.message);
+      } else if (err instanceof Error) {
+        setPasswordError(err.message);
+      } else {
+        setPasswordError("Terjadi kesalahan saat mengubah kata sandi");
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
       {/* Mobile Container */}
       <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200">
-        
+
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto pb-28 custom-scrollbar">
-          
+
           {/* Header section with gradient */}
           <div className="bg-gradient-to-br from-blue-500 to-indigo-600 px-6 pt-10 pb-16 flex flex-col relative z-0 shrink-0">
             {/* Back Button */}
@@ -66,16 +152,67 @@ export default function OrangTuaProfile() {
 
           {/* Overlapping Content Box */}
           <div className="bg-white rounded-t-[2.5rem] -mt-8 pt-8 px-6 pb-6 flex-1 flex flex-col relative z-10">
-            
+
             {/* Avatar & Profile Identity Card */}
             <div className="bg-slate-50 border border-slate-100 rounded-[1.5rem] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col items-center text-center mb-6 -mt-14 relative bg-white/95 backdrop-blur-md">
-              <div className="w-20 h-20 rounded-full bg-blue-100 p-1 border-2 border-white shadow-md mb-3 flex items-center justify-center overflow-hidden">
-                <div className="w-full h-full rounded-full bg-blue-200 flex items-center justify-center text-blue-600">
-                  <svg className="w-12 h-12 mt-2" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
+              <div className="relative group">
+                <div className="w-24 h-24 rounded-full bg-blue-100 p-1 border-2 border-white shadow-md mb-3 flex items-center justify-center overflow-hidden relative">
+                  {isUploading || isUpdating ? (
+                    <div className="w-full h-full rounded-full bg-blue-200 flex items-center justify-center">
+                      <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : user?.image ? (
+                    <img
+                      src={(() => {
+                        if (user.image.startsWith('{')) {
+                          try {
+                            return JSON.parse(user.image).url;
+                          } catch (e) {
+                            return user.image;
+                          }
+                        }
+                        return user.image;
+                      })()}
+                      alt={user?.name || "Profile"}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-full bg-blue-200 flex items-center justify-center text-blue-600">
+                      <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                      </svg>
+                    </div>
+                  )}
+                  {/* Overlay upload button on hover */}
+                  <label htmlFor="profile-upload" className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity rounded-full z-10">
+                    <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                    </svg>
+                    <span className="text-[10px] font-bold">Ubah</span>
+                  </label>
+                  <input
+                    id="profile-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    disabled={isUploading || isUpdating}
+                  />
                 </div>
               </div>
+
+              {updateError && (
+                <div className="text-rose-500 text-xs mt-1 mb-2 font-medium px-2 py-1 bg-rose-50 rounded-md">
+                  {updateError}
+                </div>
+              )}
+              {updateSuccess && (
+                <div className="text-emerald-500 text-xs mt-1 mb-2 font-medium px-2 py-1 bg-emerald-50 rounded-md">
+                  Berhasil memperbarui foto profil!
+                </div>
+              )}
+
               <h2 className="text-lg font-bold text-slate-800 leading-snug">{user?.name || "Orang Tua"}</h2>
               <span className="px-3.5 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold mt-2 border border-blue-100">
                 {user?.role === "parent" ? "Orang Tua" : user?.role || "Pengguna"}
@@ -159,6 +296,70 @@ export default function OrangTuaProfile() {
                   <span className="text-sm font-bold text-slate-700">{formatDate(user?.updatedAt)}</span>
                 </div>
               </div>
+
+              {/* Security Section (Change Password) */}
+              <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest px-1 mt-4">Keamanan</h3>
+
+              <div className="bg-slate-50 border border-slate-100 rounded-[1.25rem] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                <form onSubmit={handleUpdatePassword} className="flex flex-col gap-3">
+                  {passwordError && (
+                    <div className="text-rose-500 text-xs mb-1 font-medium px-2 py-1.5 bg-rose-50 rounded-md border border-rose-100">
+                      {passwordError}
+                    </div>
+                  )}
+                  {passwordSuccess && (
+                    <div className="text-emerald-600 text-xs mb-1 font-medium px-2 py-1.5 bg-emerald-50 rounded-md border border-emerald-100">
+                      Kata sandi berhasil diubah!
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider ml-1">Kata Sandi Lama</label>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
+                      placeholder="Masukkan kata sandi saat ini"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider ml-1">Kata Sandi Baru</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
+                      placeholder="Minimal 8 karakter"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider ml-1">Konfirmasi Kata Sandi Baru</label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-300"
+                      placeholder="Ulangi kata sandi baru"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isUpdatingPassword}
+                    className="mt-2 w-full bg-blue-600 text-white text-sm font-extrabold py-2.5 rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-70 flex items-center justify-center shadow-md shadow-blue-500/20"
+                  >
+                    {isUpdatingPassword ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                      "Simpan Kata Sandi"
+                    )}
+                  </button>
+                </form>
+              </div>
+
             </div>
 
             {/* Logout Action button */}
@@ -186,7 +387,7 @@ export default function OrangTuaProfile() {
                 )}
               </button>
             </div>
-            
+
           </div>
         </div>
 

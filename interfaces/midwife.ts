@@ -7,4 +7,6 @@ export interface Midwife {
   status: "active" | "inactive";
   created_at: string;
   updated_at: string;
+  name?: string;
+  email?: string;
 }

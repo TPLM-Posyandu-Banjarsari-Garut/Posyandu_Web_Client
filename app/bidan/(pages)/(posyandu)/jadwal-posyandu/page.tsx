@@ -1,16 +1,34 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import BottombarBidan from '@/components/ui/bottombar/bidan/BottombarBidan';
 import DateFilterInput from '@/components/ui/DateFilterInput';
+import { useForm } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 
-interface Jadwal {
-    id: number;
-    namaPosyandu: string;
-    tanggal: string; // Format: YYYY-MM-DD
-    jamMulai: string; // Format: HH:MM
-    jamSelesai: string; // Format: HH:MM
+import { useGetMidwifeProfile } from '@/hooks/query/midwife/useMidwifeProfile';
+import { fetchPosyanduById } from '@/service/posyandu/posyanduService';
+import {
+    useGetSchedules,
+    useCreateSchedule,
+    useUpdateSchedule,
+    useDeleteSchedule
+} from '@/hooks/query/schedule/useManageSchedules';
+import { 
+    useGetExaminations,
+    useCreateExamination,
+    useUpdateExamination,
+    useDeleteExamination
+} from '@/hooks/query/examination/useManageExaminations';
+import { CreateSchedulePayload, ExaminationSchedule } from '@/interfaces/schedule';
+import { useConfirm } from '@/providers/ConfirmProvider';
+
+interface ScheduleFormValues {
+    examination_id: string;
+    scheduled_date: string;
+    start_time: string;
+    end_time: string;
 }
 
 export default function JadwalPosyandu() {
@@ -25,51 +43,66 @@ export default function JadwalPosyandu() {
         }
     }, []);
 
-    // Initial premium dummy schedule data
-    const [jadwalList, setJadwalList] = useState<Jadwal[]>([
-        {
-            id: 1,
-            namaPosyandu: 'Posyandu Mawar I',
-            tanggal: '2026-05-24',
-            jamMulai: '08:00',
-            jamSelesai: '11:00'
-        },
-        {
-            id: 2,
-            namaPosyandu: 'Posyandu Melati II',
-            tanggal: '2026-05-25',
-            jamMulai: '09:00',
-            jamSelesai: '12:00'
-        },
-        {
-            id: 3,
-            namaPosyandu: 'Posyandu Flamboyan III',
-            tanggal: '2026-05-28',
-            jamMulai: '08:30',
-            jamSelesai: '11:30'
-        }
-    ]);
+    // 1. Fetch User Data
+    const { data: midwife } = useGetMidwifeProfile();
+    const posyandu_id = midwife?.posyandu_id || '';
+    
+    const confirm = useConfirm();
 
-    // Search and Filter states
-    const [searchQuery, setSearchQuery] = useState('');
+    // 2. Fetch Posyandu Detail
+    const { data: posyandu } = useQuery({
+        queryKey: ['posyandu', posyandu_id],
+        queryFn: () => fetchPosyanduById(posyandu_id),
+        enabled: !!posyandu_id,
+    });
+    const posyanduName = posyandu?.name || 'Posyandu Anda';
+
+    // 3. Fetch Examinations (for dropdown and matching names)
+    const { data: examinationsData } = useGetExaminations({ posyandu_id });
+    const examinationsList = (examinationsData?.data as any)?.data || [];
+    
+    const posyanduExaminations = useMemo(() => {
+        if (!posyandu_id || !examinationsList) return [];
+        return examinationsList.filter((ex: any) => ex.posyandu_id === posyandu_id);
+    }, [posyandu_id, examinationsList]);
+
+    // 4. Fetch Schedules
     const [filterDate, setFilterDate] = useState('');
-    const [filterPosyandu, setFilterPosyandu] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterExamination, setFilterExamination] = useState('');
+    
+    // Pagination
+    const [page, setPage] = useState(1);
+    const limit = 5;
+
+    const { data: schedulesData, isLoading } = useGetSchedules({
+        posyandu_id,
+        scheduled_date: filterDate || undefined,
+        examination_id: filterExamination || undefined,
+        page,
+        limit
+    });
+    
+    const schedules = (schedulesData?.data as any)?.data || [];
+    const meta = (schedulesData?.data as any)?.meta;
+    const totalPages = meta?.total_pages || 1;
+
+    // Reset page to 1 when filters change
+    useEffect(() => {
+        setPage(1);
+    }, [filterDate, filterExamination, searchQuery]);
+
+    // Mutations
+    const createMutation = useCreateSchedule();
+    const updateMutation = useUpdateSchedule();
+    const deleteMutation = useDeleteSchedule();
 
     // Modal & Toast states
     const [showModal, setShowModal] = useState(false);
-    const [editingItem, setEditingItem] = useState<Jadwal | null>(null);
+    const [editingId, setEditingId] = useState<string | null>(null);
     const [toastMessage, setToastMessage] = useState('');
     const [showToast, setShowToast] = useState(false);
 
-    // Form inputs state
-    const [namaPosyandu, setNamaPosyandu] = useState('Posyandu Mawar I');
-    const [customNamaPosyandu, setCustomNamaPosyandu] = useState('');
-    const [isCustomNama, setIsCustomNama] = useState(false);
-    const [tanggal, setTanggal] = useState('');
-    const [jamMulai, setJamMulai] = useState('');
-    const [jamSelesai, setJamSelesai] = useState('');
-
-    // Trigger Toast Notification
     const triggerToast = (msg: string) => {
         setToastMessage(msg);
         setShowToast(true);
@@ -78,99 +111,115 @@ export default function JadwalPosyandu() {
         }, 3000);
     };
 
-    // Open Add Modal
-    const openAddModal = () => {
-        setEditingItem(null);
-        setNamaPosyandu('Posyandu Mawar I');
-        setIsCustomNama(false);
-        setCustomNamaPosyandu('');
+    // Form
+    const { register, handleSubmit, reset, watch, setValue } = useForm<ScheduleFormValues>();
+    const selectedExaminationId = watch('examination_id');
 
-        // Prefill date with tomorrow's date
+    // Examination inline states
+    const [isAddingExam, setIsAddingExam] = useState(false);
+    const [isEditingExam, setIsEditingExam] = useState(false);
+    const [newExamName, setNewExamName] = useState('');
+    const [newExamType, setNewExamType] = useState<'infant' | 'pregnant_mother' | 'toddler' | 'young_child'>('infant');
+
+    const createExamMutation = useCreateExamination();
+    const updateExamMutation = useUpdateExamination();
+    const deleteExamMutation = useDeleteExamination();
+
+    const openAddModal = () => {
+        setEditingId(null);
+        setIsAddingExam(false);
+        setIsEditingExam(false);
+        setNewExamName('');
+
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         const yyyy = tomorrow.getFullYear();
         const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
         const dd = String(tomorrow.getDate()).padStart(2, '0');
-        setTanggal(`${yyyy}-${mm}-${dd}`);
 
-        setJamMulai('08:00');
-        setJamSelesai('11:00');
+        reset({
+            examination_id: '',
+            scheduled_date: `${yyyy}-${mm}-${dd}`,
+            start_time: '08:00',
+            end_time: '11:00',
+        });
         setShowModal(true);
     };
 
-    // Open Edit Modal
-    const openEditModal = (item: Jadwal) => {
-        setEditingItem(item);
-        const presetNames = ['Posyandu Mawar I', 'Posyandu Melati II', 'Posyandu Flamboyan III'];
-        if (presetNames.includes(item.namaPosyandu)) {
-            setNamaPosyandu(item.namaPosyandu);
-            setIsCustomNama(false);
-            setCustomNamaPosyandu('');
-        } else {
-            setNamaPosyandu('Lainnya');
-            setIsCustomNama(true);
-            setCustomNamaPosyandu(item.namaPosyandu);
-        }
-        setTanggal(item.tanggal);
-        setJamMulai(item.jamMulai);
-        setJamSelesai(item.jamSelesai);
+    const openEditModal = (item: ExaminationSchedule) => {
+        setEditingId(item.id);
+        setIsAddingExam(false);
+        setIsEditingExam(false);
+        setNewExamName('');
+        reset({
+            examination_id: item.examination_id,
+            scheduled_date: item.scheduled_date ? new Date(item.scheduled_date).toISOString().split('T')[0] : '',
+            start_time: item.start_time || '',
+            end_time: item.end_time || '',
+        });
         setShowModal(true);
     };
 
-    // Close Modal
     const closeModal = () => {
         setShowModal(false);
-        setEditingItem(null);
+        setEditingId(null);
     };
 
-    // Delete Schedule Handler
-    const handleDelete = (id: number, posyanduName: string) => {
-        if (confirm(`Apakah Anda yakin ingin menghapus jadwal untuk "${posyanduName}"?`)) {
-            setJadwalList(prev => prev.filter(item => item.id !== id));
-            triggerToast(`Jadwal "${posyanduName}" berhasil dihapus.`);
-        }
-    };
-
-    // Form Submit Handler
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const finalNama = isCustomNama ? customNamaPosyandu.trim() : namaPosyandu;
-        if (!finalNama) {
-            alert('Nama Posyandu tidak boleh kosong!');
-            return;
-        }
-        if (!tanggal || !jamMulai || !jamSelesai) {
-            alert('Semua kolom form wajib diisi!');
+    const onSubmit = (data: ScheduleFormValues) => {
+        if (!posyandu_id) {
+            alert('Gagal mendapatkan ID Posyandu.');
             return;
         }
 
-        if (editingItem) {
-            // Update mode
-            setJadwalList(prev => prev.map(item =>
-                item.id === editingItem.id
-                    ? { ...item, namaPosyandu: finalNama, tanggal, jamMulai, jamSelesai }
-                    : item
-            ));
-            triggerToast(`Jadwal "${finalNama}" berhasil diperbarui!`);
+        const payload: CreateSchedulePayload = {
+            posyandu_id,
+            examination_id: data.examination_id,
+            scheduled_date: data.scheduled_date,
+            start_time: data.start_time,
+            end_time: data.end_time,
+        };
+
+        if (editingId) {
+            updateMutation.mutate(
+                { id: editingId, payload },
+                {
+                    onSuccess: () => {
+                        triggerToast('Jadwal berhasil diperbarui!');
+                        closeModal();
+                    },
+                    onError: (err: any) => {
+                        alert(err?.response?.data?.message || 'Gagal memperbarui jadwal.');
+                    }
+                }
+            );
         } else {
-            // Add new mode
-            const newItem: Jadwal = {
-                id: Date.now(),
-                namaPosyandu: finalNama,
-                tanggal,
-                jamMulai,
-                jamSelesai
-            };
-            setJadwalList(prev => [newItem, ...prev]);
-            triggerToast(`Jadwal "${finalNama}" berhasil ditambahkan!`);
+            createMutation.mutate(payload, {
+                onSuccess: () => {
+                    triggerToast('Jadwal berhasil ditambahkan!');
+                    closeModal();
+                },
+                onError: (err: any) => {
+                    alert(err?.response?.data?.message || 'Gagal menambahkan jadwal. Pastikan tidak ada duplikat.');
+                }
+            });
         }
+    };
 
-        closeModal();
+    const handleDelete = async (id: string) => {
+        if (await confirm(`Apakah Anda yakin ingin menghapus jadwal ini?`)) {
+            deleteMutation.mutate(id, {
+                onSuccess: () => {
+                    triggerToast(`Jadwal berhasil dihapus.`);
+                },
+                onError: () => {
+                    alert('Gagal menghapus jadwal.');
+                }
+            });
+        }
     };
 
     // PWA Push Notification Handler
-    const handleLaunchNotification = async (item: Jadwal) => {
+    const handleLaunchNotification = async (item: ExaminationSchedule, examName: string) => {
         if (!("Notification" in window)) {
             alert("Browser ini tidak mendukung notifikasi.");
             return;
@@ -179,7 +228,7 @@ export default function JadwalPosyandu() {
         const showNotification = async () => {
             const title = "🔔 JADWAL POSYANDU BARU";
             const options: NotificationOptions & { vibrate?: number[] } = {
-                body: `Jadwal untuk ${item.namaPosyandu} telah diluncurkan pada ${formatDateIndo(item.tanggal)} pukul ${item.jamMulai} - ${item.jamSelesai} WIB. Jangan lupa hadir!`,
+                body: `Jadwal ${examName} di ${posyanduName} diluncurkan pada ${formatDateIndo(item.scheduled_date)} pukul ${item.start_time} - ${item.end_time} WIB. Jangan lupa hadir!`,
                 icon: "/icon-192x192.png",
                 badge: "/icon-192x192.png",
                 vibrate: [100, 50, 100],
@@ -192,30 +241,27 @@ export default function JadwalPosyandu() {
             // Try sending notification via registered service worker
             if ("serviceWorker" in navigator) {
                 try {
-                    // Prevent hanging indefinitely by using a 1.2-second timeout
                     const swReadyPromise = navigator.serviceWorker.ready;
                     const timeoutPromise = new Promise((_, reject) =>
                         setTimeout(() => reject(new Error("Timeout waiting for Service Worker")), 1200)
                     );
                     const registration = await Promise.race([swReadyPromise, timeoutPromise]) as ServiceWorkerRegistration;
 
-                    console.log("Mengirim notifikasi melalui Service Worker...");
                     await registration.showNotification(title, options);
-                    triggerToast(`Notifikasi "${item.namaPosyandu}" terkirim via SW!`);
+                    triggerToast(`Notifikasi terkirim via SW!`);
                     return;
                 } catch (err) {
                     console.warn("Service Worker showNotification gagal, menggunakan fallback:", err);
                 }
             }
 
-            // Fallback for standard browser notifications (Chrome/Safari desktop)
-            console.log("Menggunakan Browser Notification (fallback)...");
+            // Fallback for standard browser notifications
             try {
                 new Notification(title, options);
-                triggerToast(`Notifikasi "${item.namaPosyandu}" terkirim!`);
+                triggerToast(`Notifikasi terkirim!`);
             } catch (err) {
                 console.error("Gagal meluncurkan browser notification:", err);
-                alert("Gagal mengirim notifikasi. Pastikan izin notifikasi diaktifkan di browser Anda.");
+                alert("Gagal mengirim notifikasi. Pastikan izin diaktifkan.");
             }
         };
 
@@ -233,11 +279,12 @@ export default function JadwalPosyandu() {
         }
     };
 
-    // Safer Indonesian Date Formatter helper (no timezone shift)
     const formatDateIndo = (dateStr: string) => {
         if (!dateStr) return '-';
-        const [year, month, day] = dateStr.split('-');
-        if (!year || !month || !day) return dateStr;
+        // Extract YYYY-MM-DD from ISO string if needed
+        const rawDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+        const [year, month, day] = rawDate.split('-');
+        if (!year || !month || !day) return rawDate;
         const months = [
             'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
             'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
@@ -245,19 +292,24 @@ export default function JadwalPosyandu() {
         return `${parseInt(day, 10)} ${months[parseInt(month, 10) - 1]} ${year}`;
     };
 
-    // Filter schedules
-    const filteredJadwal = jadwalList.filter((item) => {
-        const matchesSearch = item.namaPosyandu.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesDate = filterDate ? item.tanggal === filterDate : true;
-        const matchesPosyandu = filterPosyandu ? item.namaPosyandu === filterPosyandu : true;
-        return matchesSearch && matchesDate && matchesPosyandu;
+    // Helper to get examination name
+    const getExamName = (id: string) => {
+        const exam = examinationsList.find((e: any) => e.id === id);
+        return exam ? exam.name : 'Kegiatan Posyandu';
+    };
+
+    // Filter schedules locally for search text / dropdown
+    const filteredJadwal = schedules.filter((item: any) => {
+        const examName = getExamName(item.examination_id);
+        const matchesSearch = examName.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesExam = filterExamination ? item.examination_id === filterExamination : true;
+        return matchesSearch && matchesExam;
     });
 
     return (
         <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-2 sm:px-0 text-slate-800 flex justify-center">
-            {/* Mobile Container */}
             <div className="w-full max-w-md bg-white min-h-[90vh] rounded-[2.5rem] relative shadow-2xl overflow-hidden flex flex-col border-[6px] border-white ring-1 ring-slate-200">
-
+                
                 {/* Header Background Gradient */}
                 <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-br from-indigo-500 via-indigo-600 to-blue-600 z-0 rounded-t-[2rem] rounded-b-[2.5rem]"></div>
 
@@ -269,12 +321,11 @@ export default function JadwalPosyandu() {
                         </svg>
                     </Link>
                     <h1 className="text-lg font-bold text-white tracking-wide">Jadwal Posyandu</h1>
-                    <div className="w-10 h-10"></div> {/* Spacing spacer */}
+                    <div className="w-10 h-10"></div>
                 </div>
 
-                {/* Scrollable Content Container */}
+                {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10 pt-16 px-6 pb-44">
-
                     {/* Dashboard Info Banner */}
                     <div className="bg-white rounded-[2rem] p-5 shadow-[0_10px_40px_rgb(0,0,0,0.06)] flex items-center gap-4 mb-6 border border-slate-100">
                         <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500">
@@ -285,7 +336,7 @@ export default function JadwalPosyandu() {
                         <div>
                             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Jadwal</p>
                             <h2 className="text-xl font-bold text-slate-800 leading-tight">
-                                {filteredJadwal.length} Sesi
+                                {isLoading ? '...' : (meta?.total_items || 0)} Sesi
                             </h2>
                         </div>
                     </div>
@@ -302,7 +353,7 @@ export default function JadwalPosyandu() {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-205 rounded-[1.25rem] text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)]"
-                            placeholder="Cari nama posyandu..."
+                            placeholder="Cari jenis kegiatan..."
                         />
                     </div>
 
@@ -315,17 +366,17 @@ export default function JadwalPosyandu() {
                                 onChange={(val) => setFilterDate(val)}
                             />
                         </div>
-                        {/* Posyandu Select Filter */}
+                        {/* Examination Filter */}
                         <div className="w-[calc(50%-0.25rem)] min-w-0 shrink-0 grow-0 relative h-[3.25rem]">
                             <select
-                                value={filterPosyandu}
-                                onChange={(e) => setFilterPosyandu(e.target.value)}
-                                className="w-full h-full box-border px-3 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-[0_2px_10px_rgb(0,0,0,0.02)] appearance-none font-semibold"
+                                value={filterExamination}
+                                onChange={(e) => setFilterExamination(e.target.value)}
+                                className="w-full h-full box-border px-3 py-3.5 bg-white border border-slate-200 rounded-[1.25rem] text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-[0_2px_10px_rgb(0,0,0,0.02)] appearance-none font-semibold truncate pr-8"
                             >
-                                <option value="">Semua Posyandu</option>
-                                <option value="Posyandu Mawar I">Mawar I</option>
-                                <option value="Posyandu Melati II">Melati II</option>
-                                <option value="Posyandu Flamboyan III">Flamboyan III</option>
+                                <option value="">Semua Kegiatan</option>
+                                {examinationsList.map((ex: any) => (
+                                    <option key={ex.id} value={ex.id}>{ex.name}</option>
+                                ))}
                             </select>
                             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -335,102 +386,127 @@ export default function JadwalPosyandu() {
                         </div>
                     </div>
 
-                    {/* Reset Filter Button */}
-                    {(searchQuery || filterDate || filterPosyandu) && (
-                        <div className="flex justify-between items-center mb-4 px-2">
-                            <span className="text-[11px] font-bold text-slate-400">Hasil filter: {filteredJadwal.length} Jadwal</span>
-                            <button
-                                onClick={() => {
-                                    setSearchQuery('');
-                                    setFilterDate('');
-                                    setFilterPosyandu('');
-                                }}
-                                className="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                    {/* Reset Filter Button & Pagination Controls */}
+                    <div className="flex flex-col gap-3 mb-4 px-2">
+                        {(searchQuery || filterDate || filterExamination) && (
+                            <div className="flex justify-between items-center">
+                                <span className="text-[11px] font-bold text-slate-400">Hasil: {filteredJadwal.length} Jadwal di Halaman Ini</span>
+                                <button
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        setFilterDate('');
+                                        setFilterExamination('');
+                                        setPage(1);
+                                    }}
+                                    className="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                                >
+                                    Reset Filter
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-slate-100">
+                            <button 
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                className="px-3 py-1.5 text-[11px] font-bold bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
-                                Reset Filter
+                                Sebelumnya
+                            </button>
+                            <span className="text-[11px] font-bold text-slate-500">
+                                Halaman {page} dari {totalPages}
+                            </span>
+                            <button 
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages || totalPages === 0}
+                                className="px-3 py-1.5 text-[11px] font-bold bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                Selanjutnya
                             </button>
                         </div>
-                    )}
+                    </div>
 
-                    {/* Schedule Stack list */}
+                    {/* Schedule List */}
                     <div className="flex flex-col gap-4">
-                        {filteredJadwal.length > 0 ? (
-                            filteredJadwal.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="bg-white rounded-[2rem] p-5 shadow-[0_4px_15px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col gap-4 hover:shadow-md transition-shadow duration-300 animate-fade-in"
-                                >
-                                    {/* Posyandu Name */}
-                                    <div className="flex justify-between items-start gap-2">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-650 shrink-0">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                                </svg>
+                        {isLoading ? (
+                            <div className="text-center text-sm text-slate-500 p-8">Memuat jadwal...</div>
+                        ) : filteredJadwal.length > 0 ? (
+                            filteredJadwal.map((item: any) => {
+                                const examName = getExamName(item.examination_id);
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className="bg-white rounded-[2rem] p-5 shadow-[0_4px_15px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col gap-4 hover:shadow-md transition-shadow duration-300 animate-fade-in"
+                                    >
+                                        <div className="flex justify-between items-start gap-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-650 shrink-0">
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-sm font-extrabold text-slate-850 leading-tight">
+                                                        {examName}
+                                                    </h3>
+                                                    <p className="text-[10px] text-slate-500 font-medium mt-0.5">{posyanduName}</p>
+                                                    <span className="inline-block mt-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-100/50">
+                                                        Terjadwal
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="text-sm font-extrabold text-slate-850 leading-tight">
-                                                    {item.namaPosyandu}
-                                                </h3>
-                                                <span className="inline-block mt-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-100/50">
-                                                    Terjadwal
-                                                </span>
+                                        </div>
+
+                                        <div className="flex flex-col gap-2.5 bg-slate-50/70 p-4 rounded-2xl border border-slate-100">
+                                            <div className="flex gap-2.5 items-center text-xs text-slate-650 font-bold">
+                                                <svg className="w-4 h-4 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                <span>{formatDateIndo(item.scheduled_date)}</span>
+                                            </div>
+                                            <div className="flex gap-2.5 items-center text-xs text-slate-650 font-bold">
+                                                <svg className="w-4 h-4 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span>{item.start_time} - {item.end_time} WIB</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-2 border-t border-slate-50 pt-3.5">
+                                            <button
+                                                onClick={() => handleLaunchNotification(item, examName)}
+                                                className="w-full bg-gradient-to-tr from-indigo-500 to-blue-600 hover:opacity-95 text-[11px] font-bold px-3 py-3 rounded-xl active:scale-[0.98] transition-all text-center flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(79,70,229,0.2)] text-white cursor-pointer"
+                                            >
+                                                <svg className="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                                </svg>
+                                                Luncurkan Notifikasi
+                                            </button>
+
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => openEditModal(item)}
+                                                    className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 text-[11px] font-bold px-3 py-2.5 rounded-xl active:scale-95 transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
+                                                >
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(item.id)}
+                                                    className="bg-rose-50 text-rose-600 hover:bg-rose-100 text-[11px] font-bold px-3.5 py-2.5 rounded-xl active:scale-95 transition-all text-center flex items-center justify-center cursor-pointer"
+                                                    title="Hapus"
+                                                >
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Schedule Details */}
-                                    <div className="flex flex-col gap-2.5 bg-slate-50/70 p-4 rounded-2xl border border-slate-100">
-                                        <div className="flex gap-2.5 items-center text-xs text-slate-650 font-bold">
-                                            <svg className="w-4 h-4 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                            <span>{formatDateIndo(item.tanggal)}</span>
-                                        </div>
-                                        <div className="flex gap-2.5 items-center text-xs text-slate-650 font-bold">
-                                            <svg className="w-4 h-4 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <span>{item.jamMulai} - {item.jamSelesai} WIB</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Action Buttons & Notification */}
-                                    <div className="flex flex-col gap-2 border-t border-slate-50 pt-3.5">
-                                        {/* Luncurkan Notifikasi Button */}
-                                        <button
-                                            onClick={() => handleLaunchNotification(item)}
-                                            className="w-full bg-gradient-to-tr from-indigo-500 to-blue-600 hover:opacity-95 text-[11px] font-bold px-3 py-3 rounded-xl active:scale-[0.98] transition-all text-center flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(79,70,229,0.2)] text-white cursor-pointer"
-                                        >
-                                            <svg className="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                                            </svg>
-                                            Luncurkan Notifikasi
-                                        </button>
-
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => openEditModal(item)}
-                                                className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 text-[11px] font-bold px-3 py-2.5 rounded-xl active:scale-95 transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer"
-                                            >
-                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                </svg>
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(item.id, item.namaPosyandu)}
-                                                className="bg-rose-50 text-rose-600 hover:bg-rose-100 text-[11px] font-bold px-3.5 py-2.5 rounded-xl active:scale-95 transition-all text-center flex items-center justify-center cursor-pointer"
-                                                title="Hapus"
-                                            >
-                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
+                                );
+                            })
                         ) : (
                             <div className="bg-white rounded-3xl p-8 border border-slate-100 text-center text-xs text-slate-400 font-semibold shadow-[0_2px_10px_rgb(0,0,0,0.01)]">
                                 Tidak ada jadwal posyandu yang ditemukan.
@@ -439,7 +515,7 @@ export default function JadwalPosyandu() {
                     </div>
                 </div>
 
-                {/* Floating Action Button (FAB) for adding new Schedule */}
+                {/* FAB */}
                 <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-md flex justify-end px-6 pointer-events-none z-40">
                     <button
                         onClick={openAddModal}
@@ -452,24 +528,21 @@ export default function JadwalPosyandu() {
                     </button>
                 </div>
 
-                {/* Bottom navigation */}
                 <BottombarBidan />
 
-                {/* Bottom Sheet Modal */}
+                {/* Bottom Modal Form */}
                 {showModal && (
                     <div className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-slate-900/60 backdrop-blur-sm z-[1010] flex flex-col justify-end animate-fade-in">
                         <div className="bg-white w-full rounded-t-[2.5rem] p-6 shadow-2xl border-t border-slate-100 flex flex-col max-h-[85%] animate-slide-up overflow-hidden">
-
-                            {/* Modal Header */}
+                            
                             <div className="flex justify-between items-center pb-4 border-b border-slate-100 shrink-0">
                                 <div>
                                     <h2 className="text-base font-bold text-slate-800">
-                                        {editingItem ? 'Edit Jadwal Posyandu' : 'Tambah Jadwal Baru'}
+                                        {editingId ? 'Edit Jadwal Posyandu' : 'Tambah Jadwal Baru'}
                                     </h2>
-                                    <p className="text-[10px] text-slate-400">Tentukan lokasi, tanggal, dan waktu pelaksanaan posyandu</p>
+                                    <p className="text-[10px] text-slate-400">Pilih jenis kegiatan, lokasi otomatis mengikuti Posyandu Anda</p>
                                 </div>
                                 <button
-                                    type="button"
                                     onClick={closeModal}
                                     className="p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors cursor-pointer"
                                 >
@@ -479,94 +552,190 @@ export default function JadwalPosyandu() {
                                 </button>
                             </div>
 
-                            {/* Modal Scrollable Body */}
                             <div className="flex-1 overflow-y-auto py-4 pr-1 flex flex-col gap-4 custom-scrollbar">
-                                <form onSubmit={handleSubmit} id="jadwal-form" className="flex flex-col gap-4">
-                                    {/* Nama Posyandu Dropdown */}
+                                <form onSubmit={handleSubmit(onSubmit)} id="jadwal-form" className="flex flex-col gap-4">
+                                    
+                                    {/* Posyandu (Read Only Info) */}
                                     <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Posyandu</label>
-                                        <div className="relative">
-                                            <select
-                                                value={namaPosyandu}
-                                                onChange={(e) => {
-                                                    setNamaPosyandu(e.target.value);
-                                                    setIsCustomNama(e.target.value === 'Lainnya');
-                                                }}
-                                                className="w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-205 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all appearance-none font-semibold"
-                                                required
-                                            >
-                                                <option value="Posyandu Mawar I">Posyandu Mawar I</option>
-                                                <option value="Posyandu Melati II">Posyandu Melati II</option>
-                                                <option value="Posyandu Flamboyan III">Posyandu Flamboyan III</option>
-                                                <option value="Lainnya">Lainnya (Tulis Kustom)</option>
-                                            </select>
-                                            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Lokasi Posyandu</label>
+                                        <div className="w-full box-border px-4 py-3.5 bg-slate-100 border border-slate-205 rounded-[1.25rem] text-sm text-slate-600 font-semibold">
+                                            {posyanduName}
                                         </div>
                                     </div>
 
-                                    {/* Custom Nama Posyandu Input (if 'Lainnya' selected) */}
-                                    {isCustomNama && (
-                                        <div className="flex flex-col gap-1.5 animate-fade-in">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Posyandu Kustom</label>
-                                            <input
-                                                type="text"
-                                                value={customNamaPosyandu}
-                                                onChange={(e) => setCustomNamaPosyandu(e.target.value)}
-                                                placeholder="Contoh: Posyandu Dahlia IV"
-                                                className="w-full box-border px-4 py-3 bg-slate-50 border border-slate-205 rounded-[1.25rem] text-sm text-slate-750 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all"
-                                                required
-                                            />
-                                        </div>
-                                    )}
+                                    {/* Examination Select with Inline CRUD */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Kegiatan (Pemeriksaan)</label>
+                                        
+                                        {!isAddingExam && !isEditingExam ? (
+                                            <div className="flex gap-2">
+                                                <div className="relative flex-1">
+                                                    <select
+                                                        {...register('examination_id', { required: true })}
+                                                        className="w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-205 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all appearance-none font-semibold"
+                                                    >
+                                                        <option value="">Pilih kegiatan...</option>
+                                                        {posyanduExaminations.map((exam: any) => (
+                                                            <option key={exam.id} value={exam.id}>{exam.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setIsAddingExam(true);
+                                                        setNewExamName('');
+                                                        setNewExamType('infant');
+                                                    }}
+                                                    className="px-4 bg-blue-50 text-blue-600 border border-blue-100 rounded-[1.25rem] font-medium text-sm hover:bg-blue-100 transition-colors flex items-center gap-1 shrink-0"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                                                    Baru
+                                                </button>
+                                                {selectedExaminationId && (
+                                                    <>
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const exam = posyanduExaminations.find((exam: any) => exam.id === selectedExaminationId);
+                                                                if (exam) {
+                                                                    setNewExamName(exam.name);
+                                                                    setNewExamType(exam.examination_type);
+                                                                    setIsEditingExam(true);
+                                                                }
+                                                            }}
+                                                            className="px-3 bg-amber-50 text-amber-600 border border-amber-100 rounded-[1.25rem] hover:bg-amber-100 transition-colors flex items-center shrink-0"
+                                                            title="Edit Kegiatan"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                        </button>
+                                                        <button 
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                if (await confirm("Apakah Anda yakin ingin menghapus kegiatan ini?")) {
+                                                                    deleteExamMutation.mutate(selectedExaminationId, {
+                                                                        onSuccess: () => {
+                                                                            setValue('examination_id', '');
+                                                                        }
+                                                                    });
+                                                                }
+                                                            }}
+                                                            disabled={deleteExamMutation.isPending}
+                                                            className="px-3 bg-red-50 text-red-600 border border-red-100 rounded-[1.25rem] hover:bg-red-100 transition-colors flex items-center shrink-0 disabled:opacity-50"
+                                                            title="Hapus Kegiatan"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col gap-2 p-3 bg-blue-50/50 rounded-2xl border border-blue-100">
+                                                <input 
+                                                    type="text" 
+                                                    value={newExamName}
+                                                    onChange={(e) => setNewExamName(e.target.value)}
+                                                    className="w-full px-3 py-3 bg-white border border-slate-200 rounded-[1rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all placeholder-slate-400" 
+                                                    placeholder={isEditingExam ? "Ubah nama kegiatan..." : "Nama kegiatan baru..."} 
+                                                    autoFocus
+                                                />
+                                                <div className="flex gap-2">
+                                                    <select
+                                                        value={newExamType}
+                                                        onChange={(e) => setNewExamType(e.target.value as any)}
+                                                        className="flex-1 px-3 py-2.5 bg-white border border-slate-200 rounded-[1rem] text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner appearance-none font-semibold"
+                                                    >
+                                                        <option value="infant">Bayi (Infant)</option>
+                                                        <option value="toddler">Balita (Toddler)</option>
+                                                        <option value="young_child">Anak (Young Child)</option>
+                                                        <option value="pregnant_mother">Ibu Hamil</option>
+                                                    </select>
+                                                    <button 
+                                                        type="button"
+                                                        disabled={createExamMutation.isPending || updateExamMutation.isPending || !newExamName.trim()}
+                                                        onClick={() => {
+                                                            if (isEditingExam && selectedExaminationId) {
+                                                                updateExamMutation.mutate(
+                                                                    { id: selectedExaminationId, payload: { name: newExamName.trim(), examination_type: newExamType } },
+                                                                    {
+                                                                        onSuccess: () => {
+                                                                            setIsEditingExam(false);
+                                                                            setNewExamName('');
+                                                                        }
+                                                                    }
+                                                                );
+                                                            } else {
+                                                                createExamMutation.mutate(
+                                                                    { posyandu_id, name: newExamName.trim(), examination_type: newExamType },
+                                                                    {
+                                                                        onSuccess: (response) => {
+                                                                            setValue('examination_id', response.data.id);
+                                                                            setIsAddingExam(false);
+                                                                            setNewExamName('');
+                                                                        }
+                                                                    }
+                                                                );
+                                                            }
+                                                        }}
+                                                        className="px-4 bg-blue-600 text-white rounded-[1rem] font-bold text-xs hover:bg-blue-700 transition-colors shrink-0 disabled:opacity-50"
+                                                    >
+                                                        {(createExamMutation.isPending || updateExamMutation.isPending) ? '...' : 'Simpan'}
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setIsAddingExam(false);
+                                                            setIsEditingExam(false);
+                                                            setNewExamName('');
+                                                        }}
+                                                        className="px-4 bg-slate-200 text-slate-600 rounded-[1rem] font-bold text-xs hover:bg-slate-300 transition-colors shrink-0"
+                                                    >
+                                                        Batal
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
 
-                                    {/* Tanggal Pelaksanaan */}
+                                    {/* Tanggal */}
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tanggal Pelaksanaan</label>
                                         <div className="relative h-[3.25rem] w-full overflow-hidden">
                                             <input
                                                 type="date"
-                                                value={tanggal}
-                                                onChange={(e) => setTanggal(e.target.value)}
+                                                {...register('scheduled_date', { required: true })}
                                                 className="absolute inset-0 h-full w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-205 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all [color-scheme:light]"
-                                                required
                                             />
                                         </div>
                                     </div>
 
-                                    {/* Jam Mulai & Selesai Grid */}
+                                    {/* Waktu */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-1.5">
                                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Jam Mulai</label>
                                             <input
                                                 type="time"
-                                                value={jamMulai}
-                                                onChange={(e) => setJamMulai(e.target.value)}
+                                                {...register('start_time', { required: true })}
                                                 className="w-full box-border px-4 py-3 bg-slate-50 border border-slate-205 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all [color-scheme:light]"
-                                                required
                                             />
                                         </div>
                                         <div className="flex flex-col gap-1.5">
                                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Jam Selesai</label>
                                             <input
                                                 type="time"
-                                                value={jamSelesai}
-                                                onChange={(e) => setJamSelesai(e.target.value)}
+                                                {...register('end_time', { required: true })}
                                                 className="w-full box-border px-4 py-3 bg-slate-50 border border-slate-205 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all [color-scheme:light]"
-                                                required
                                             />
                                         </div>
                                     </div>
                                 </form>
                             </div>
 
-                            {/* Modal Footer */}
                             <div className="pt-4 border-t border-slate-100 flex gap-3.5 shrink-0 bg-white">
                                 <button
-                                    type="button"
                                     onClick={closeModal}
                                     className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm py-4 rounded-[1.25rem] active:scale-95 transition-all text-center cursor-pointer"
                                 >
@@ -575,19 +744,24 @@ export default function JadwalPosyandu() {
                                 <button
                                     type="submit"
                                     form="jadwal-form"
-                                    className="w-2/3 bg-blue-600 text-white font-bold text-sm py-4 rounded-[1.25rem] shadow-[0_8px_20px_rgba(37,99,235,0.3)] hover:bg-blue-700 active:scale-95 transition-all flex justify-center items-center gap-2 cursor-pointer"
+                                    disabled={createMutation.isPending || updateMutation.isPending}
+                                    className="w-2/3 bg-blue-600 text-white font-bold text-sm py-4 rounded-[1.25rem] shadow-[0_8px_20px_rgba(37,99,235,0.3)] hover:bg-blue-700 active:scale-95 transition-all flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
                                 >
-                                    <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                                    </svg>
-                                    Simpan Jadwal
+                                    {(createMutation.isPending || updateMutation.isPending) ? 'Menyimpan...' : (
+                                        <>
+                                            <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                            </svg>
+                                            Simpan Jadwal
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Toast Notification Alert */}
+                {/* Toast */}
                 {showToast && (
                     <div className="fixed bottom-[92px] left-1/2 -translate-x-1/2 w-[85%] max-w-[calc(448px*0.85)] bg-slate-900/90 text-white text-xs font-bold px-4 py-3.5 rounded-2xl shadow-xl flex items-center gap-2.5 z-[1050] animate-fade-in backdrop-blur-sm border border-white/10">
                         <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
@@ -598,7 +772,6 @@ export default function JadwalPosyandu() {
                         <span className="flex-1 text-slate-100">{toastMessage}</span>
                     </div>
                 )}
-
             </div>
         </div>
     );

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import QueryProvider from "@/providers/QueryProvider";
+import { ConfirmProvider } from "@/providers/ConfirmProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -46,7 +47,9 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <ConfirmProvider>{children}</ConfirmProvider>
+        </QueryProvider>
       </body>
     </html>
   );

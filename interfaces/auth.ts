@@ -102,3 +102,9 @@ export interface ResendOTPPayload {
   email: string;
   type: "email-verification" | "sign-in" | "forget-password" | "change-email";
 }
+
+export interface ResetPasswordOTPPayload {
+  email: string;
+  otp: string;
+  password?: string;
+}

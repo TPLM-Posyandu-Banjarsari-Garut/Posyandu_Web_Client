@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import BottombarOrtu from '@/components/ui/bottombar/orangtua/BottombarOrtu';
 import DateFilterInput from '@/components/ui/DateFilterInput';
+import { useConfirm } from '@/providers/ConfirmProvider';
 
 interface Jadwal {
     id: number;
@@ -14,6 +15,8 @@ interface Jadwal {
 }
 
 export default function JadwalPosyandu() {
+    const confirm = useConfirm();
+
     // Register Service Worker explicitly on mount to ensure push notifications work flawlessly
     useEffect(() => {
         if ('serviceWorker' in navigator) {
@@ -124,8 +127,8 @@ export default function JadwalPosyandu() {
     };
 
     // Delete Schedule Handler
-    const handleDelete = (id: number, posyanduName: string) => {
-        if (confirm(`Apakah Anda yakin ingin menghapus jadwal untuk "${posyanduName}"?`)) {
+    const handleDelete = async (id: number, posyanduName: string) => {
+        if (await confirm(`Apakah Anda yakin ingin menghapus jadwal untuk "${posyanduName}"?`)) {
             setJadwalList(prev => prev.filter(item => item.id !== id));
             triggerToast(`Jadwal "${posyanduName}" berhasil dihapus.`);
         }
