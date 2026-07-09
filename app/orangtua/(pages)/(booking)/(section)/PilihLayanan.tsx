@@ -124,7 +124,7 @@ export default function PilihLayanan({ onSelect }: PilihLayananProps) {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-[#1E3050] tracking-wide leading-tight">Periksa Ibu</h3>
-                <p className="text-xs text-slate-500 font-semibold mt-1">Pemeriksaan umum / keluhan kesehatan ibu</p>
+                <p className="text-xs text-slate-500 font-semibold mt-1">Pemeriksaan umum kehamilan/ keluhan kesehatan ibu</p>
               </div>
             </div>
             <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -275,30 +275,7 @@ export default function PilihLayanan({ onSelect }: PilihLayananProps) {
         </button>
 
         {/* ANC / Ibu Hamil */}
-        <button
-          onClick={handleSelectPregnancy}
-          disabled={isLoadingPregnancy}
-          className="w-full text-left bg-white rounded-2xl py-4.5 px-5 border border-[#EBE8D8] hover:border-blue-400 hover:shadow-sm active:scale-[0.99] transition-all flex items-center justify-between shadow-[0_2px_8px_rgba(0,0,0,0.01)] disabled:opacity-50"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 font-bold shrink-0">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-[#1E3050] tracking-wide leading-tight">ANC / Ibu Hamil</h3>
-              <p className="text-xs text-slate-500 font-semibold mt-1">Pemeriksaan kehamilan rutin & kesehatan janin</p>
-            </div>
-          </div>
-          {isLoadingPregnancy ? (
-            <div className="w-4 h-4 border-2 border-slate-350 border-t-transparent rounded-full animate-spin shrink-0"></div>
-          ) : (
-            <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          )}
-        </button>
+
 
         {/* Imunisasi / Tumbuh Kembang */}
         <button
