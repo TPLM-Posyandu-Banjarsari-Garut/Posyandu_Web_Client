@@ -51,7 +51,7 @@ export function useBroadcastConsultationNotification() {
       payload,
     }: {
       publicId: string;
-      payload?: { custom_message?: string };
+      payload?: { custom_message?: string; scheduled_push_at?: string };
     }) => broadcastConsultationNotification(publicId, payload),
   });
 }

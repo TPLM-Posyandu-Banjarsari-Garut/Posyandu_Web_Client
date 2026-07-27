@@ -82,8 +82,8 @@ export async function updateConsultationStatus(
 
 export async function broadcastConsultationNotification(
   publicId: string,
-  payload?: { custom_message?: string }
-): Promise<{ data: { recipient_count: number; title: string; body: string } }> {
+  payload?: { custom_message?: string; scheduled_push_at?: string }
+): Promise<{ data: { recipient_count: number; title: string; body: string; is_scheduled?: boolean; scheduled_push_at?: string } }> {
   const { data } = await bidanApi.post(
     `/api/consultations/${publicId}/broadcast-notification`,
     payload

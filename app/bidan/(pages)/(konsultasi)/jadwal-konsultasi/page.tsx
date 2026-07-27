@@ -27,9 +27,85 @@ export default function JadwalKonsultasiPage() {
     const [showBroadcastModal, setShowBroadcastModal] = useState(false);
     const [selectedBroadcastItem, setSelectedBroadcastItem] = useState<MidwifeConsultation | null>(null);
     const [customBroadcastMessage, setCustomBroadcastMessage] = useState('');
+    const [pushTimingOption, setPushTimingOption] = useState<'instant' | 'custom'>('instant');
+    const [customPushTime, setCustomPushTime] = useState('');
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
     const broadcastMutation = useBroadcastConsultationNotification();
+
+    const formatPushTimestamp = (d: Date = new Date()) => {
+        if (isNaN(d.getTime())) return '-';
+        return d.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        }) + ' WIB';
+    };
+
+    const handleOpenBroadcastModal = (item: MidwifeConsultation) => {
+        setSelectedBroadcastItem(item);
+        setCustomBroadcastMessage('');
+        setPushTimingOption('instant');
+        setCustomPushTime('');
+        setShowBroadcastModal(true);
+    };
+
+    const handleSelectCustomPushTiming = () => {
+        setPushTimingOption('custom');
+        if (!customPushTime) {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + 15);
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            setCustomPushTime(`${yyyy}-${mm}-${dd}T${hh}:${min}`);
+        }
+    };
+
+    const handleConfirmBroadcast = () => {
+        if (!selectedBroadcastItem) return;
+
+        if (pushTimingOption === 'custom' && !customPushTime) {
+            alert('Silakan pilih tanggal dan jam push notifikasi terlebih dahulu.');
+            return;
+        }
+
+        const scheduledPushAtIso = pushTimingOption === 'custom' && customPushTime
+            ? new Date(customPushTime).toISOString()
+            : undefined;
+
+        broadcastMutation.mutate(
+            {
+                publicId: selectedBroadcastItem.id,
+                payload: {
+                    custom_message: customBroadcastMessage.trim() || undefined,
+                    scheduled_push_at: scheduledPushAtIso
+                }
+            },
+            {
+                onSuccess: (res: any) => {
+                    const isScheduled = pushTimingOption === 'custom' || res?.data?.is_scheduled || res?.is_scheduled;
+                    const scheduledTimeStr = customPushTime ? formatPushTimestamp(new Date(customPushTime)) : '';
+
+                    if (isScheduled && scheduledTimeStr) {
+                        triggerToast(`Notifikasi berhasil dijadwalkan untuk dikirim pada ${scheduledTimeStr}!`);
+                    } else {
+                        triggerToast('Notifikasi berhasil diluncurkan ke orang tua!');
+                    }
+                    setShowBroadcastModal(false);
+                    setSelectedBroadcastItem(null);
+                    setCustomBroadcastMessage('');
+                },
+                onError: () => {
+                    alert('Gagal meluncurkan notifikasi.');
+                }
+            }
+        );
+    };
 
     const { data: profile, isLoading: isLoadingProfile } = useGetMidwifeProfile();
     const midwife_id = profile?.id;
@@ -143,33 +219,6 @@ export default function JadwalKonsultasiPage() {
     const triggerToast = (msg: string) => {
         setToastMessage(msg);
         setTimeout(() => setToastMessage(null), 4000);
-    };
-
-    const handleOpenBroadcastModal = (item: MidwifeConsultation) => {
-        setSelectedBroadcastItem(item);
-        setCustomBroadcastMessage('');
-        setShowBroadcastModal(true);
-    };
-
-    const handleConfirmBroadcast = () => {
-        if (!selectedBroadcastItem) return;
-        broadcastMutation.mutate(
-            {
-                publicId: selectedBroadcastItem.id,
-                payload: { custom_message: customBroadcastMessage || undefined }
-            },
-            {
-                onSuccess: () => {
-                    triggerToast('Notifikasi berhasil diluncurkan ke orang tua!');
-                    setShowBroadcastModal(false);
-                    setSelectedBroadcastItem(null);
-                    setCustomBroadcastMessage('');
-                },
-                onError: () => {
-                    alert('Gagal meluncurkan notifikasi.');
-                }
-            }
-        );
     };
 
     return (
@@ -437,6 +486,59 @@ export default function JadwalKonsultasiPage() {
                             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Layanan & Pasien</label>
                             <div className="text-xs font-semibold text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-1">
                                 <div>{selectedBroadcastItem.children_name || selectedBroadcastItem.parent_name} — <span className="text-indigo-600">{getLayananLabel(selectedBroadcastItem.consultation_type)}</span></div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Waktu Notifikasi (Kapan Di-Push)</label>
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 text-xs font-semibold text-slate-700 flex flex-col gap-2.5">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                                        <span className="text-slate-800 font-bold">Waktu Peluncuran (Push)</span>
+                                    </div>
+                                    <span className="text-[10px] font-extrabold text-indigo-600 bg-white px-2.5 py-1 rounded-lg border border-indigo-100 shadow-xs">
+                                        {pushTimingOption === 'custom' && customPushTime
+                                            ? formatPushTimestamp(new Date(customPushTime))
+                                            : formatPushTimestamp(new Date())}
+                                    </span>
+                                </div>
+                                <div className="flex gap-2 pt-1 border-t border-slate-200/60">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPushTimingOption('instant')}
+                                        className={`flex-1 py-2 px-3 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                                            pushTimingOption === 'instant'
+                                                ? 'bg-indigo-600 text-white shadow-xs'
+                                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        ⚡ Langsung (Sekarang)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleSelectCustomPushTiming}
+                                        className={`flex-1 py-2 px-3 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                                            pushTimingOption === 'custom'
+                                                ? 'bg-indigo-600 text-white shadow-xs'
+                                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        ⏰ Waktu Kustom
+                                    </button>
+                                </div>
+
+                                {pushTimingOption === 'custom' && (
+                                    <div className="mt-1 flex flex-col gap-1">
+                                        <label className="text-[10px] font-bold text-slate-500">Pilih Tanggal & Jam Push Notifikasi:</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={customPushTime}
+                                            onChange={(e) => setCustomPushTime(e.target.value)}
+                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </div>
 
