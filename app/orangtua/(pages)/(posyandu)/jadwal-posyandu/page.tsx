@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import BottombarOrtu from '@/components/ui/bottombar/orangtua/BottombarOrtu';
 import DateFilterInput from '@/components/ui/DateFilterInput';
@@ -17,16 +17,8 @@ interface Jadwal {
 export default function JadwalPosyandu() {
     const confirm = useConfirm();
 
-    // Register Service Worker explicitly on mount to ensure push notifications work flawlessly
-    useEffect(() => {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').then((reg) => {
-                console.log('Service Worker registered successfully with scope:', reg.scope);
-            }).catch((err) => {
-                console.warn('Service Worker registration failed:', err);
-            });
-        }
-    }, []);
+
+
 
     // Initial premium dummy schedule data
     const [jadwalList, setJadwalList] = useState<Jadwal[]>([

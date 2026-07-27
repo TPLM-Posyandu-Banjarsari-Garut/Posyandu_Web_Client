@@ -4,9 +4,14 @@ import {
     getScheduleById,
     createSchedule,
     updateSchedule,
-    deleteSchedule
+    deleteSchedule,
+    broadcastScheduleNotification
 } from '@/service/schedule/scheduleService';
-import { CreateSchedulePayload, UpdateSchedulePayload } from '@/interfaces/schedule';
+import {
+    CreateSchedulePayload,
+    UpdateSchedulePayload,
+    BroadcastScheduleNotificationPayload
+} from '@/interfaces/schedule';
 
 export const useGetSchedules = (params?: {
     posyandu_id?: string;
@@ -60,5 +65,17 @@ export const useDeleteSchedule = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['schedules'] });
         },
+    });
+};
+
+export const useBroadcastScheduleNotification = () => {
+    return useMutation({
+        mutationFn: ({
+            id,
+            payload
+        }: {
+            id: string;
+            payload?: BroadcastScheduleNotificationPayload;
+        }) => broadcastScheduleNotification(id, payload),
     });
 };

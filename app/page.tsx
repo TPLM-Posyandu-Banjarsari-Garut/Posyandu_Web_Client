@@ -10,7 +10,7 @@ export default function Home() {
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
-        .register("/sw.js")
+        .register("/swe-worker-development.js")
         .then((reg) => {
           console.log("Service Worker registered successfully with scope:", reg.scope);
         })

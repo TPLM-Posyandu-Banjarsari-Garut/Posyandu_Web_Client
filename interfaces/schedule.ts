@@ -40,3 +40,13 @@ export interface CreateSchedulePayload {
 export interface UpdateSchedulePayload extends Partial<CreateSchedulePayload> {
     status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
 }
+
+export interface BroadcastScheduleNotificationPayload {
+    custom_message?: string;
+}
+
+export interface BroadcastScheduleNotificationResponse {
+    recipient_count: number;
+    title: string;
+    body: string;
+}

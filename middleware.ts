@@ -76,6 +76,31 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // ── Auto Redirect Root / jika Pengguna Memiliki Session Aktif ──────────────
+  if (pathname === "/") {
+    const sessionToken =
+      request.cookies.get("better-auth.session_token")?.value ??
+      request.cookies.get("__Secure-better-auth.session_token")?.value;
+
+    if (sessionToken) {
+      const { valid, role } = await validateSessionToken(request, sessionToken);
+      if (valid) {
+        if (ADMIN_ROLES.has(role)) {
+          return NextResponse.redirect(new URL("/admin/kelola-buat-akun", request.url));
+        }
+        if (BIDAN_ROLES.has(role)) {
+          return NextResponse.redirect(new URL("/bidan/home", request.url));
+        }
+        if (KADER_ROLES.has(role)) {
+          return NextResponse.redirect(new URL("/kader/home", request.url));
+        }
+        if (role === "parent") {
+          return NextResponse.redirect(new URL("/orangtua/home", request.url));
+        }
+      }
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // 1. Proteksi Halaman Admin (/admin/*)
   //    Role yang diizinkan: admin, posyandu_admin, village_admin
@@ -179,8 +204,6 @@ export async function middleware(request: NextRequest) {
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 4. Proteksi Halaman Orang Tua (/orangtua/*)
-  //    Tetap cookie-name check (tidak diubah) karena cookie Google OAuth
-  //    berada di domain backend, bukan di proxy Next.js.
   // ═══════════════════════════════════════════════════════════════════════════
   if (pathname.startsWith("/orangtua")) {
     const isLoginPage = pathname === "/orangtua/login";
@@ -195,6 +218,13 @@ export async function middleware(request: NextRequest) {
       const loginUrl = new URL("/orangtua/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
+    }
+
+    if (sessionToken && isLoginPage) {
+      const { valid, role } = await validateSessionToken(request, sessionToken);
+      if (valid && role === "parent") {
+        return NextResponse.redirect(new URL("/orangtua/home", request.url));
+      }
     }
   }
 
@@ -239,6 +269,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/",
     "/api/:path*",
     "/admin/:path*",
     "/bidan/:path*",

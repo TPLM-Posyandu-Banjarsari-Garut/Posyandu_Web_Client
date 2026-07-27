@@ -13,7 +13,8 @@ import {
     useGetSchedules,
     useCreateSchedule,
     useUpdateSchedule,
-    useDeleteSchedule
+    useDeleteSchedule,
+    useBroadcastScheduleNotification
 } from '@/hooks/query/schedule/useManageSchedules';
 import { 
     useGetExaminations,
@@ -29,6 +30,21 @@ interface ScheduleFormValues {
     scheduled_date: string;
     start_time: string;
     end_time: string;
+}
+
+interface ExaminationItem {
+    id: string;
+    posyandu_id: string;
+    name: string;
+    examination_type: 'infant' | 'pregnant_mother' | 'toddler' | 'young_child';
+}
+
+interface ApiErrorResponse {
+    response?: {
+        data?: {
+            message?: string;
+        };
+    };
 }
 
 export default function JadwalPosyandu() {
@@ -59,11 +75,12 @@ export default function JadwalPosyandu() {
 
     // 3. Fetch Examinations (for dropdown and matching names)
     const { data: examinationsData } = useGetExaminations({ posyandu_id });
-    const examinationsList = (examinationsData?.data as any)?.data || [];
+    const rawExams = (examinationsData as unknown as { data?: { data?: ExaminationItem[] } })?.data?.data;
+    const examinationsList: ExaminationItem[] = Array.isArray(rawExams) ? rawExams : [];
     
     const posyanduExaminations = useMemo(() => {
         if (!posyandu_id || !examinationsList) return [];
-        return examinationsList.filter((ex: any) => ex.posyandu_id === posyandu_id);
+        return examinationsList.filter((ex) => ex.posyandu_id === posyandu_id);
     }, [posyandu_id, examinationsList]);
 
     // 4. Fetch Schedules
@@ -83,8 +100,9 @@ export default function JadwalPosyandu() {
         limit
     });
     
-    const schedules = (schedulesData?.data as any)?.data || [];
-    const meta = (schedulesData?.data as any)?.meta;
+    const rawSchedules = (schedulesData as unknown as { data?: { data?: ExaminationSchedule[]; meta?: { total_pages?: number; total_items?: number } } })?.data?.data;
+    const schedules: ExaminationSchedule[] = Array.isArray(rawSchedules) ? rawSchedules : [];
+    const meta = (schedulesData as unknown as { data?: { meta?: { total_pages?: number; total_items?: number } } })?.data?.meta;
     const totalPages = meta?.total_pages || 1;
 
     // Reset page to 1 when filters change
@@ -96,12 +114,21 @@ export default function JadwalPosyandu() {
     const createMutation = useCreateSchedule();
     const updateMutation = useUpdateSchedule();
     const deleteMutation = useDeleteSchedule();
+    const broadcastMutation = useBroadcastScheduleNotification();
 
     // Modal & Toast states
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [toastMessage, setToastMessage] = useState('');
     const [showToast, setShowToast] = useState(false);
+
+    // Broadcast Modal state
+    const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+    const [selectedBroadcastItem, setSelectedBroadcastItem] = useState<{
+        schedule: ExaminationSchedule;
+        examName: string;
+    } | null>(null);
+    const [customBroadcastMessage, setCustomBroadcastMessage] = useState('');
 
     const triggerToast = (msg: string) => {
         setToastMessage(msg);
@@ -218,65 +245,34 @@ export default function JadwalPosyandu() {
         }
     };
 
-    // PWA Push Notification Handler
-    const handleLaunchNotification = async (item: ExaminationSchedule, examName: string) => {
-        if (!("Notification" in window)) {
-            alert("Browser ini tidak mendukung notifikasi.");
-            return;
-        }
+    // Broadcast Notification Handler
+    const handleLaunchNotification = (item: ExaminationSchedule, examName: string) => {
+        setSelectedBroadcastItem({ schedule: item, examName });
+        setCustomBroadcastMessage('');
+        setShowBroadcastModal(true);
+    };
 
-        const showNotification = async () => {
-            const title = "🔔 JADWAL POSYANDU BARU";
-            const options: NotificationOptions & { vibrate?: number[] } = {
-                body: `Jadwal ${examName} di ${posyanduName} diluncurkan pada ${formatDateIndo(item.scheduled_date)} pukul ${item.start_time} - ${item.end_time} WIB. Jangan lupa hadir!`,
-                icon: "/icon-192x192.png",
-                badge: "/icon-192x192.png",
-                vibrate: [100, 50, 100],
-                data: {
-                    dateOfArrival: Date.now(),
-                    primaryKey: item.id,
+    const handleConfirmBroadcast = () => {
+        if (!selectedBroadcastItem) return;
+        broadcastMutation.mutate(
+            {
+                id: selectedBroadcastItem.schedule.id,
+                payload: { custom_message: customBroadcastMessage || undefined }
+            },
+            {
+                onSuccess: (res) => {
+                    const count = res.data?.recipient_count ?? 0;
+                    triggerToast(`Notifikasi berhasil diluncurkan ke ${count} orang tua!`);
+                    setShowBroadcastModal(false);
+                    setSelectedBroadcastItem(null);
+                    setCustomBroadcastMessage('');
                 },
-            };
-
-            // Try sending notification via registered service worker
-            if ("serviceWorker" in navigator) {
-                try {
-                    const swReadyPromise = navigator.serviceWorker.ready;
-                    const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("Timeout waiting for Service Worker")), 1200)
-                    );
-                    const registration = await Promise.race([swReadyPromise, timeoutPromise]) as ServiceWorkerRegistration;
-
-                    await registration.showNotification(title, options);
-                    triggerToast(`Notifikasi terkirim via SW!`);
-                    return;
-                } catch (err) {
-                    console.warn("Service Worker showNotification gagal, menggunakan fallback:", err);
+                onError: (err: unknown) => {
+                    const error = err as ApiErrorResponse;
+                    alert(error?.response?.data?.message || 'Gagal meluncurkan notifikasi.');
                 }
             }
-
-            // Fallback for standard browser notifications
-            try {
-                new Notification(title, options);
-                triggerToast(`Notifikasi terkirim!`);
-            } catch (err) {
-                console.error("Gagal meluncurkan browser notification:", err);
-                alert("Gagal mengirim notifikasi. Pastikan izin diaktifkan.");
-            }
-        };
-
-        if (Notification.permission === "granted") {
-            await showNotification();
-        } else if (Notification.permission !== "denied") {
-            const permission = await Notification.requestPermission();
-            if (permission === "granted") {
-                await showNotification();
-            } else {
-                triggerToast("Izin notifikasi ditolak oleh pengguna.");
-            }
-        } else {
-            alert("Izin notifikasi diblokir. Harap aktifkan izin notifikasi pada pengaturan browser Anda.");
-        }
+        );
     };
 
     const formatDateIndo = (dateStr: string) => {
@@ -294,12 +290,12 @@ export default function JadwalPosyandu() {
 
     // Helper to get examination name
     const getExamName = (id: string) => {
-        const exam = examinationsList.find((e: any) => e.id === id);
+        const exam = examinationsList.find((e) => e.id === id);
         return exam ? exam.name : 'Kegiatan Posyandu';
     };
 
     // Filter schedules locally for search text / dropdown
-    const filteredJadwal = schedules.filter((item: any) => {
+    const filteredJadwal = schedules.filter((item) => {
         const examName = getExamName(item.examination_id);
         const matchesSearch = examName.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesExam = filterExamination ? item.examination_id === filterExamination : true;
@@ -753,6 +749,81 @@ export default function JadwalPosyandu() {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                                             </svg>
                                             Simpan Jadwal
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Broadcast Notification Modal */}
+                {showBroadcastModal && selectedBroadcastItem && (
+                    <div className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-slate-900/60 backdrop-blur-sm z-[1010] flex items-center justify-center p-4 animate-fade-in">
+                        <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 animate-slide-up">
+                            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                        </svg>
+                                    </div>
+                                    <h2 className="text-base font-bold text-slate-800">
+                                        Luncurkan Notifikasi
+                                    </h2>
+                                </div>
+                                <button
+                                    onClick={() => setShowBroadcastModal(false)}
+                                    className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 transition-colors"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="bg-indigo-50/60 p-3.5 rounded-2xl border border-indigo-100/80 text-xs text-indigo-900 font-medium leading-relaxed">
+                                Notifikasi akan dikirimkan secara otomatis ke seluruh <strong>Orang Tua</strong> yang terdaftar di <strong>{posyanduName}</strong>.
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Kegiatan & Waktu</label>
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 text-xs font-semibold text-slate-700 flex flex-col gap-1">
+                                    <span className="text-sm font-bold text-indigo-600">{selectedBroadcastItem.examName}</span>
+                                    <span>📅 {formatDateIndo(selectedBroadcastItem.schedule.scheduled_date)}</span>
+                                    <span>⏰ {selectedBroadcastItem.schedule.start_time || '08:00'} - {selectedBroadcastItem.schedule.end_time || '11:00'} WIB</span>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pesan Khusus (Opsional)</label>
+                                <textarea
+                                    value={customBroadcastMessage}
+                                    onChange={(e) => setCustomBroadcastMessage(e.target.value)}
+                                    rows={3}
+                                    placeholder="Contoh: Bawa buku KIA dan hadir tepat waktu ya bu..."
+                                    className="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none font-medium"
+                                />
+                            </div>
+
+                            <div className="flex gap-2.5 pt-2 border-t border-slate-100">
+                                <button
+                                    onClick={() => setShowBroadcastModal(false)}
+                                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs py-3 rounded-xl transition-all"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={handleConfirmBroadcast}
+                                    disabled={broadcastMutation.isPending}
+                                    className="flex-[2] bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold text-xs py-3 rounded-xl shadow-md hover:opacity-95 active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                >
+                                    {broadcastMutation.isPending ? 'Mengirim...' : (
+                                        <>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                            </svg>
+                                            Kirim Notifikasi
                                         </>
                                     )}
                                 </button>

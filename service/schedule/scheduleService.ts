@@ -3,7 +3,9 @@ import {
     ExaminationSchedule,
     SchedulesListResponse,
     CreateSchedulePayload,
-    UpdateSchedulePayload
+    UpdateSchedulePayload,
+    BroadcastScheduleNotificationPayload,
+    BroadcastScheduleNotificationResponse
 } from '@/interfaces/schedule';
 
 interface GetSchedulesParams {
@@ -49,5 +51,13 @@ export const deleteSchedule = async (
     id: string
 ): Promise<{ data: ExaminationSchedule }> => {
     const response = await bidanApi.delete(`/api/examination-schedules/${id}`);
+    return response.data;
+};
+
+export const broadcastScheduleNotification = async (
+    id: string,
+    payload?: BroadcastScheduleNotificationPayload
+): Promise<{ data: BroadcastScheduleNotificationResponse }> => {
+    const response = await bidanApi.post(`/api/examination-schedules/${id}/broadcast-notification`, payload);
     return response.data;
 };
