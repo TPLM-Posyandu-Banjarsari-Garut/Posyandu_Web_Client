@@ -8,7 +8,8 @@ import { FilterHalf, FilterRow } from '@/components/ui/FilterRow';
 import { useGetMidwifeProfile } from '@/hooks/query/midwife/useMidwifeProfile';
 import {
     useGetMidwifeConsultations,
-    useUpdateConsultationStatus
+    useUpdateConsultationStatus,
+    useBroadcastConsultationNotification
 } from '@/hooks/query/midwife/useMidwifeConsultations';
 import { MidwifeConsultation } from '@/service/midwife/midwifeService';
 
@@ -21,6 +22,14 @@ export default function JadwalKonsultasiPage() {
     // Modal state for modern confirm dialog
     const [confirmDialog, setConfirmDialog] = useState<{isOpen: boolean, publicId: string, newStatus: string, message: string} | null>(null);
     const [cancellationReason, setCancellationReason] = useState('');
+
+    // Broadcast Notification Modal State
+    const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+    const [selectedBroadcastItem, setSelectedBroadcastItem] = useState<MidwifeConsultation | null>(null);
+    const [customBroadcastMessage, setCustomBroadcastMessage] = useState('');
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+    const broadcastMutation = useBroadcastConsultationNotification();
 
     const { data: profile, isLoading: isLoadingProfile } = useGetMidwifeProfile();
     const midwife_id = profile?.id;
@@ -129,6 +138,38 @@ export default function JadwalKonsultasiPage() {
     const closeDialog = () => {
         setConfirmDialog(null);
         setCancellationReason('');
+    };
+
+    const triggerToast = (msg: string) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(null), 4000);
+    };
+
+    const handleOpenBroadcastModal = (item: MidwifeConsultation) => {
+        setSelectedBroadcastItem(item);
+        setCustomBroadcastMessage('');
+        setShowBroadcastModal(true);
+    };
+
+    const handleConfirmBroadcast = () => {
+        if (!selectedBroadcastItem) return;
+        broadcastMutation.mutate(
+            {
+                publicId: selectedBroadcastItem.id,
+                payload: { custom_message: customBroadcastMessage || undefined }
+            },
+            {
+                onSuccess: () => {
+                    triggerToast('Notifikasi berhasil diluncurkan ke orang tua!');
+                    setShowBroadcastModal(false);
+                    setSelectedBroadcastItem(null);
+                    setCustomBroadcastMessage('');
+                },
+                onError: () => {
+                    alert('Gagal meluncurkan notifikasi.');
+                }
+            }
+        );
     };
 
     return (
@@ -297,19 +338,30 @@ export default function JadwalKonsultasiPage() {
                                         )}
 
                                         {item.status === 'confirmed' && (
-                                            <div className="flex gap-2 mt-2 pt-4 border-t border-slate-100">
+                                            <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-slate-100">
                                                 <button
-                                                    onClick={() => handleUpdateStatus(item.id, 'completed')}
-                                                    className="flex-1 bg-emerald-600 text-white text-xs font-bold px-4 py-3 rounded-xl hover:bg-emerald-700 active:scale-95 transition-all flex justify-center items-center gap-1.5 shadow-sm cursor-pointer"
+                                                    onClick={() => handleOpenBroadcastModal(item)}
+                                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-3 rounded-xl transition-all flex justify-center items-center gap-2 shadow-sm cursor-pointer active:scale-95"
                                                 >
-                                                    Selesai
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                                    </svg>
+                                                    Luncurkan Notifikasi
                                                 </button>
-                                                <button
-                                                    onClick={() => handleUpdateStatus(item.id, 'cancelled')}
-                                                    className="flex-1 bg-red-50 text-red-600 text-xs font-bold px-4 py-3 rounded-xl hover:bg-red-100 hover:text-red-700 active:scale-95 transition-all flex justify-center items-center gap-1.5 cursor-pointer"
-                                                >
-                                                    Batalkan
-                                                </button>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleUpdateStatus(item.id, 'completed')}
+                                                        className="flex-1 bg-emerald-600 text-white text-xs font-bold px-4 py-3 rounded-xl hover:bg-emerald-700 active:scale-95 transition-all flex justify-center items-center gap-1.5 shadow-sm cursor-pointer"
+                                                    >
+                                                        Selesai
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleUpdateStatus(item.id, 'cancelled')}
+                                                        className="flex-1 bg-red-50 text-red-600 text-xs font-bold px-4 py-3 rounded-xl hover:bg-red-100 hover:text-red-700 active:scale-95 transition-all flex justify-center items-center gap-1.5 cursor-pointer"
+                                                    >
+                                                        Batalkan
+                                                    </button>
+                                                </div>
                                             </div>
                                         )}
 
@@ -330,6 +382,18 @@ export default function JadwalKonsultasiPage() {
                     </div>
                 </div>
 
+                {/* Toast Notification */}
+                {toastMessage && (
+                    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-800 text-xs font-semibold flex items-center gap-2.5 animate-bounce">
+                        <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <span>{toastMessage}</span>
+                    </div>
+                )}
+
                 {/* Fixed (+) Button */}
                 <div className="fixed bottom-[100px] w-full max-w-md mx-auto z-40 pointer-events-none flex justify-end px-6 left-1/2 -translate-x-1/2">
                     <Link href="/bidan/buat-jadwal-konsultasi" className="bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(37,99,235,0.4)] hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all pointer-events-auto">
@@ -339,6 +403,84 @@ export default function JadwalKonsultasiPage() {
 
                 <BottombarBidan />
             </div>
+
+            {/* Broadcast Notification Modal */}
+            {showBroadcastModal && selectedBroadcastItem && (
+                <div className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-slate-900/60 backdrop-blur-sm z-[1010] flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 animate-slide-up">
+                        <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                    </svg>
+                                </div>
+                                <h2 className="text-base font-bold text-slate-800">
+                                    Luncurkan Notifikasi
+                                </h2>
+                            </div>
+                            <button
+                                onClick={() => setShowBroadcastModal(false)}
+                                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 transition-colors"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="bg-indigo-50/60 p-3.5 rounded-2xl border border-indigo-100/80 text-xs text-indigo-900 font-medium leading-relaxed">
+                            Notifikasi akan dikirimkan secara otomatis ke <strong>{selectedBroadcastItem.parent_name || 'Orang Tua'}</strong>.
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Layanan & Pasien</label>
+                            <div className="text-xs font-semibold text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-1">
+                                <div>{selectedBroadcastItem.children_name || selectedBroadcastItem.parent_name} — <span className="text-indigo-600">{getLayananLabel(selectedBroadcastItem.consultation_type)}</span></div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                Pesan Kustom (Opsional)
+                            </label>
+                            <textarea
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none h-24"
+                                placeholder="Contoh: Halo Ibu, pengingat untuk janji konsultasi Anda..."
+                                value={customBroadcastMessage}
+                                onChange={(e) => setCustomBroadcastMessage(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="flex gap-2 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowBroadcastModal(false)}
+                                className="flex-1 py-3 px-4 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-200 transition-colors cursor-pointer"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirmBroadcast}
+                                disabled={broadcastMutation.isPending}
+                                className="flex-1 py-3 px-4 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                            >
+                                {broadcastMutation.isPending ? (
+                                    <span>Mengirim...</span>
+                                ) : (
+                                    <>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                        </svg>
+                                        Luncurkan
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Custom Modern Confirm Dialog */}
             {confirmDialog && confirmDialog.isOpen && (

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchMidwifeConsultations,
   updateConsultationStatus,
+  broadcastConsultationNotification,
   FetchMidwifeConsultationsParams,
   FetchMidwifeConsultationsResponse,
 } from "@/service/midwife/midwifeService";
@@ -37,5 +38,17 @@ export function useUpdateConsultationStatus() {
       queryClient.invalidateQueries({ queryKey: ["orangtua-consultations"] });
       queryClient.invalidateQueries({ queryKey: ["orangtua-available-slots"] });
     },
+  });
+}
+
+export function useBroadcastConsultationNotification() {
+  return useMutation({
+    mutationFn: ({
+      publicId,
+      payload,
+    }: {
+      publicId: string;
+      payload?: { custom_message?: string };
+    }) => broadcastConsultationNotification(publicId, payload),
   });
 }
