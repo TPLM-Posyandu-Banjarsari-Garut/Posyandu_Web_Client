@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
@@ -43,6 +43,7 @@ export function useLoginOrangTua() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormInputs>({
     defaultValues: {
@@ -51,6 +52,14 @@ export function useLoginOrangTua() {
       rememberMe: false,
     },
   });
+
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail_orangtua");
+    if (rememberedEmail) {
+      setValue("email", rememberedEmail);
+      setValue("rememberMe", true);
+    }
+  }, [setValue]);
 
   const loginMutation = useMutation<void, Error, LoginOrangTuaVariables>({
     mutationFn: async ({ email, password }) => {
@@ -83,6 +92,11 @@ export function useLoginOrangTua() {
       },
       {
         onSuccess: () => {
+          if (data.rememberMe) {
+            localStorage.setItem("rememberedEmail_orangtua", data.email);
+          } else {
+            localStorage.removeItem("rememberedEmail_orangtua");
+          }
           setShowSuccess(true);
           setTimeout(() => {
             router.push("/orangtua/home");

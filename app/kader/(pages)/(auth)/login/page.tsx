@@ -144,9 +144,13 @@ export default function KaderLogin() {
                 <span className="text-xs text-slate-500 font-bold tracking-wide">Ingat saya</span>
               </label>
               
-              <a href="#" className="text-xs text-blue-600 hover:text-blue-700 font-bold hover:underline">
+              <button
+                type="button"
+                onClick={() => router.push('/kader/lupa-password')}
+                className="text-xs text-blue-600 hover:text-blue-700 font-bold hover:underline"
+              >
                 Lupa Kata Sandi?
-              </a>
+              </button>
             </div>
 
           </form>

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const isBrowser = typeof window !== "undefined";
 
 /**
@@ -45,4 +45,23 @@ interface AuthMeResponse {
 export async function fetchCurrentUser(): Promise<SessionUser> {
   const { data } = await api.get<AuthMeResponse>("/api/auth/me");
   return data.data.user;
+}
+
+export interface UpdateUserPayload {
+  image?: string;
+  name?: string;
+}
+
+export async function updateUserProfile(payload: UpdateUserPayload): Promise<void> {
+  await api.post("/api/auth/update-user", payload);
+}
+
+export interface ChangePasswordPayload {
+  newPassword: string;
+  currentPassword?: string;
+  revokeOtherSessions?: boolean;
+}
+
+export async function changePassword(payload: ChangePasswordPayload): Promise<void> {
+  await api.post("/api/auth/change-password", payload);
 }

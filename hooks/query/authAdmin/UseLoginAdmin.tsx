@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
@@ -49,6 +49,7 @@ export function useLoginAdmin() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormInputs>({
     defaultValues: {
@@ -57,6 +58,14 @@ export function useLoginAdmin() {
       rememberMe: false,
     },
   });
+
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail_admin");
+    if (rememberedEmail) {
+      setValue("email", rememberedEmail);
+      setValue("rememberMe", true);
+    }
+  }, [setValue]);
 
   const loginMutation = useMutation<void, Error, LoginAdminVariables>({
     mutationFn: async ({ email, password }) => {
@@ -94,6 +103,11 @@ export function useLoginAdmin() {
       },
       {
         onSuccess: () => {
+          if (data.rememberMe) {
+            localStorage.setItem("rememberedEmail_admin", data.email);
+          } else {
+            localStorage.removeItem("rememberedEmail_admin");
+          }
           setShowSuccess(true);
           setTimeout(() => {
             router.push("/admin/kelola-buat-akun");

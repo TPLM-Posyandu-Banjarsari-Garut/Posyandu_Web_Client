@@ -119,12 +119,12 @@ export default function CreateUserModal({
                 {...register('password', {
                   required: 'Password tidak boleh kosong',
                   minLength: {
-                    value: 8,
-                    message: 'Password minimal harus 8 karakter',
+                    value: 12,
+                    message: 'Password minimal harus 12 karakter',
                   },
                 })}
                 className={`${inputClass} pr-11`}
-                placeholder="Masukkan minimal 8 karakter..."
+                placeholder="Masukkan minimal 12 karakter..."
               />
               <button
                 type="button"
@@ -175,6 +175,28 @@ export default function CreateUserModal({
               </div>
             </div>
           </div>
+
+          {/* Input NIK untuk Bidan */}
+          {watchedRole === 'bidan' && (
+            <div className="flex flex-col animate-fade-in">
+              <label className={labelClass}>
+                Nomor Induk Kependudukan (NIK) <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                {...register('identityNumber', {
+                  required: 'NIK wajib diisi untuk peran Bidan',
+                  pattern: {
+                    value: /^[0-9]{16}$/,
+                    message: 'NIK harus 16 digit angka',
+                  },
+                })}
+                className={inputClass}
+                placeholder="Masukkan 16 digit NIK..."
+                maxLength={16}
+              />
+            </div>
+          )}
 
           {/* Dropdown Select Posyandu for Bidan / Kader */}
           {(watchedRole === 'bidan' || watchedRole === 'kader') && (

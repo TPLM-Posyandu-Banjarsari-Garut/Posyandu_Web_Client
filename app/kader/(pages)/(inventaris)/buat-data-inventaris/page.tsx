@@ -3,6 +3,10 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { useCreateInventory } from '@/hooks/query/inventory/useManageInventories';
+import { useGetCadreProfile } from '@/hooks/query/cadre/useCadreProfile';
+import { InventoryItemType, InventoryCondition, InventoryUnit } from '@/interfaces/inventory';
 
 const textInputClassName =
     'w-full min-w-0 max-w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all placeholder-slate-400';
@@ -10,59 +14,82 @@ const textInputClassName =
 const selectClassName =
     'w-full min-w-0 max-w-full box-border px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[1.25rem] text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-inner transition-all appearance-none';
 
-export default function BuatDataInventaris() {
+interface InventoryFormValues {
+    nama: string;
+    kategori: InventoryItemType;
+    unit: InventoryUnit;
+    kondisi: InventoryCondition;
+    stok: number | '';
+    deskripsi: string;
+    batchNumber: string;
+    expiryDate: string;
+}
+
+export default function BuatDataInventarisKader() {
     const router = useRouter();
 
-    // Form states
-    const [nama, setNama] = useState('');
-    const [kategori, setKategori] = useState<'vaksin' | 'barang' | 'makanan'>('vaksin');
-    const [stok, setStok] = useState<number | ''>('');
-    const [status, setStatus] = useState<'Tersedia' | 'Tidak Tersedia'>('Tersedia');
+    const { data: profile } = useGetCadreProfile();
+    const posyandu_id = profile?.posyandu_id || '';
 
-    // Validation & loading states
+    const createInventoryMutation = useCreateInventory();
+
+    const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<InventoryFormValues>({
+        defaultValues: {
+            nama: '',
+            kategori: 'vaccine',
+            unit: 'pcs',
+            kondisi: 'good',
+            stok: '',
+            deskripsi: '',
+            batchNumber: '',
+            expiryDate: '',
+        }
+    });
+
     const [error, setError] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    const stokWatch = watch('stok');
+    const kondisiWatch = watch('kondisi');
 
     // Auto-update status based on stock count
     useEffect(() => {
-        if (stok === 0) {
-            setStatus('Tidak Tersedia');
-        } else if (stok !== '' && stok > 0 && status === 'Tidak Tersedia') {
-            setStatus('Tersedia');
+        if (String(stokWatch) === '0') {
+            setValue('kondisi', 'out_of_stock');
+        } else if (stokWatch !== '' && Number(stokWatch) > 0 && kondisiWatch === 'out_of_stock') {
+            setValue('kondisi', 'good');
         }
-    }, [stok, status]);
+    }, [stokWatch, kondisiWatch, setValue]);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const onSubmit = (data: InventoryFormValues) => {
         setError('');
 
-        // Basic validation
-        if (!nama.trim()) {
-            setError('Nama item tidak boleh kosong');
-            return;
-        }
-        if (stok === '') {
-            setError('Jumlah stok tidak boleh kosong');
-            return;
-        }
-        if (stok < 0) {
-            setError('Jumlah stok tidak boleh negatif');
+        if (!posyandu_id) {
+            setError('Data Posyandu belum dimuat. Silakan tunggu atau muat ulang halaman.');
             return;
         }
 
-        setIsSubmitting(true);
-
-        // Simulate API call and success animation
-        setTimeout(() => {
-            setIsSubmitting(false);
-            setShowSuccessModal(true);
-
-            // Redirect back to list page after 1.5s
-            setTimeout(() => {
-                router.push('/kader/data-inventaris');
-            }, 1500);
-        }, 1000);
+        createInventoryMutation.mutate({
+            posyandu_id,
+            item_name: data.nama,
+            item_type: data.kategori,
+            quantity: data.stok === '' ? 0 : Number(data.stok),
+            unit: data.unit,
+            condition: data.kondisi,
+            description: data.deskripsi || undefined,
+            batch_number: data.batchNumber || undefined,
+            expiry_date: data.expiryDate || undefined,
+        }, {
+            onSuccess: () => {
+                setShowSuccessModal(true);
+                setTimeout(() => {
+                    router.push('/kader/data-inventaris');
+                }, 1500);
+            },
+            onError: (err: any) => {
+                setError(err?.response?.data?.message || err?.message || 'Gagal menyimpan data inventaris.');
+            }
+        });
     };
 
     return (
@@ -82,8 +109,8 @@ export default function BuatDataInventaris() {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto px-6 py-6 bg-slate-50 flex flex-col">
-                    <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 rounded-[1.5rem] border border-slate-100 bg-white p-6 shadow-[0_4px_15px_rgb(0,0,0,0.03)]">
+                <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar bg-slate-50 flex flex-col">
+                    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col gap-5 rounded-[1.5rem] border border-slate-100 bg-white p-6 shadow-[0_4px_15px_rgb(0,0,0,0.03)]">
                         
                         {/* Error Alert */}
                         {error && (
@@ -100,30 +127,52 @@ export default function BuatDataInventaris() {
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Item</label>
                             <input
                                 type="text"
-                                value={nama}
-                                onChange={(e) => setNama(e.target.value)}
+                                {...register('nama', { required: 'Nama item tidak boleh kosong' })}
                                 className={textInputClassName}
-                                placeholder="Masukkan nama vaksin, barang, atau makanan..."
+                                placeholder="Masukkan nama vaksin, alat, dll..."
                             />
+                            {errors.nama && <span className="text-[10px] font-bold text-rose-500">{errors.nama.message}</span>}
                         </div>
 
-                        {/* Select Kategori */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kategori</label>
-                            <div className="relative">
-                                <select
-                                    value={kategori}
-                                    onChange={(e) => setKategori(e.target.value as 'vaksin' | 'barang' | 'makanan')}
-                                    className={selectClassName}
-                                >
-                                    <option value="vaksin">Vaksin</option>
-                                    <option value="barang">Barang</option>
-                                    <option value="makanan">Makanan</option>
-                                </select>
-                                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                                    </svg>
+                        {/* Select Kategori & Unit */}
+                        <div className="flex gap-3">
+                            <div className="flex flex-col gap-2 flex-1">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kategori</label>
+                                <div className="relative">
+                                    <select
+                                        {...register('kategori')}
+                                        className={selectClassName}
+                                    >
+                                        <option value="vaccine">Vaksin</option>
+                                        <option value="general">Barang Umum</option>
+                                        <option value="vitamin">Vitamin</option>
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2 flex-1">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Satuan</label>
+                                <div className="relative">
+                                    <select
+                                        {...register('unit')}
+                                        className={selectClassName}
+                                    >
+                                        <option value="pcs">Pcs</option>
+                                        <option value="box">Box</option>
+                                        <option value="bottle">Botol</option>
+                                        <option value="pack">Pack</option>
+                                        <option value="set">Set</option>
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -133,26 +182,31 @@ export default function BuatDataInventaris() {
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Jumlah Stok</label>
                             <input
                                 type="number"
-                                value={stok}
-                                onChange={(e) => setStok(e.target.value === '' ? '' : parseInt(e.target.value))}
+                                {...register('stok', { 
+                                    required: 'Jumlah stok tidak boleh kosong',
+                                    min: { value: 0, message: 'Jumlah stok tidak boleh negatif' }
+                                })}
                                 className={textInputClassName}
-                                placeholder="Masukkan jumlah stok (pcs)..."
+                                placeholder="Masukkan jumlah stok..."
                                 min="0"
                             />
+                            {errors.stok && <span className="text-[10px] font-bold text-rose-500">{errors.stok.message}</span>}
                         </div>
 
-                        {/* Select Status */}
+                        {/* Select Kondisi */}
                         <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status Ketersediaan</label>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kondisi</label>
                             <div className="relative">
                                 <select
-                                    value={status}
-                                    onChange={(e) => setStatus(e.target.value as 'Tersedia' | 'Tidak Tersedia')}
+                                    {...register('kondisi')}
                                     className={selectClassName}
-                                    disabled={stok === 0}
+                                    disabled={String(stokWatch) === '0'}
                                 >
-                                    <option value="Tersedia">Tersedia</option>
-                                    <option value="Tidak Tersedia">Tidak Tersedia / Habis</option>
+                                    <option value="good">Baik</option>
+                                    <option value="minor_damage">Rusak Ringan</option>
+                                    <option value="major_damage">Rusak Berat</option>
+                                    <option value="under_repair">Sedang Diperbaiki</option>
+                                    <option value="out_of_stock">Habis</option>
                                 </select>
                                 <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                                     <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,20 +214,49 @@ export default function BuatDataInventaris() {
                                     </svg>
                                 </div>
                             </div>
-                            {stok === 0 && (
+                            {String(stokWatch) === '0' && (
                                 <p className="text-[10px] font-bold text-rose-500">
-                                    * Status otomatis diatur ke &quot;Tidak Tersedia&quot; karena stok kosong.
+                                    * Kondisi otomatis diatur ke &quot;Habis&quot; karena stok kosong.
                                 </p>
                             )}
+                        </div>
+
+                        <div className="w-full h-px bg-slate-100 my-1"></div>
+
+                        {/* Input Deskripsi */}
+                        <div className="flex flex-col gap-2">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Deskripsi Tambahan</label>
+                            <textarea
+                                {...register('deskripsi')}
+                                className={textInputClassName + ' min-h-[80px]'}
+                                placeholder="Opsional: Keterangan barang..."
+                            />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">No Batch / Tgl Kadaluarsa</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    {...register('batchNumber')}
+                                    className={textInputClassName}
+                                    placeholder="No. Batch"
+                                />
+                                <input
+                                    type="date"
+                                    {...register('expiryDate')}
+                                    className={textInputClassName}
+                                />
+                            </div>
                         </div>
 
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={createInventoryMutation.isPending}
                             className="mt-auto w-full bg-blue-600 text-white font-bold text-sm py-4 rounded-[1.25rem] hover:bg-blue-700 active:scale-95 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.3)] flex justify-center items-center gap-2 disabled:opacity-50"
                         >
-                            {isSubmitting ? (
+                            {createInventoryMutation.isPending ? (
                                 <>
                                     <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />

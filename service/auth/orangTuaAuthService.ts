@@ -6,6 +6,7 @@ import {
   VerifyOTPPayload,
   ResendOTPPayload,
   OrangTuaUser,
+  ResetPasswordOTPPayload,
 } from "@/interfaces/auth";
 
 export { api as orangTuaApi };
@@ -58,3 +59,15 @@ export async function signInOrangTuaGoogle(
   return data;
 }
 
+export async function requestPasswordResetOTP(email: string): Promise<any> {
+  const { data } = await api.post<any>("/api/auth/email-otp/send-verification-otp", {
+    email,
+    type: "forget-password",
+  });
+  return data;
+}
+
+export async function resetPasswordWithOTP(payload: ResetPasswordOTPPayload): Promise<any> {
+  const { data } = await api.post<any>("/api/auth/email-otp/reset-password", payload);
+  return data;
+}

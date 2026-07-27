@@ -181,9 +181,13 @@ export default function OrangTuaAuth() {
                     />
                     <span className="text-xs text-slate-500 font-bold tracking-wide">Ingat saya</span>
                   </label>
-                  <a href="#" className="text-xs text-blue-600 hover:text-blue-700 font-bold hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => router.push('/orangtua/lupa-password')}
+                    className="text-[11px] font-extrabold text-blue-600 hover:text-blue-700 hover:underline tracking-wide transition-all cursor-pointer mr-1"
+                  >
                     Lupa Kata Sandi?
-                  </a>
+                  </button>
                 </div>
               </form>
             ) : (

@@ -1,15 +1,7 @@
-import axios from "axios";
+import { api } from "./authService";
 import { SessionUser } from "./authService";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.posyandubanjarsari.my.id";
-
-export const orangTuaApi = axios.create({
-  baseURL: API_URL, // ALWAYS bypass proxy to ensure Google Login cookies on the backend domain are read
-  headers: {
-    "Content-Type": "application/json",
-  },
-  withCredentials: true,
-});
+export const orangTuaApi = api;
 
 export async function fetchOrangTuaCurrentUser(): Promise<SessionUser> {
   const { data } = await orangTuaApi.get<{ data: { user: SessionUser } }>("/api/auth/me");
