@@ -37,10 +37,21 @@ export async function executeWebPushSubscription(): Promise<boolean> {
         // Subscribe to PushManager
         let subscription = await registration.pushManager.getSubscription();
         if (!subscription) {
-            subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: convertedKey as unknown as BufferSource,
-            });
+            try {
+                subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: convertedKey as unknown as BufferSource,
+                });
+            } catch (subErr: unknown) {
+                const subError = subErr as Error;
+                if (subError?.name === 'AbortError' || subError?.message?.includes('push service error')) {
+                    console.warn('[PushSubscription] Browser Push Service temporarily unavailable or blocked by browser/network:', subError?.message);
+                    const oldSub = await registration.pushManager.getSubscription().catch(() => null);
+                    if (oldSub) await oldSub.unsubscribe().catch(() => null);
+                    return false;
+                }
+                throw subErr;
+            }
         }
 
         const subJson = subscription.toJSON();
@@ -55,8 +66,9 @@ export async function executeWebPushSubscription(): Promise<boolean> {
             console.log('[PushSubscription] Push subscription saved to DB successfully!');
             return true;
         }
-    } catch (err) {
-        console.error('[PushSubscription] Registration error:', err);
+    } catch (err: unknown) {
+        const errorObj = err as Error;
+        console.warn('[PushSubscription] Web Push registration skipped:', errorObj?.message || err);
     }
     return false;
 }

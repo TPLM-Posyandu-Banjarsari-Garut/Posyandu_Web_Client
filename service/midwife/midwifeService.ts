@@ -1,6 +1,6 @@
 import { bidanApi } from "../auth/bidanAuthService";
 import { Midwife } from "@/interfaces/midwife";
-import { Consultation } from "@/interfaces/consultation";
+import { Consultation, CreateBookingPayload, AvailableSlot } from "@/interfaces/consultation";
 import { ApiResponse } from "@/interfaces/api";
 
 export interface FetchMidwivesResponse {
@@ -35,6 +35,7 @@ export interface FetchMidwifeConsultationsResponse {
 }
 
 export interface FetchMidwifeConsultationsParams {
+  posyandu_id?: string;
   status?: string;
   consultation_type?: string;
   page?: number;
@@ -88,4 +89,34 @@ export async function broadcastConsultationNotification(
     payload
   );
   return data;
+}
+
+export async function createMidwifeConsultation(
+  payload: CreateBookingPayload
+): Promise<Consultation> {
+  const { data } = await bidanApi.post<ApiResponse<Consultation>>(
+    "/api/consultations",
+    payload
+  );
+  return data.data;
+}
+
+export async function fetchMidwifeAvailableSlots(
+  posyandu_id: string,
+  consultation_type: string,
+  date: string,
+  midwife_id?: string | null
+): Promise<AvailableSlot[]> {
+  const { data } = await bidanApi.get<ApiResponse<AvailableSlot[]>>(
+    "/api/consultations/slots/available",
+    {
+      params: {
+        posyandu_id,
+        consultation_type,
+        date,
+        midwife_id: midwife_id || undefined,
+      },
+    }
+  );
+  return data.data;
 }
