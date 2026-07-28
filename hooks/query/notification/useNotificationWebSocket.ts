@@ -64,13 +64,23 @@ export function useNotificationWebSocket(): void {
             if (!('Notification' in window)) return;
             if (Notification.permission !== 'granted') return;
 
+            const payloadData = (payload.data as Record<string, unknown>) || {};
+            const rawUrl = typeof payloadData.url === 'string' ? payloadData.url : undefined;
+            const targetUrl = rawUrl || (
+                payload.type === 'consultation'
+                    ? '/orangtua/lihat-antrean'
+                    : payload.type === 'examination'
+                        ? '/orangtua/jadwal-posyandu'
+                        : '/'
+            );
+
             const notificationOptions: NotificationOptions = {
                 body: payload.body,
                 icon: '/icon-192x192.png',
                 badge: '/icon-192x192.png',
                 tag: payload.id,
                 data: {
-                    url: '/',
+                    url: targetUrl,
                     notificationId: payload.id,
                 },
             };

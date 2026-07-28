@@ -87,8 +87,8 @@ export default function JadwalKonsultasiPage() {
                 }
             },
             {
-                onSuccess: (res: any) => {
-                    const isScheduled = pushTimingOption === 'custom' || res?.data?.is_scheduled || res?.is_scheduled;
+                onSuccess: (res) => {
+                    const isScheduled = pushTimingOption === 'custom' || !!res.data.is_scheduled;
                     const scheduledTimeStr = customPushTime ? formatPushTimestamp(new Date(customPushTime)) : '';
 
                     if (isScheduled && scheduledTimeStr) {
