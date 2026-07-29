@@ -53,3 +53,17 @@ export interface BroadcastScheduleNotificationResponse {
     is_scheduled?: boolean;
     scheduled_push_at?: string;
 }
+
+export interface ScheduleFormValues {
+    examination_id: string;
+    scheduled_date: string;
+    start_time: string;
+    end_time: string;
+}
+
+export interface ExaminationItem {
+    id: string;
+    posyandu_id: string;
+    name: string;
+    examination_type: 'infant' | 'pregnant_mother' | 'toddler' | 'young_child';
+}

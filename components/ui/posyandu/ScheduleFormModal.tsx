@@ -2,21 +2,7 @@
 
 import React from 'react';
 import { UseFormRegister, FieldErrors, UseFormHandleSubmit } from 'react-hook-form';
-import { ExaminationSchedule } from '@/interfaces/schedule';
-
-export interface ScheduleFormValues {
-    examination_id: string;
-    scheduled_date: string;
-    start_time: string;
-    end_time: string;
-}
-
-export interface ExaminationItem {
-    id: string;
-    posyandu_id: string;
-    name: string;
-    examination_type: 'infant' | 'pregnant_mother' | 'toddler' | 'young_child';
-}
+import { ExaminationSchedule, ScheduleFormValues, ExaminationItem } from '@/interfaces/schedule';
 
 interface ScheduleFormModalProps {
     isOpen: boolean;

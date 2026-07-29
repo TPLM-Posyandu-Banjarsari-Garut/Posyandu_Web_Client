@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ExaminationItem } from './ScheduleFormModal';
+import { ExaminationItem } from '@/interfaces/schedule';
 
 interface ExaminationManageModalProps {
     isOpen: boolean;
