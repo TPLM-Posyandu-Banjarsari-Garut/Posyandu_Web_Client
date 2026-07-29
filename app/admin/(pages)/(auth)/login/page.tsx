@@ -1,11 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLoginAdmin } from "@/hooks/query/authAdmin/UseLoginAdmin";
+import TurnstileWidget from "@/components/ui/TurnstileWidget";
 
 export default function AdminLogin() {
   const router = useRouter();
+  const [captchaToken, setCaptchaToken] = useState<string>('');
   const {
     register,
     onSubmit,
@@ -156,12 +158,21 @@ export default function AdminLogin() {
 
           </form>
 
+          {/* CAPTCHA Turnstile */}
+          <div className="mt-6">
+            <TurnstileWidget
+              onVerify={(token) => setCaptchaToken(token)}
+              onExpire={() => setCaptchaToken('')}
+              theme="light"
+            />
+          </div>
+
           {/* Submit Action Button */}
-          <div className="mt-8 flex flex-col gap-4">
+          <div className="mt-4 flex flex-col gap-4">
             <button
               onClick={onSubmit}
-              disabled={isPending}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-full active:scale-98 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.25)] flex justify-center items-center gap-2 disabled:opacity-75"
+              disabled={isPending || !captchaToken}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-full active:scale-98 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.25)] flex justify-center items-center gap-2 disabled:opacity-75 cursor-pointer"
             >
               {isPending ? (
                 <>

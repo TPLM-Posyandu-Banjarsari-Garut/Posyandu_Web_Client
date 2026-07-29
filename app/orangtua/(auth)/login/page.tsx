@@ -4,12 +4,19 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLoginOrangTua } from "@/hooks/query/authOrangTua/useLoginOrangTua";
 import { useRegisterOrangTua } from "@/hooks/query/authOrangTua/useRegisterOrangTua";
+import TurnstileWidget from "@/components/ui/TurnstileWidget";
 
 export default function OrangTuaAuth() {
   const router = useRouter();
 
   // Active Tab state ("login" or "register")
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  const [captchaToken, setCaptchaToken] = useState<string>('');
+
+  const handleTabChange = (tab: "login" | "register") => {
+    setActiveTab(tab);
+    setCaptchaToken('');
+  };
 
   const {
     register: registerLogin,
@@ -81,7 +88,7 @@ export default function OrangTuaAuth() {
             <div className="bg-slate-100 p-1.5 rounded-[1.25rem] flex gap-1 mb-6">
               <button
                 type="button"
-                onClick={() => setActiveTab("login")}
+                onClick={() => handleTabChange("login")}
                 className={`flex-1 py-3 text-sm font-extrabold rounded-[0.95rem] transition-all duration-300 cursor-pointer ${
                   activeTab === "login"
                     ? "bg-white text-slate-800 shadow-sm"
@@ -92,7 +99,7 @@ export default function OrangTuaAuth() {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab("register")}
+                onClick={() => handleTabChange("register")}
                 className={`flex-1 py-3 text-sm font-extrabold rounded-[0.95rem] transition-all duration-300 cursor-pointer ${
                   activeTab === "register"
                     ? "bg-white text-slate-800 shadow-sm"
@@ -325,10 +332,16 @@ export default function OrangTuaAuth() {
           </div>
 
           <div className="mt-8 flex flex-col gap-6">
+            {/* CAPTCHA Turnstile */}
+            <TurnstileWidget
+              onVerify={(token) => setCaptchaToken(token)}
+              onExpire={() => setCaptchaToken('')}
+              theme="light"
+            />
             <button
               type="submit"
               form={activeTab === "login" ? "loginForm" : "registerForm"}
-              disabled={isLoading}
+              disabled={isLoading || !captchaToken}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-4 rounded-full active:scale-98 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.25)] flex justify-center items-center gap-2 disabled:opacity-75 cursor-pointer"
             >
               {isLoading ? (
