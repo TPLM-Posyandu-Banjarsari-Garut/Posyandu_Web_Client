@@ -123,7 +123,7 @@ export default function OrangTuaAuth() {
             )}
 
             {activeTab === "login" ? (
-              <form id="loginForm" onSubmit={onSubmitLogin} className="flex flex-col gap-5">
+              <form id="loginForm" onSubmit={onSubmitLogin(captchaToken)} className="flex flex-col gap-5">
                 <div className="flex items-center gap-3.5 bg-slate-50 border border-slate-200/80 rounded-[1.25rem] p-3 hover:border-slate-350 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/10 transition-all">
                   <div className="w-11 h-11 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 shrink-0">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -198,7 +198,7 @@ export default function OrangTuaAuth() {
                 </div>
               </form>
             ) : (
-              <form id="registerForm" onSubmit={onSubmitSignup} className="flex flex-col gap-5">
+              <form id="registerForm" onSubmit={onSubmitSignup(captchaToken)} className="flex flex-col gap-5">
                 <div className="flex items-center gap-3.5 bg-slate-50 border border-slate-200/80 rounded-[1.25rem] p-3 hover:border-slate-350 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/10 transition-all">
                   <div className="w-11 h-11 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 shrink-0">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">

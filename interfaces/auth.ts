@@ -108,3 +108,10 @@ export interface ResetPasswordOTPPayload {
   otp: string;
   password?: string;
 }
+
+export interface GenericAuthSuccessResponse {
+  status?: string | boolean;
+  message?: string;
+  success?: boolean;
+  data?: Record<string, unknown>;
+}

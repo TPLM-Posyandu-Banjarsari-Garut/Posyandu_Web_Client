@@ -48,7 +48,7 @@ export default function AdminLogin() {
         {/* White Form Card Overlap Section */}
         <div className="bg-white rounded-t-[2.5rem] -mt-8 pt-8 px-6 pb-8 flex-1 flex flex-col justify-between relative z-10">
           
-          <form onSubmit={onSubmit} className="flex flex-col gap-5">
+          <form onSubmit={onSubmit(captchaToken)} className="flex flex-col gap-5">
             
             {/* Error Alert Display */}
             {displayError && (
@@ -170,7 +170,7 @@ export default function AdminLogin() {
           {/* Submit Action Button */}
           <div className="mt-4 flex flex-col gap-4">
             <button
-              onClick={onSubmit}
+              onClick={onSubmit(captchaToken)}
               disabled={isPending || !captchaToken}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-full active:scale-98 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.25)] flex justify-center items-center gap-2 disabled:opacity-75 cursor-pointer"
             >

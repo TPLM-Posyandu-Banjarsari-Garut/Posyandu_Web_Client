@@ -10,6 +10,7 @@ import { KaderLoginPayload } from "@/interfaces/auth";
 
 interface LoginKaderVariables extends KaderLoginPayload {
   rememberMe?: boolean;
+  captchaToken?: string;
 }
 
 export interface LoginFormInputs {
@@ -46,6 +47,8 @@ export function useLoginKader() {
   const [apiError, setApiError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -68,9 +71,9 @@ export function useLoginKader() {
   }, [setValue]);
 
   const loginMutation = useMutation<void, Error, LoginKaderVariables>({
-    mutationFn: async ({ email, password }) => {
+    mutationFn: async ({ email, password, captchaToken }) => {
       try {
-        const response = await loginKader({ email, password });
+        const response = await loginKader({ email, password, captchaToken });
 
         if (!response.user) {
           throw new Error("Email atau kata sandi tidak valid");
@@ -90,32 +93,40 @@ export function useLoginKader() {
     },
   });
 
-  const onSubmit = handleSubmit((data) => {
-    setApiError("");
-    loginMutation.mutate(
-      {
-        email: data.email,
-        password: data.password,
-        rememberMe: data.rememberMe,
-      },
-      {
-        onSuccess: () => {
-          if (data.rememberMe) {
-            localStorage.setItem("rememberedEmail_kader", data.email);
-          } else {
-            localStorage.removeItem("rememberedEmail_kader");
-          }
-          setShowSuccess(true);
-          setTimeout(() => {
-            router.push("/kader/home");
-          }, 1500);
-        },
-        onError: (err) => {
-          setApiError(err.message);
-        },
+  const onSubmit = (captchaToken: string) =>
+    handleSubmit((data) => {
+      if (!captchaToken) {
+        setApiError("Silakan selesaikan verifikasi CAPTCHA terlebih dahulu.");
+        return;
       }
-    );
-  });
+      setApiError("");
+      setIsSubmitting(true);
+      loginMutation.mutate(
+        {
+          email: data.email,
+          password: data.password,
+          rememberMe: data.rememberMe,
+          captchaToken,
+        },
+        {
+          onSuccess: () => {
+            if (data.rememberMe) {
+              localStorage.setItem("rememberedEmail_kader", data.email);
+            } else {
+              localStorage.removeItem("rememberedEmail_kader");
+            }
+            setShowSuccess(true);
+            setTimeout(() => {
+              router.push("/kader/home");
+            }, 1500);
+          },
+          onError: (err) => {
+            setApiError(err.message);
+            setIsSubmitting(false);
+          },
+        }
+      );
+    });
 
   const displayError =
     errors.email?.message || errors.password?.message || apiError || "";
@@ -128,6 +139,6 @@ export function useLoginKader() {
     passwordVisible,
     setPasswordVisible,
     showSuccess,
-    isPending: loginMutation.isPending,
+    isPending: loginMutation.isPending || isSubmitting,
   };
 }

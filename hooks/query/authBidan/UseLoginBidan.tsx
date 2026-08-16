@@ -10,6 +10,7 @@ import { BidanLoginPayload } from "@/interfaces/auth";
 
 interface LoginBidanVariables extends BidanLoginPayload {
   rememberMe?: boolean;
+  captchaToken?: string;
 }
 
 export interface LoginFormInputs {
@@ -45,6 +46,7 @@ export function useLoginBidan() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [apiError, setApiError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
@@ -68,9 +70,9 @@ export function useLoginBidan() {
   }, [setValue]);
 
   const loginMutation = useMutation<void, Error, LoginBidanVariables>({
-    mutationFn: async ({ email, password }) => {
+    mutationFn: async ({ email, password, captchaToken }) => {
       try {
-        const response = await loginBidan({ email, password });
+        const response = await loginBidan({ email, password, captchaToken });
 
         if (!response.user) {
           throw new Error("Email atau kata sandi tidak valid");
@@ -90,32 +92,41 @@ export function useLoginBidan() {
     },
   });
 
-  const onSubmit = handleSubmit((data) => {
-    setApiError("");
-    loginMutation.mutate(
-      {
-        email: data.email,
-        password: data.password,
-        rememberMe: data.rememberMe,
-      },
-      {
-        onSuccess: () => {
-          if (data.rememberMe) {
-            localStorage.setItem("rememberedEmail_bidan", data.email);
-          } else {
-            localStorage.removeItem("rememberedEmail_bidan");
-          }
-          setShowSuccess(true);
-          setTimeout(() => {
-            router.push("/bidan/home");
-          }, 1500);
-        },
-        onError: (err) => {
-          setApiError(err.message);
-        },
+  // Terima captchaToken sebagai parameter untuk diteruskan ke API
+  const onSubmit = (captchaToken: string) =>
+    handleSubmit((data) => {
+      if (!captchaToken) {
+        setApiError("Silakan selesaikan verifikasi CAPTCHA terlebih dahulu.");
+        return;
       }
-    );
-  });
+      setApiError("");
+      setIsSubmitting(true);
+      loginMutation.mutate(
+        {
+          email: data.email,
+          password: data.password,
+          rememberMe: data.rememberMe,
+          captchaToken,
+        },
+        {
+          onSuccess: () => {
+            if (data.rememberMe) {
+              localStorage.setItem("rememberedEmail_bidan", data.email);
+            } else {
+              localStorage.removeItem("rememberedEmail_bidan");
+            }
+            setShowSuccess(true);
+            setTimeout(() => {
+              router.push("/bidan/home");
+            }, 1500);
+          },
+          onError: (err) => {
+            setApiError(err.message);
+            setIsSubmitting(false);
+          },
+        }
+      );
+    });
 
   const displayError =
     errors.email?.message || errors.password?.message || apiError || "";
@@ -128,6 +139,6 @@ export function useLoginBidan() {
     passwordVisible,
     setPasswordVisible,
     showSuccess,
-    isPending: loginMutation.isPending,
+    isPending: loginMutation.isPending || isSubmitting,
   };
 }

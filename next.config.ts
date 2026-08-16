@@ -58,7 +58,12 @@ const securityHeaders = [
   // Batasi fitur browser yang tidak diperlukan
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
+  },
+  // HSTS: paksa browser gunakan HTTPS selama 1 tahun (production only dihandle oleh browser cache)
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=31536000; includeSubDomains; preload",
   },
   // CSP utama
   { key: "Content-Security-Policy", value: cspDirectives },
