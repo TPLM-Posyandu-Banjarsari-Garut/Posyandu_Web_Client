@@ -27,6 +27,10 @@ export interface Consultation {
   queue_number?: number;
   created_at?: string;
   updated_at?: string;
+  midwife_name?: string | null;
+  posyandu_name?: string | null;
+  parent_name?: string | null;
+  children_name?: string | null;
 }
 
 export interface CreateBookingPayload {
