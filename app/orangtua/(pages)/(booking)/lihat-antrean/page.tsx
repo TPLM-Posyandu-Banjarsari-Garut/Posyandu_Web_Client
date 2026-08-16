@@ -4,12 +4,17 @@ import { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppBarBooking from '@/components/ui/appbar/AppBarBooking';
 import BottombarOrtu from '@/components/ui/bottombar/orangtua/BottombarOrtu';
-import { useGetOrangTuaConsultations, useGetOrangTuaPosyandus } from '@/hooks/query/orangtua/useOrangTuaChildren';
+import {
+  useGetOrangTuaConsultations,
+  useGetOrangTuaPosyandus,
+  useGetOrangTuaMidwives,
+} from '@/hooks/query/orangtua/useOrangTuaChildren';
+import { Consultation } from '@/interfaces/consultation';
 import Link from 'next/link';
 
 function LihatAntreanContent() {
   const router = useRouter();
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
 
   // Fetch parent consultations list
   const { data: consultationsData, isLoading: isLoadingConsultations, error: errorConsultations } = useGetOrangTuaConsultations({
@@ -33,6 +38,12 @@ function LihatAntreanContent() {
   const mainActiveBooking = activeConsultations[0];
   const otherActiveBookings = activeConsultations.slice(1);
 
+  // Fetch midwives list for posyandu of main booking if needed
+  const { data: midwivesData } = useGetOrangTuaMidwives(
+    mainActiveBooking?.posyandu_id ? { posyandu_id: mainActiveBooking.posyandu_id, limit: 100 } : undefined
+  );
+  const midwives = midwivesData?.data || [];
+
   const handleGoHome = () => {
     router.push('/orangtua/home');
   };
@@ -41,6 +52,15 @@ function LihatAntreanContent() {
     if (type === 'pregnancy') return 'ANC / Ibu Hamil';
     if (type === 'child_development') return 'Imunisasi / Tumbuh Kembang';
     return 'Layanan Umum';
+  };
+
+  const getMidwifeName = (booking: Consultation) => {
+    if (booking.midwife_name) return booking.midwife_name;
+    if (booking.midwife_id) {
+      const found = midwives.find((m) => m.id === booking.midwife_id);
+      if (found?.name) return found.name;
+    }
+    return 'Bidan Bertugas';
   };
 
   const getStatusBadge = (status: string) => {
@@ -149,6 +169,7 @@ function LihatAntreanContent() {
               {/* Main Ticket Card */}
               {(() => {
                 const posyanduName = posyandus.find(p => p.id === mainActiveBooking.posyandu_id)?.name || 'Posyandu';
+                const midwifeName = getMidwifeName(mainActiveBooking);
                 const { dateStr, timeStr } = formatUtcDateTime(mainActiveBooking.scheduled_at);
 
                 return (
@@ -170,6 +191,10 @@ function LihatAntreanContent() {
                       <div className="flex justify-between items-start text-xs font-semibold gap-4">
                         <span className="text-slate-450 shrink-0">Posyandu</span>
                         <span className="text-[#1E3050] font-bold text-right leading-tight">{posyanduName}</span>
+                      </div>
+                      <div className="flex justify-between items-start text-xs font-semibold gap-4">
+                        <span className="text-slate-450 shrink-0">Bidan</span>
+                        <span className="text-blue-650 font-bold text-right leading-tight">{midwifeName}</span>
                       </div>
                       <div className="flex justify-between items-start text-xs font-semibold gap-4">
                         <span className="text-slate-450 shrink-0">Layanan</span>
@@ -195,13 +220,17 @@ function LihatAntreanContent() {
                   <div className="flex flex-col gap-2.5">
                     {otherActiveBookings.map((booking) => {
                       const posyanduName = posyandus.find(p => p.id === booking.posyandu_id)?.name || 'Posyandu';
+                      const midwifeName = getMidwifeName(booking);
                       const { dateStr, timeStr } = formatUtcDateTime(booking.scheduled_at);
 
                       return (
                         <div key={booking.id} className="bg-white rounded-2xl p-4.5 border border-[#EBE8D8] flex items-center justify-between shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
                           <div className="min-w-0 flex-1 pr-3">
                             <h4 className="text-xs.5 font-bold text-[#1E3050] truncate">{getLayananLabel(booking.consultation_type)}</h4>
-                            <p className="text-[11px] text-slate-500 font-semibold mt-1">
+                            <p className="text-[11px] text-blue-650 font-bold mt-1 truncate">
+                              Bidan: {midwifeName}
+                            </p>
+                            <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
                               {posyanduName}
                             </p>
                             <p className="text-[11px] text-slate-400 font-semibold mt-0.5">
