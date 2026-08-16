@@ -10,6 +10,7 @@ import { AdminLoginPayload } from "@/interfaces/auth";
 
 interface LoginAdminVariables extends AdminLoginPayload {
   rememberMe?: boolean;
+  captchaToken?: string;
 }
 
 export interface LoginFormInputs {
@@ -46,6 +47,8 @@ export function useLoginAdmin() {
   const [apiError, setApiError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -68,9 +71,9 @@ export function useLoginAdmin() {
   }, [setValue]);
 
   const loginMutation = useMutation<void, Error, LoginAdminVariables>({
-    mutationFn: async ({ email, password }) => {
+    mutationFn: async ({ email, password, captchaToken }) => {
       try {
-        const response = await loginAdmin({ email, password });
+        const response = await loginAdmin({ email, password, captchaToken });
 
         if (!response.user) {
           throw new Error("Email atau kata sandi tidak valid");
@@ -93,32 +96,40 @@ export function useLoginAdmin() {
     },
   });
 
-  const onSubmit = handleSubmit((data) => {
-    setApiError("");
-    loginMutation.mutate(
-      {
-        email: data.email,
-        password: data.password,
-        rememberMe: data.rememberMe,
-      },
-      {
-        onSuccess: () => {
-          if (data.rememberMe) {
-            localStorage.setItem("rememberedEmail_admin", data.email);
-          } else {
-            localStorage.removeItem("rememberedEmail_admin");
-          }
-          setShowSuccess(true);
-          setTimeout(() => {
-            router.push("/admin/kelola-buat-akun");
-          }, 1500);
-        },
-        onError: (err) => {
-          setApiError(err.message);
-        },
+  const onSubmit = (captchaToken: string) =>
+    handleSubmit((data) => {
+      if (!captchaToken) {
+        setApiError("Silakan selesaikan verifikasi CAPTCHA terlebih dahulu.");
+        return;
       }
-    );
-  });
+      setApiError("");
+      setIsSubmitting(true);
+      loginMutation.mutate(
+        {
+          email: data.email,
+          password: data.password,
+          rememberMe: data.rememberMe,
+          captchaToken,
+        },
+        {
+          onSuccess: () => {
+            if (data.rememberMe) {
+              localStorage.setItem("rememberedEmail_admin", data.email);
+            } else {
+              localStorage.removeItem("rememberedEmail_admin");
+            }
+            setShowSuccess(true);
+            setTimeout(() => {
+              router.push("/admin/kelola-buat-akun");
+            }, 1500);
+          },
+          onError: (err) => {
+            setApiError(err.message);
+            setIsSubmitting(false);
+          },
+        }
+      );
+    });
 
   const displayError =
     errors.email?.message || errors.password?.message || apiError || "";
@@ -131,6 +142,6 @@ export function useLoginAdmin() {
     passwordVisible,
     setPasswordVisible,
     showSuccess,
-    isPending: loginMutation.isPending,
+    isPending: loginMutation.isPending || isSubmitting,
   };
 }

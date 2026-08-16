@@ -1,11 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLoginAdmin } from "@/hooks/query/authAdmin/UseLoginAdmin";
+import { useLoginBidan } from "@/hooks/query/authBidan/UseLoginBidan";
+import TurnstileWidget from "@/components/ui/TurnstileWidget";
 
-export default function AdminLogin() {
+export default function BidanLogin() {
   const router = useRouter();
+  const [captchaToken, setCaptchaToken] = useState<string>('');
   const {
     register,
     onSubmit,
@@ -14,7 +16,7 @@ export default function AdminLogin() {
     setPasswordVisible,
     showSuccess,
     isPending,
-  } = useLoginAdmin();
+  } = useLoginBidan();
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-0 sm:px-0 text-slate-800 flex justify-center">
@@ -36,7 +38,7 @@ export default function AdminLogin() {
 
           {/* Page Headers */}
           <h1 className="text-[28px] font-bold text-white tracking-tight leading-tight">
-            Login Sebagai<br />Admin
+            Login Sebagai<br />Bidan
           </h1>
           <p className="text-white/80 text-sm mt-2 font-medium">
             Silakan masuk untuk melanjutkan.
@@ -46,7 +48,7 @@ export default function AdminLogin() {
         {/* White Form Card Overlap Section */}
         <div className="bg-white rounded-t-[2.5rem] -mt-8 pt-8 px-6 pb-8 flex-1 flex flex-col justify-between relative z-10">
           
-          <form onSubmit={onSubmit} className="flex flex-col gap-5">
+          <form onSubmit={onSubmit(captchaToken)} className="flex flex-col gap-5">
             
             {/* Error Alert Display */}
             {displayError && (
@@ -147,7 +149,7 @@ export default function AdminLogin() {
               
               <button
                 type="button"
-                onClick={() => router.push('/admin/lupa-password')}
+                onClick={() => router.push('/bidan/lupa-password')}
                 className="text-xs text-blue-600 hover:text-blue-700 font-bold hover:underline"
               >
                 Lupa Kata Sandi?
@@ -156,12 +158,21 @@ export default function AdminLogin() {
 
           </form>
 
+          {/* CAPTCHA Turnstile */}
+          <div className="mt-6">
+            <TurnstileWidget
+              onVerify={(token) => setCaptchaToken(token)}
+              onExpire={() => setCaptchaToken('')}
+              theme="light"
+            />
+          </div>
+
           {/* Submit Action Button */}
-          <div className="mt-8 flex flex-col gap-4">
+          <div className="mt-4 flex flex-col gap-4">
             <button
-              onClick={onSubmit}
-              disabled={isPending}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-full active:scale-98 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.25)] flex justify-center items-center gap-2 disabled:opacity-75"
+              onClick={onSubmit(captchaToken)}
+              disabled={isPending || !captchaToken}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-full active:scale-98 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.25)] flex justify-center items-center gap-2 disabled:opacity-75 cursor-pointer"
             >
               {isPending ? (
                 <>
@@ -192,7 +203,7 @@ export default function AdminLogin() {
             </div>
             <h2 className="text-base font-extrabold text-slate-800 mb-1">Berhasil Masuk</h2>
             <p className="text-xs text-slate-500 leading-normal font-semibold">
-              Selamat datang kembali Admin! Mengarahkan ke dasbor...
+              Selamat datang kembali Bidan! Mengarahkan ke dasbor...
             </p>
           </div>
         </div>

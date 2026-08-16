@@ -10,6 +10,7 @@ import { OrangTuaLoginPayload } from "@/interfaces/auth";
 
 interface LoginOrangTuaVariables extends OrangTuaLoginPayload {
   rememberMe?: boolean;
+  captchaToken?: string;
 }
 
 export interface LoginFormInputs {
@@ -40,6 +41,8 @@ export function useLoginOrangTua() {
   const [apiError, setApiError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -62,9 +65,9 @@ export function useLoginOrangTua() {
   }, [setValue]);
 
   const loginMutation = useMutation<void, Error, LoginOrangTuaVariables>({
-    mutationFn: async ({ email, password }) => {
+    mutationFn: async ({ email, password, captchaToken }) => {
       try {
-        const response = await loginOrangTua({ email, password });
+        const response = await loginOrangTua({ email, password, captchaToken });
 
         if (!response.user) {
           throw new Error("Email atau kata sandi tidak valid");
@@ -82,32 +85,40 @@ export function useLoginOrangTua() {
     },
   });
 
-  const onSubmit = handleSubmit((data) => {
-    setApiError("");
-    loginMutation.mutate(
-      {
-        email: data.email,
-        password: data.password,
-        rememberMe: data.rememberMe,
-      },
-      {
-        onSuccess: () => {
-          if (data.rememberMe) {
-            localStorage.setItem("rememberedEmail_orangtua", data.email);
-          } else {
-            localStorage.removeItem("rememberedEmail_orangtua");
-          }
-          setShowSuccess(true);
-          setTimeout(() => {
-            router.push("/orangtua/home");
-          }, 1500);
-        },
-        onError: (err) => {
-          setApiError(err.message);
-        },
+  const onSubmit = (captchaToken: string) =>
+    handleSubmit((data) => {
+      if (!captchaToken) {
+        setApiError("Silakan selesaikan verifikasi CAPTCHA terlebih dahulu.");
+        return;
       }
-    );
-  });
+      setApiError("");
+      setIsSubmitting(true);
+      loginMutation.mutate(
+        {
+          email: data.email,
+          password: data.password,
+          rememberMe: data.rememberMe,
+          captchaToken,
+        },
+        {
+          onSuccess: () => {
+            if (data.rememberMe) {
+              localStorage.setItem("rememberedEmail_orangtua", data.email);
+            } else {
+              localStorage.removeItem("rememberedEmail_orangtua");
+            }
+            setShowSuccess(true);
+            setTimeout(() => {
+              router.push("/orangtua/home");
+            }, 1500);
+          },
+          onError: (err) => {
+            setApiError(err.message);
+            setIsSubmitting(false);
+          },
+        }
+      );
+    });
 
   const [isGooglePending, setIsGooglePending] = useState(false);
 
@@ -138,7 +149,7 @@ export function useLoginOrangTua() {
     passwordVisible,
     setPasswordVisible,
     showSuccess,
-    isPending: loginMutation.isPending,
+    isPending: loginMutation.isPending || isSubmitting,
     handleGoogleLogin,
     isGooglePending,
   };

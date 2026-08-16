@@ -16,6 +16,85 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+// ─── CSRF Token Auto-Manager ──────────────────────────────────────────────────
+let cachedCsrfToken: string | null = null;
+let csrfFetchPromise: Promise<string | null> | null = null;
+
+/**
+ * Mengambil CSRF token dari server dan menyimpannya di memory.
+ * Menggunakan direct axios call agar tidak memicu interceptor loop.
+ */
+export async function fetchCsrfToken(): Promise<string | null> {
+  if (cachedCsrfToken) return cachedCsrfToken;
+  if (csrfFetchPromise) return csrfFetchPromise;
+
+  csrfFetchPromise = (async () => {
+    try {
+      const baseURL = isBrowser ? "" : (API_URL || "");
+      const res = await axios.get<{ csrfToken: string }>(`${baseURL}/api/csrf-token`, {
+        withCredentials: true,
+      });
+      cachedCsrfToken = res.data?.csrfToken ?? null;
+      return cachedCsrfToken;
+    } catch {
+      return null;
+    } finally {
+      csrfFetchPromise = null;
+    }
+  })();
+
+  return csrfFetchPromise;
+}
+
+export function clearCsrfToken(): void {
+  cachedCsrfToken = null;
+}
+
+// Request Interceptor: Otomatis lampirkan header X-CSRF-Token pada POST/PUT/PATCH/DELETE
+api.interceptors.request.use(
+  async (config) => {
+    const method = config.method?.toUpperCase();
+    const isMutating =
+      method === "POST" ||
+      method === "PUT" ||
+      method === "PATCH" ||
+      method === "DELETE";
+
+    // Jangan pasang pada endpoint fetching csrf-token itu sendiri
+    if (isMutating && !config.url?.includes("/api/csrf-token")) {
+      const token = await fetchCsrfToken();
+      if (token) {
+        config.headers["X-CSRF-Token"] = token;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response Interceptor: Otomatis refresh CSRF token & retry request jika terjadi 403 CSRF error
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    const isCsrfError =
+      error.response?.status === 403 &&
+      (error.response?.data?.message?.toLowerCase().includes("csrf") ||
+        error.response?.data?.error?.toLowerCase().includes("csrf"));
+
+    if (isCsrfError && originalRequest && !originalRequest._retryCsrf) {
+      originalRequest._retryCsrf = true;
+      clearCsrfToken(); // Invalidate cached token
+      const newToken = await fetchCsrfToken();
+      if (newToken) {
+        originalRequest.headers["X-CSRF-Token"] = newToken;
+        return api(originalRequest);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export interface SessionUser {
   id: string;
   name: string;

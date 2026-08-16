@@ -30,6 +30,41 @@ if (typeof setInterval !== "undefined") {
     }
   }, 10 * 60 * 1000);
 }
+
+// ─── Rate Limiter untuk Endpoint Ini ─────────────────────────────────────────
+// Cegah abuse: max 60 req/menit per IP
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 60;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 menit
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || entry.resetAt <= now) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true; // OK
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return false; // Rate limited
+  }
+
+  entry.count++;
+  return true; // OK
+}
+
+// Bersihkan rate limit map setiap 5 menit
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of rateLimitMap.entries()) {
+      if (entry.resetAt <= now) {
+        rateLimitMap.delete(ip);
+      }
+    }
+  }, 5 * 60 * 1000);
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -41,8 +76,22 @@ if (typeof setInterval !== "undefined") {
  * Response:
  *   200: { valid: true, role: string }
  *   200: { valid: false, role: "" }
+ *   429: rate limited
  */
 export async function GET(request: NextRequest) {
+  // Rate limiting — ambil IP dari CF-Connecting-IP atau X-Forwarded-For
+  const ip =
+    request.headers.get("cf-connecting-ip") ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "unknown";
+
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      { valid: false, role: "", error: "Rate limit exceeded" },
+      { status: 429 }
+    );
+  }
+
   const token = request.headers.get("x-session-token");
 
   // Jika tidak ada token sama sekali, langsung kembalikan invalid

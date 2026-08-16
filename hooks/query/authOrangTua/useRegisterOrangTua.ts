@@ -62,10 +62,20 @@ export function useRegisterOrangTua() {
     },
   });
 
-  const registerMutation = useMutation<RegisterOrangTuaResult, Error, OrangTuaRegisterPayload>({
-    mutationFn: async ({ name, email, phone_number, password }) => {
+  const registerMutation = useMutation<
+    RegisterOrangTuaResult,
+    Error,
+    OrangTuaRegisterPayload & { captchaToken?: string }
+  >({
+    mutationFn: async ({ name, email, phone_number, password, captchaToken }) => {
       try {
-        const response = await registerOrangTua({ name, email, phone_number, password });
+        const response = await registerOrangTua({
+          name,
+          email,
+          phone_number,
+          password,
+          captchaToken,
+        });
         return { user: response.user };
       } catch (error) {
         throw new Error(getErrorMessage(error));
@@ -73,36 +83,42 @@ export function useRegisterOrangTua() {
     },
   });
 
-  const onSubmit = handleSubmit((data) => {
-    setApiError("");
-    if (data.password !== data.confirmPassword) {
-      setApiError("Kata sandi verifikasi tidak cocok");
-      return;
-    }
-
-    registerMutation.mutate(
-      {
-        name: data.name,
-        email: data.email,
-        phone_number: data.phone_number,
-        password: data.password,
-      },
-      {
-        onSuccess: (res) => {
-          setShowSuccess(true);
-          // Set session storage item for OTP page to know which email to verify
-          sessionStorage.setItem("verify_email", data.email);
-
-          setTimeout(() => {
-            router.push("/orangtua/otp");
-          }, 1500);
-        },
-        onError: (err) => {
-          setApiError(err.message);
-        },
+  const onSubmit = (captchaToken: string) =>
+    handleSubmit((data) => {
+      if (!captchaToken) {
+        setApiError("Silakan selesaikan verifikasi CAPTCHA terlebih dahulu.");
+        return;
       }
-    );
-  });
+      setApiError("");
+      if (data.password !== data.confirmPassword) {
+        setApiError("Kata sandi verifikasi tidak cocok");
+        return;
+      }
+
+      registerMutation.mutate(
+        {
+          name: data.name,
+          email: data.email,
+          phone_number: data.phone_number,
+          password: data.password,
+          captchaToken,
+        },
+        {
+          onSuccess: (res) => {
+            setShowSuccess(true);
+            // Set session storage item for OTP page to know which email to verify
+            sessionStorage.setItem("verify_email", data.email);
+
+            setTimeout(() => {
+              router.push("/orangtua/otp");
+            }, 1500);
+          },
+          onError: (err) => {
+            setApiError(err.message);
+          },
+        }
+      );
+    });
 
   const displayError = errors.name?.message || errors.email?.message || errors.password?.message || apiError || "";
 

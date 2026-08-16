@@ -52,7 +52,15 @@ export default function FiturAplikasi() {
                     <span className="text-xs font-bold text-slate-600 text-center leading-tight">Antrean</span>
                 </Link>
 
-
+                {/* Feature 6: Jadwal Posyandu */}
+                <Link href="/orangtua/jadwal-posyandu" className="flex flex-col items-center gap-2.5 group">
+                    <div className="w-16 h-16 rounded-[1.25rem] bg-purple-100 flex items-center justify-center text-purple-600 shadow-sm transition-transform active:scale-95 group-hover:shadow-md">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                    </div>
+                    <span className="text-xs font-bold text-slate-600 text-center leading-tight">Jadwal<br />Posyandu</span>
+                </Link>
             </div>
         </div>
     )

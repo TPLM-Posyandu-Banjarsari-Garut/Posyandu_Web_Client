@@ -115,7 +115,7 @@ export function useManagePosyanduPage() {
             setPage((prev) => prev - 1);
           }
         },
-        onError: (err: any) => {
+        onError: (err: unknown) => {
           let msg = "Gagal menghapus posyandu";
           if (axios.isAxiosError(err)) {
             msg = err.response?.data?.message || msg;
@@ -156,7 +156,7 @@ export function useManagePosyanduPage() {
             showToast(`Posyandu "${name}" berhasil diperbarui!`);
             closeModal();
           },
-          onError: (err: any) => {
+          onError: (err: unknown) => {
             let msg = "Gagal memperbarui posyandu";
             if (axios.isAxiosError(err)) {
               msg = err.response?.data?.message || msg;
@@ -182,7 +182,7 @@ export function useManagePosyanduPage() {
             closeModal();
             setPage(1); // Return to first page to see the new posyandu
           },
-          onError: (err: any) => {
+          onError: (err: unknown) => {
             let msg = "Gagal menambahkan posyandu baru";
             if (axios.isAxiosError(err)) {
               msg = err.response?.data?.message || msg;

@@ -3,23 +3,22 @@
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { requestPasswordResetOTP } from "@/service/auth/kaderAuthService";
+import { GenericAuthSuccessResponse } from "@/interfaces/auth";
 
 function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     if (!error.response) {
-      return "Tidak dapat terhubung ke server. Pastikan koneksi internet aktif.";
+      return "Tidak dapat terhubung ke server.";
     }
     const data = error.response.data as { message?: string; error?: string } | undefined;
-    return data?.message ?? data?.error ?? "Gagal memproses permintaan";
+    return data?.message ?? data?.error ?? "Gagal mengirim OTP reset kata sandi";
   }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Terjadi kesalahan yang tidak diketahui";
+  if (error instanceof Error) return error.message;
+  return "Terjadi kesalahan";
 }
 
 export function useForgetPasswordKader() {
-  return useMutation<any, Error, string>({
+  return useMutation<GenericAuthSuccessResponse, Error, string>({
     mutationFn: async (email: string) => {
       try {
         const response = await requestPasswordResetOTP(email);

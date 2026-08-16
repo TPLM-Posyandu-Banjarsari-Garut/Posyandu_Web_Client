@@ -40,7 +40,7 @@ export default function FiturAplikasi() {
                     <span className="text-xs font-bold text-slate-600 text-center">Inventaris</span>
                 </Link>
 
-                {/* Feature 5: Riwayat Imunisasi */}
+                {/* Feature 5: Jadwal Posyandu */}
                 <Link href="/kader/jadwal-posyandu" className="flex flex-col items-center gap-2.5 group">
                     <div className="w-16 h-16 rounded-[1.25rem] bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm transition-transform active:scale-95 group-hover:shadow-md">
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
@@ -48,7 +48,13 @@ export default function FiturAplikasi() {
                     <span className="text-xs font-bold text-slate-600 text-center leading-tight">Jadwal<br />Posyandu</span>
                 </Link>
 
-
+                {/* Feature 6: Konsultasi */}
+                <Link href="/kader/jadwal-konsultasi" className="flex flex-col items-center gap-2.5 group">
+                    <div className="w-16 h-16 rounded-[1.25rem] bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm transition-transform active:scale-95 group-hover:shadow-md">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                    </div>
+                    <span className="text-xs font-bold text-slate-600 text-center">Konsultasi</span>
+                </Link>
             </div>
         </div>
     )

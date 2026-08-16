@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import QueryProvider from "@/providers/QueryProvider";
 import { ConfirmProvider } from "@/providers/ConfirmProvider";
+import NotificationPermissionBanner from "@/components/ui/NotificationPermissionBanner";
+import NotificationWebSocketProvider from "@/providers/NotificationWebSocketProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -48,7 +50,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <QueryProvider>
-          <ConfirmProvider>{children}</ConfirmProvider>
+          <ConfirmProvider>
+            <NotificationPermissionBanner />
+            <NotificationWebSocketProvider />
+            {children}
+          </ConfirmProvider>
         </QueryProvider>
       </body>
     </html>

@@ -30,6 +30,7 @@ export interface Consultation {
 }
 
 export interface CreateBookingPayload {
+  parent_id?: string | null;
   posyandu_id: string;
   consultation_type: ConsultationType;
   scheduled_at: string | string[];

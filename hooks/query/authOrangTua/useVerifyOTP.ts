@@ -3,7 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { verifyEmailOTP } from "@/service/auth/orangTuaAuthService";
-import { VerifyOTPPayload } from "@/interfaces/auth";
+import { VerifyOTPPayload, GenericAuthSuccessResponse } from "@/interfaces/auth";
 
 function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
@@ -18,7 +18,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function useVerifyOTP() {
-  return useMutation<any, Error, VerifyOTPPayload>({
+  return useMutation<GenericAuthSuccessResponse, Error, VerifyOTPPayload>({
     mutationFn: async ({ email, otp }) => {
       try {
         const response = await verifyEmailOTP({ email, otp });

@@ -1,5 +1,7 @@
 import { kaderApi } from "@/service/auth/kaderAuthService";
 import { Cadre } from "@/interfaces/cadre";
+import { FetchMidwifeConsultationsParams, FetchMidwifeConsultationsResponse } from "@/service/midwife/midwifeService";
+import { ApiResponse } from "@/interfaces/api";
 
 export interface FetchCadresResponse {
   success: boolean;
@@ -22,4 +24,20 @@ export async function fetchCadres(): Promise<FetchCadresResponse> {
     },
   });
   return data;
+}
+
+export async function fetchCadreConsultations(
+  params?: FetchMidwifeConsultationsParams
+): Promise<FetchMidwifeConsultationsResponse> {
+  const { data } = await kaderApi.get<ApiResponse<FetchMidwifeConsultationsResponse>>(
+    "/api/consultations",
+    {
+      params: {
+        ...params,
+        limit: params?.limit || 10,
+        page: params?.page || 1,
+      },
+    }
+  );
+  return data.data;
 }

@@ -1,36 +1,52 @@
 import { api } from "@/service/auth/authService";
-import { AdminLoginPayload, AdminLoginResponse, ResetPasswordOTPPayload } from "@/interfaces/auth";
+import {
+  AdminLoginPayload,
+  AdminLoginResponse,
+  ResetPasswordOTPPayload,
+  GenericAuthSuccessResponse,
+} from "@/interfaces/auth";
 
 export { api as adminApi };
 
 export async function loginAdmin(
-  payload: AdminLoginPayload
+  payload: AdminLoginPayload & { captchaToken?: string }
 ): Promise<AdminLoginResponse> {
+  const { captchaToken, ...loginPayload } = payload;
   const { data } = await api.post<AdminLoginResponse>(
     "/api/auth/sign-in/email",
-    payload
+    loginPayload,
+    {
+      headers: captchaToken
+        ? { "X-Captcha-Token": captchaToken }
+        : undefined,
+    }
   );
   return data;
 }
 
 export async function logoutAdmin(): Promise<void> {
-  // Panggil Next.js API Route yang proper:
-  // 1. Hapus cache token dari validate-session layer
-  // 2. Sign-out server-side ke backend
-  // 3. Hapus cookie browser dengan bersih
   await api.post("/api/auth/logout");
 }
 
-export async function requestPasswordResetOTP(email: string): Promise<any> {
-  const { data } = await api.post<any>("/api/auth/email-otp/send-verification-otp", {
-    email,
-    type: "forget-password",
-  });
+export async function requestPasswordResetOTP(
+  email: string
+): Promise<GenericAuthSuccessResponse> {
+  const { data } = await api.post<GenericAuthSuccessResponse>(
+    "/api/auth/email-otp/send-verification-otp",
+    {
+      email,
+      type: "forget-password",
+    }
+  );
   return data;
 }
 
-export async function resetPasswordWithOTP(payload: ResetPasswordOTPPayload): Promise<any> {
-  const { data } = await api.post<any>("/api/auth/email-otp/reset-password", payload);
+export async function resetPasswordWithOTP(
+  payload: ResetPasswordOTPPayload
+): Promise<GenericAuthSuccessResponse> {
+  const { data } = await api.post<GenericAuthSuccessResponse>(
+    "/api/auth/email-otp/reset-password",
+    payload
+  );
   return data;
 }
-
