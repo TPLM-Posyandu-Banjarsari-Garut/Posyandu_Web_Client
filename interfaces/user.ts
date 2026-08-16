@@ -11,6 +11,8 @@ export interface BackendUser {
   email_verified: boolean;
   created_at: string;
   updated_at: string;
+  posyandu_name?: string | null;
+  posyandu_id?: string | null;
 }
 
 export interface GetUsersData {
