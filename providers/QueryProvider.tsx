@@ -13,7 +13,10 @@ export default function QueryProvider({
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000,
+            staleTime: 3 * 60 * 1000, // 3 menit data dianggap fresh
+            gcTime: 10 * 60 * 1000, // 10 menit data disimpan di cache
+            refetchOnWindowFocus: false, // Tidak fetch ulang otomatis saat pindah tab
+            refetchOnReconnect: true, // Tetap fetch ulang saat koneksi internet pulih
             retry: 1,
           },
         },
