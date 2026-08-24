@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
 import BottombarKader from "@/components/ui/bottombar/kader/BottombarKader";
+import GrafikPertumbuhan from "@/components/ui/grafik/GrafikPertumbuhan";
 import { useGetChildById, useUpdateChild } from "@/hooks/query/child/useManageChildren";
 import { useGetPosyandus } from "@/hooks/query/posyandu/useManagePosyandu";
 import { useGetUsers } from "@/hooks/query/userAdmin/UseManageUsers";
@@ -18,6 +19,7 @@ function DetailBayiContent() {
   const [editedData, setEditedData] = useState<Partial<CreateChildPayload>>({});
   const [apiError, setApiError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showGrafik, setShowGrafik] = useState(false);
 
   const [motherSearch, setMotherSearch] = useState("");
   const [showMotherDropdown, setShowMotherDropdown] = useState(false);
@@ -770,7 +772,10 @@ function DetailBayiContent() {
                 >
                   Lihat / Input Riwayat Imunisasi
                 </Link>
-                <button className="w-full bg-white text-blue-600 border-[2.5px] border-blue-100 rounded-[1.25rem] py-3.5 font-bold hover:bg-blue-50 hover:border-blue-200 transition-colors text-sm">
+                <button
+                  onClick={() => setShowGrafik(true)}
+                  className="w-full bg-white text-blue-600 border-[2.5px] border-blue-100 rounded-[1.25rem] py-3.5 font-bold hover:bg-blue-50 hover:border-blue-200 transition-colors text-sm"
+                >
                   Grafik Pertumbuhan
                 </button>
               </div>
@@ -781,6 +786,15 @@ function DetailBayiContent() {
         <BottombarKader />
       </div>
 
+      {/* Grafik Pertumbuhan Modal */}
+      <GrafikPertumbuhan
+        childId={childId}
+        childName={child.name}
+        gender={child.gender}
+        isOpen={showGrafik}
+        onClose={() => setShowGrafik(false)}
+        role="kader"
+      />
       {/* Success Notification Alert overlay */}
       {showSuccess && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-fade-in">

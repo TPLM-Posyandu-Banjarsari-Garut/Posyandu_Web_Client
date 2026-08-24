@@ -1,14 +1,17 @@
 "use client";
 
-import { Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import BottombarOrtu from "@/components/ui/bottombar/orangtua/BottombarOrtu";
+import GrafikPertumbuhan from "@/components/ui/grafik/GrafikPertumbuhan";
 import { useGetOrangTuaChildById } from "@/hooks/query/orangtua/useOrangTuaChildren";
 
 function DetailBayiContent() {
   const searchParams = useSearchParams();
   const childId = searchParams.get("id") || "";
+
+  const [showGrafik, setShowGrafik] = useState(false);
 
   const { data: child, isLoading, error } = useGetOrangTuaChildById(childId);
 
@@ -310,7 +313,10 @@ function DetailBayiContent() {
             >
               Lihat Riwayat Imunisasi
             </Link>
-            <button className="w-full bg-white text-blue-600 border-[2.5px] border-blue-100 rounded-[1.25rem] py-3.5 font-bold hover:bg-blue-50 hover:border-blue-200 transition-colors text-sm">
+            <button
+              onClick={() => setShowGrafik(true)}
+              className="w-full bg-white text-blue-600 border-[2.5px] border-blue-100 rounded-[1.25rem] py-3.5 font-bold hover:bg-blue-50 hover:border-blue-200 transition-colors text-sm"
+            >
               Grafik Pertumbuhan
             </button>
           </div>
@@ -319,6 +325,16 @@ function DetailBayiContent() {
 
         <BottombarOrtu />
       </div>
+
+      {/* Grafik Pertumbuhan Modal */}
+      <GrafikPertumbuhan
+        childId={childId}
+        childName={child.name}
+        gender={child.gender}
+        isOpen={showGrafik}
+        onClose={() => setShowGrafik(false)}
+        role="orangtua"
+      />
     </div>
   );
 }
