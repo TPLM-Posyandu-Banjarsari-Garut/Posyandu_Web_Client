@@ -6,9 +6,10 @@ import {
   createChild,
   fetchChildById,
   updateChild,
+  fetchNewbornReport,
   FetchChildrenParams,
 } from "@/service/child/childService";
-import { CreateChildPayload } from "@/interfaces/child";
+import { CreateChildPayload, NewbornReportParams } from "@/interfaces/child";
 
 export function useGetChildren(params: FetchChildrenParams) {
   return useQuery({
@@ -50,5 +51,13 @@ export function useUpdateChild() {
       queryClient.invalidateQueries({ queryKey: ["children"] });
       queryClient.invalidateQueries({ queryKey: ["child", variables.id] });
     },
+  });
+}
+
+export function useGetNewbornReport(params: NewbornReportParams) {
+  return useQuery({
+    queryKey: ["newborn-report", params],
+    queryFn: () => fetchNewbornReport(params),
+    staleTime: 10000,
   });
 }

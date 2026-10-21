@@ -6,24 +6,49 @@ const BACKEND_URL =
     ? "http://localhost:3000"
     : "https://api.posyandubanjarsari.my.id");
 
+const SESSION_COOKIE_NAMES = [
+  "better-auth.session_token",
+  "__Secure-better-auth.session_token",
+  "better-auth.session_data",
+  "__Secure-better-auth.session_data",
+  "better-auth.csrf_token",
+  "__Secure-better-auth.csrf_token",
+] as const;
+
+/**
+ * Helper untuk menghapus seluruh cookie sesi autentikasi pada response
+ */
+function clearSessionCookies(response: NextResponse): void {
+  const cookieOptions = {
+    path: "/",
+    maxAge: 0,
+    expires: new Date(0),
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+  };
+
+  for (const cookieName of SESSION_COOKIE_NAMES) {
+    response.cookies.set(cookieName, "", cookieOptions);
+  }
+}
+
 /**
  * POST /api/auth/logout
  *
- * Proper logout handler yang:
- * 1. Membaca session token dari cookie request
- * 2. Menghapus cache token dari validate-session cache layer
- * 3. Memanggil backend untuk sign-out server-side
- * 4. Menghapus cookie di browser dengan Set-Cookie maxAge=0
+ * Handler logout terpusat:
+ * 1. Menghapus cache token pada in-memory session cache layer
+ * 2. Memanggil backend untuk invalidasi sesi server-side (Better Auth)
+ * 3. Selalu membersihkan cookies di browser client secara deterministik
  */
 export async function POST(request: NextRequest) {
   const sessionToken =
     request.cookies.get("better-auth.session_token")?.value ??
     request.cookies.get("__Secure-better-auth.session_token")?.value;
 
-  // ── 1. Hapus cache dari validate-session layer ─────────────────────────────
+  // 1. Invalidate cache internal
   if (sessionToken) {
     try {
-      // Panggil internal API Route kita sendiri untuk hapus cache
       const internalUrl = new URL(
         "/api/auth/validate-session",
         request.nextUrl.origin
@@ -34,13 +59,13 @@ export async function POST(request: NextRequest) {
           "x-session-token": sessionToken,
         },
       });
-    } catch {
-      // Gagal hapus cache tidak critical, lanjutkan proses logout
+    } catch (_err) {
+      // Kegagalan invalidasi cache internal tidak menghentikan alur logout
     }
   }
 
+  // 2. Beritahu backend sign-out
   let backendRes: Response | null = null;
-  // ── 2. Panggil backend sign-out (server-side session invalidation) ─────────
   try {
     const cookieHeader = request.headers.get("cookie") ?? "";
     const apiUrlObj = new URL(BACKEND_URL);
@@ -55,29 +80,21 @@ export async function POST(request: NextRequest) {
         Host: apiUrlObj.host,
       },
     });
-  } catch {
-    // Jika backend tidak terjangkau, tetap lanjutkan logout di client-side
+  } catch (_err) {
+    // Jika backend tidak terjangkau atau rate-limited, proses pembersihan client tetap berjalan
   }
 
-  // ── 3. Buat response dan hapus semua cookie session di browser ─────────────
+  // 3. Buat response dan bersihkan seluruh cookie sesi
   const response = NextResponse.json({ success: true });
 
-  if (backendRes) {
-    const setCookies = backendRes.headers.getSetCookie();
-    setCookies.forEach((c) => response.headers.append("Set-Cookie", c));
-  } else {
-    const cookieOptions = {
-      path: "/",
-      maxAge: 0,
-      expires: new Date(0),
-    };
+  clearSessionCookies(response);
 
-    response.cookies.set("better-auth.session_token", "", cookieOptions);
-    response.cookies.set(
-      "__Secure-better-auth.session_token",
-      "",
-      cookieOptions
-    );
+  // Teruskan Set-Cookie dari backend jika tersedia
+  if (backendRes) {
+    const setCookies = backendRes.headers.getSetCookie?.() ?? [];
+    for (const cookie of setCookies) {
+      response.headers.append("Set-Cookie", cookie);
+    }
   }
 
   return response;

@@ -1,5 +1,10 @@
 import { bidanApi } from "../auth/bidanAuthService";
-import { Child, CreateChildPayload } from "@/interfaces/child";
+import {
+  Child,
+  CreateChildPayload,
+  NewbornReportParams,
+  NewbornReportResponse,
+} from "@/interfaces/child";
 
 export interface FetchChildrenParams {
   posyandu_id?: string;
@@ -62,5 +67,15 @@ export async function updateChild(
   payload: Partial<CreateChildPayload>
 ): Promise<FetchChildByIdResponse> {
   const { data } = await bidanApi.put<FetchChildByIdResponse>(`/api/childrens/${id}`, payload);
+  return data;
+}
+
+export async function fetchNewbornReport(
+  params: NewbornReportParams
+): Promise<NewbornReportResponse> {
+  const { data } = await bidanApi.get<NewbornReportResponse>(
+    "/api/childrens/reports/newborns",
+    { params }
+  );
   return data;
 }

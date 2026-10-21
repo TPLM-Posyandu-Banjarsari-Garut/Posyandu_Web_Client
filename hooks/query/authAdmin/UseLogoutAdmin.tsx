@@ -2,26 +2,29 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { logoutAdmin } from "@/service/auth/adminAuthService";
-import { useRouter } from "next/navigation";
 
+const ADMIN_LOGIN_PATH = "/admin/login";
+
+/**
+ * Hook logout admin dengan standar clean code dan keamanan data:
+ * - Menghapus seluruh cache query React Query untuk mencegah kebocoran sesi
+ * - Menggunakan full page redirect (window.location.replace) untuk membersihkan in-memory state
+ */
 export function useLogoutAdmin() {
-  const router = useRouter();
   const queryClient = useQueryClient();
+
+  const handlePostLogout = () => {
+    queryClient.clear();
+    if (typeof window !== "undefined") {
+      window.location.replace(ADMIN_LOGIN_PATH);
+    }
+  };
 
   return useMutation<void, Error, void>({
     mutationFn: async () => {
       await logoutAdmin();
     },
-    onSuccess: () => {
-      // Clear all React Query cache to prevent data leaks between sessions
-      queryClient.clear();
-      router.push("/admin/login");
-      router.refresh();
-    },
-    onError: () => {
-      // Force redirect even if API fails
-      queryClient.clear();
-      router.push("/admin/login");
-    },
+    onSuccess: handlePostLogout,
+    onError: handlePostLogout,
   });
 }

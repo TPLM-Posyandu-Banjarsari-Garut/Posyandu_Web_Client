@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { loginBidan } from "@/service/auth/bidanAuthService";
+import { isEmailNotVerifiedError } from "@/service/auth/authService";
 import { BidanLoginPayload } from "@/interfaces/auth";
 
 interface LoginBidanVariables extends BidanLoginPayload {
@@ -69,13 +70,22 @@ export function useLoginBidan() {
     }
   }, [setValue]);
 
-  const loginMutation = useMutation<void, Error, LoginBidanVariables>({
+  const loginMutation = useMutation<{ requiresOtp: boolean }, Error, LoginBidanVariables>({
     mutationFn: async ({ email, password, captchaToken }) => {
       try {
         const response = await loginBidan({ email, password, captchaToken });
 
         if (!response.user) {
           throw new Error("Email atau kata sandi tidak valid");
+        }
+
+        if (response.user.emailVerified === false) {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("verify_email", email);
+            sessionStorage.setItem("verify_role", "bidan");
+          }
+          router.push("/bidan/otp");
+          return { requiresOtp: true };
         }
 
         if (response.user.role !== "midwife") {
@@ -86,7 +96,16 @@ export function useLoginBidan() {
 
         // Invalidate current-user cache so fresh data is fetched
         await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+        return { requiresOtp: false };
       } catch (error) {
+        if (isEmailNotVerifiedError(error)) {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("verify_email", email);
+            sessionStorage.setItem("verify_role", "bidan");
+          }
+          router.push("/bidan/otp");
+          return { requiresOtp: true };
+        }
         throw new Error(getErrorMessage(error));
       }
     },
@@ -109,7 +128,11 @@ export function useLoginBidan() {
           captchaToken,
         },
         {
-          onSuccess: () => {
+          onSuccess: (result) => {
+            if (result?.requiresOtp) {
+              setIsSubmitting(false);
+              return;
+            }
             if (data.rememberMe) {
               localStorage.setItem("rememberedEmail_bidan", data.email);
             } else {

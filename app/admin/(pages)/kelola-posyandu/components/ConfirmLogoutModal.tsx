@@ -40,7 +40,8 @@ export default function ConfirmLogoutModal({
         <div className="flex w-full gap-2.5">
           <button
             onClick={onClose}
-            className="flex-1 bg-slate-50 border border-slate-200 text-slate-500 font-bold text-xs py-3 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+            disabled={isPending}
+            className="flex-1 bg-slate-50 border border-slate-200 text-slate-500 font-bold text-xs py-3 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-50"
           >
             Batal
           </button>

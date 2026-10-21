@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useManagePosyanduPage } from "@/hooks/query/posyandu/useManagePosyanduPage";
 import KelolaPosyanduHeader from "./components/KelolaPosyanduHeader";
 import PosyanduCard from "./components/PosyanduCard";
@@ -88,6 +89,37 @@ export default function KelolaPosyandu() {
                 )}
               </h2>
             </div>
+          </div>
+
+          {/* Quick Navigation Links */}
+          <div className="grid grid-cols-2 gap-2.5 mb-5">
+            <Link
+              href="/admin/kelola-buat-akun"
+              className="flex items-center gap-2.5 bg-white border border-slate-100 rounded-[1.25rem] p-3 shadow-xs hover:shadow-md hover:border-blue-100 transition-all group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-105 transition-transform shrink-0">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div className="text-left overflow-hidden">
+                <h4 className="text-xs font-bold text-slate-800 truncate">Kelola Akun</h4>
+                <p className="text-[9px] text-slate-400 truncate">Kader, Bidan, Ortu</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/admin/laporan-bayi-baru-lahir"
+              className="flex items-center gap-2.5 bg-white border border-slate-100 rounded-[1.25rem] p-3 shadow-xs hover:shadow-md hover:border-indigo-100 transition-all group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-105 transition-transform shrink-0">
+                <span className="text-sm">👶</span>
+              </div>
+              <div className="text-left overflow-hidden">
+                <h4 className="text-xs font-bold text-slate-800 truncate">Laporan Bayi</h4>
+                <p className="text-[9px] text-slate-400 truncate">Kependudukan</p>
+              </div>
+            </Link>
           </div>
 
           {/* Search bar */}
@@ -262,10 +294,7 @@ export default function KelolaPosyandu() {
         <ConfirmLogoutModal
           isOpen={isLogoutModalOpen}
           onClose={() => setIsLogoutModalOpen(false)}
-          onConfirm={() => {
-            setIsLogoutModalOpen(false);
-            logout.mutate();
-          }}
+          onConfirm={() => logout.mutate()}
           isPending={logout.isPending}
         />
 
