@@ -144,3 +144,47 @@ export interface ChangePasswordPayload {
 export async function changePassword(payload: ChangePasswordPayload): Promise<void> {
   await api.post("/api/auth/change-password", payload);
 }
+
+export interface VerifyEmailOTPPayload {
+  email: string;
+  otp: string;
+}
+
+export interface ResendEmailOTPPayload {
+  email: string;
+  type?: "email-verification" | "forget-password";
+}
+
+export async function verifyEmailOTP(payload: VerifyEmailOTPPayload): Promise<{ success: boolean; message?: string }> {
+  const { data } = await api.post<{ success: boolean; message?: string }>(
+    "/api/auth/email-otp/verify-email",
+    payload
+  );
+  return data;
+}
+
+export async function resendEmailOTP(payload: ResendEmailOTPPayload): Promise<{ success: boolean; message?: string }> {
+  const { data } = await api.post<{ success: boolean; message?: string }>(
+    "/api/auth/email-otp/send-verification-otp",
+    {
+      email: payload.email,
+      type: payload.type ?? "email-verification",
+    }
+  );
+  return data;
+}
+
+export function isEmailNotVerifiedError(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false;
+  const data = error.response?.data as { code?: string; message?: string; error?: string } | undefined;
+  if (!data) return false;
+
+  const code = (data.code ?? "").toUpperCase();
+  const message = (data.message ?? data.error ?? "").toLowerCase();
+
+  return (
+    code === "EMAIL_NOT_VERIFIED" ||
+    message.includes("email not verified") ||
+    message.includes("belum diverifikasi")
+  );
+}

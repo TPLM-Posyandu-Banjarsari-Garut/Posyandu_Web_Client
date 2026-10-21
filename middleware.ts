@@ -78,7 +78,8 @@ export async function middleware(request: NextRequest) {
   // ── 1. Bypass: Internal API Routes ──────────────────────────────────────────
   if (
     pathname === "/api/auth/validate-session" ||
-    pathname === "/api/auth/logout"
+    pathname === "/api/auth/logout" ||
+    pathname === "/api/auth/sign-out"
   ) {
     return NextResponse.next();
   }
@@ -103,7 +104,10 @@ export async function middleware(request: NextRequest) {
   // 3. Proteksi Portal Admin (/admin/*)
   // ═══════════════════════════════════════════════════════════════════════════
   if (pathname.startsWith("/admin")) {
-    const isAuthPage = pathname === "/admin/login" || pathname.startsWith("/admin/lupa-password");
+    const isAuthPage =
+      pathname === "/admin/login" ||
+      pathname === "/admin/otp" ||
+      pathname.startsWith("/admin/lupa-password");
 
     if (!sessionToken) {
       if (isAuthPage) return NextResponse.next();
@@ -134,7 +138,10 @@ export async function middleware(request: NextRequest) {
   // 4. Proteksi Portal Bidan (/bidan/*)
   // ═══════════════════════════════════════════════════════════════════════════
   if (pathname.startsWith("/bidan")) {
-    const isAuthPage = pathname === "/bidan/login" || pathname.startsWith("/bidan/lupa-password");
+    const isAuthPage =
+      pathname === "/bidan/login" ||
+      pathname === "/bidan/otp" ||
+      pathname.startsWith("/bidan/lupa-password");
 
     if (!sessionToken) {
       if (isAuthPage) return NextResponse.next();
@@ -165,7 +172,10 @@ export async function middleware(request: NextRequest) {
   // 5. Proteksi Portal Kader (/kader/*)
   // ═══════════════════════════════════════════════════════════════════════════
   if (pathname.startsWith("/kader")) {
-    const isAuthPage = pathname === "/kader/login" || pathname.startsWith("/kader/lupa-password");
+    const isAuthPage =
+      pathname === "/kader/login" ||
+      pathname === "/kader/otp" ||
+      pathname.startsWith("/kader/lupa-password");
 
     if (!sessionToken) {
       if (isAuthPage) return NextResponse.next();

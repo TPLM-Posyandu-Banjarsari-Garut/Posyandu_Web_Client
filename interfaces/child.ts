@@ -54,3 +54,63 @@ export interface CreateChildPayload {
   parent_user_id?: string | null;
   mother_name?: string | null;
 }
+
+export interface NewbornReportItem {
+  id: string;
+  name: string;
+  identity_number: string;
+  gender: "male" | "female";
+  child_category: string | null;
+  place_of_birth: string | null;
+  birth_date: string | null;
+  birth_order: number | null;
+  blood_type: string | null;
+  birth_weight: string | null;
+  birth_length: string | null;
+  birth_head_circumference: string | null;
+  created_at: string | null;
+  posyandu_id: string;
+  posyandu_name: string | null;
+  posyandu_village: string | null;
+  posyandu_rt: string | null;
+  posyandu_rw: string | null;
+  mother_name: string | null;
+  mother_nik: string | null;
+  mother_phone: string | null;
+  mother_address: string | null;
+  mother_rt: string | null;
+  mother_rw: string | null;
+}
+
+export interface NewbornReportSummary {
+  total_newborns: number;
+  male_count: number;
+  female_count: number;
+  total_posyandus: number;
+}
+
+export interface NewbornReportData {
+  summary: NewbornReportSummary;
+  data: NewbornReportItem[];
+  meta: {
+    page: number;
+    limit: number;
+    total_items: number;
+    total_pages: number;
+  };
+}
+
+export interface NewbornReportResponse {
+  success: boolean;
+  message: string;
+  data: NewbornReportData;
+}
+
+export interface NewbornReportParams {
+  month: number;
+  year: number;
+  posyandu_id?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}

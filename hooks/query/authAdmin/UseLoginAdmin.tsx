@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { loginAdmin } from "@/service/auth/adminAuthService";
+import { isEmailNotVerifiedError } from "@/service/auth/authService";
 import { AdminLoginPayload } from "@/interfaces/auth";
 
 interface LoginAdminVariables extends AdminLoginPayload {
@@ -70,13 +71,22 @@ export function useLoginAdmin() {
     }
   }, [setValue]);
 
-  const loginMutation = useMutation<void, Error, LoginAdminVariables>({
+  const loginMutation = useMutation<{ requiresOtp: boolean }, Error, LoginAdminVariables>({
     mutationFn: async ({ email, password, captchaToken }) => {
       try {
         const response = await loginAdmin({ email, password, captchaToken });
 
         if (!response.user) {
           throw new Error("Email atau kata sandi tidak valid");
+        }
+
+        if (response.user.emailVerified === false) {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("verify_email", email);
+            sessionStorage.setItem("verify_role", "admin");
+          }
+          router.push("/admin/otp");
+          return { requiresOtp: true };
         }
 
         if (
@@ -90,7 +100,16 @@ export function useLoginAdmin() {
 
         // Invalidate current-user cache so fresh data is fetched
         await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+        return { requiresOtp: false };
       } catch (error) {
+        if (isEmailNotVerifiedError(error)) {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("verify_email", email);
+            sessionStorage.setItem("verify_role", "admin");
+          }
+          router.push("/admin/otp");
+          return { requiresOtp: true };
+        }
         throw new Error(getErrorMessage(error));
       }
     },
@@ -112,7 +131,11 @@ export function useLoginAdmin() {
           captchaToken,
         },
         {
-          onSuccess: () => {
+          onSuccess: (result) => {
+            if (result?.requiresOtp) {
+              setIsSubmitting(false);
+              return;
+            }
             if (data.rememberMe) {
               localStorage.setItem("rememberedEmail_admin", data.email);
             } else {

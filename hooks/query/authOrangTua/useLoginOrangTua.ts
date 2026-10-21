@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { loginOrangTua, signInOrangTuaGoogle } from "@/service/auth/orangTuaAuthService";
+import { isEmailNotVerifiedError } from "@/service/auth/authService";
 import { OrangTuaLoginPayload } from "@/interfaces/auth";
 
 interface LoginOrangTuaVariables extends OrangTuaLoginPayload {
@@ -64,7 +65,7 @@ export function useLoginOrangTua() {
     }
   }, [setValue]);
 
-  const loginMutation = useMutation<void, Error, LoginOrangTuaVariables>({
+  const loginMutation = useMutation<{ requiresOtp: boolean }, Error, LoginOrangTuaVariables>({
     mutationFn: async ({ email, password, captchaToken }) => {
       try {
         const response = await loginOrangTua({ email, password, captchaToken });
@@ -73,13 +74,31 @@ export function useLoginOrangTua() {
           throw new Error("Email atau kata sandi tidak valid");
         }
 
+        if (response.user.emailVerified === false) {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("verify_email", email);
+            sessionStorage.setItem("verify_role", "orangtua");
+          }
+          router.push("/orangtua/otp");
+          return { requiresOtp: true };
+        }
+
         if (response.user.role !== "parent") {
           throw new Error("Akses ditolak. Hanya Orang Tua yang dapat masuk ke halaman ini.");
         }
 
         // Invalidate current-user cache so fresh data is fetched
         await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+        return { requiresOtp: false };
       } catch (error) {
+        if (isEmailNotVerifiedError(error)) {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("verify_email", email);
+            sessionStorage.setItem("verify_role", "orangtua");
+          }
+          router.push("/orangtua/otp");
+          return { requiresOtp: true };
+        }
         throw new Error(getErrorMessage(error));
       }
     },
@@ -101,7 +120,11 @@ export function useLoginOrangTua() {
           captchaToken,
         },
         {
-          onSuccess: () => {
+          onSuccess: (result) => {
+            if (result?.requiresOtp) {
+              setIsSubmitting(false);
+              return;
+            }
             if (data.rememberMe) {
               localStorage.setItem("rememberedEmail_orangtua", data.email);
             } else {

@@ -2,23 +2,24 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { logoutOrangTua } from "@/service/auth/orangTuaAuthService";
-import { useRouter } from "next/navigation";
+
+const ORANGTUA_LOGIN_PATH = "/orangtua/login";
 
 export function useLogoutOrangTua() {
-  const router = useRouter();
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: logoutOrangTua,
-    onSuccess: () => {
-      // Clear all React Query cache to prevent data leaks between sessions
-      queryClient.clear();
-      router.push("/orangtua/login");
+  const handlePostLogout = () => {
+    queryClient.clear();
+    if (typeof window !== "undefined") {
+      window.location.replace(ORANGTUA_LOGIN_PATH);
+    }
+  };
+
+  return useMutation<void, Error, void>({
+    mutationFn: async () => {
+      await logoutOrangTua();
     },
-    onError: () => {
-      // Force redirect even if API fails
-      queryClient.clear();
-      router.push("/orangtua/login");
-    },
+    onSuccess: handlePostLogout,
+    onError: handlePostLogout,
   });
 }

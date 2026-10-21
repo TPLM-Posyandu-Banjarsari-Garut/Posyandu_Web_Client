@@ -31,7 +31,7 @@ const cspDirectives = [
   // gambar: self, data URI, blob, dan semua HTTPS (untuk avatar, dll)
   `img-src 'self' data: blob: https:`,
   // koneksi: self dan backend API
-  `connect-src 'self' ${API_URL} https://challenges.cloudflare.com wss:`,
+  `connect-src 'self' ${API_URL} https://challenges.cloudflare.com ws: wss:`,
   // iframe: izinkan Cloudflare Turnstile widget
   `frame-src 'self' https://challenges.cloudflare.com`,
   // melarang embed halaman ini di frame lain (anti-clickjacking)

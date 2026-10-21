@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { loginKader } from "@/service/auth/kaderAuthService";
+import { isEmailNotVerifiedError } from "@/service/auth/authService";
 import { KaderLoginPayload } from "@/interfaces/auth";
 
 interface LoginKaderVariables extends KaderLoginPayload {
@@ -70,13 +71,22 @@ export function useLoginKader() {
     }
   }, [setValue]);
 
-  const loginMutation = useMutation<void, Error, LoginKaderVariables>({
+  const loginMutation = useMutation<{ requiresOtp: boolean }, Error, LoginKaderVariables>({
     mutationFn: async ({ email, password, captchaToken }) => {
       try {
         const response = await loginKader({ email, password, captchaToken });
 
         if (!response.user) {
           throw new Error("Email atau kata sandi tidak valid");
+        }
+
+        if (response.user.emailVerified === false) {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("verify_email", email);
+            sessionStorage.setItem("verify_role", "kader");
+          }
+          router.push("/kader/otp");
+          return { requiresOtp: true };
         }
 
         if (response.user.role !== "cadre") {
@@ -87,7 +97,16 @@ export function useLoginKader() {
 
         // Invalidate current-user cache so fresh data is fetched
         await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+        return { requiresOtp: false };
       } catch (error) {
+        if (isEmailNotVerifiedError(error)) {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("verify_email", email);
+            sessionStorage.setItem("verify_role", "kader");
+          }
+          router.push("/kader/otp");
+          return { requiresOtp: true };
+        }
         throw new Error(getErrorMessage(error));
       }
     },
@@ -109,7 +128,11 @@ export function useLoginKader() {
           captchaToken,
         },
         {
-          onSuccess: () => {
+          onSuccess: (result) => {
+            if (result?.requiresOtp) {
+              setIsSubmitting(false);
+              return;
+            }
             if (data.rememberMe) {
               localStorage.setItem("rememberedEmail_kader", data.email);
             } else {

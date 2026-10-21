@@ -243,7 +243,7 @@ function ChartInner({ records, isLoading, tab, gender }: ChartInnerProps) {
             <Tooltip content={<CustomTooltip tab={tab} />} />
             <Legend
               wrapperStyle={{ fontSize: "10px", fontWeight: 600, paddingTop: "8px" }}
-              formatter={(value) =>
+              formatter={(value: string) =>
                 value === "value" ? tabLabel : `Median WHO (${gender === "male" ? "Laki-laki" : "Perempuan"})`
               }
             />
