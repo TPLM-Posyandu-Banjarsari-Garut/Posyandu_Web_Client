@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import SanitizedHtml from '@/components/ui/SanitizedHtml';
 import { useGetEducationById, useGetEducationCategories } from '@/hooks/query/education/useManageEducations';
 import 'react-quill-new/dist/quill.snow.css'; 
 
@@ -120,9 +121,9 @@ export default function EdukasiViewPage() {
 
                         {/* Article Body using Quill styles for consistency */}
                         <div className="ql-snow">
-                            <div 
+                            <SanitizedHtml
                                 className="ql-editor p-0 text-slate-700 leading-relaxed text-[15px]" 
-                                dangerouslySetInnerHTML={{ __html: cleanContent }}
+                                html={cleanContent}
                             />
                         </div>
 

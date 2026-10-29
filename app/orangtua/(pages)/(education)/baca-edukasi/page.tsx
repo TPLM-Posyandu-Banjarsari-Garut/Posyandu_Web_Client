@@ -1,6 +1,7 @@
 'use client';
 
 import BottombarOrtu from '@/components/ui/bottombar/orangtua/BottombarOrtu';
+import SanitizedHtml from '@/components/ui/SanitizedHtml';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
@@ -142,9 +143,9 @@ function BacaEdukasiContent() {
 
                         {/* Article Body using Quill styles for consistency */}
                         <div className="ql-snow">
-                            <div 
+                            <SanitizedHtml
                                 className="ql-editor p-0 text-slate-700 leading-relaxed text-[15px]" 
-                                dangerouslySetInnerHTML={{ __html: cleanContent }}
+                                html={cleanContent}
                             />
                         </div>
 
