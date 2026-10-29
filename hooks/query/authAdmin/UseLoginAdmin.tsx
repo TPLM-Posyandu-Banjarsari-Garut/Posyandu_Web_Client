@@ -8,6 +8,7 @@ import axios from "axios";
 import { loginAdmin } from "@/service/auth/adminAuthService";
 import { isEmailNotVerifiedError } from "@/service/auth/authService";
 import { AdminLoginPayload } from "@/interfaces/auth";
+import { clearIdentityBoundQueryCache } from "@/service/auth/clearIdentityBoundQueryCache";
 
 interface LoginAdminVariables extends AdminLoginPayload {
   rememberMe?: boolean;
@@ -73,6 +74,7 @@ export function useLoginAdmin() {
 
   const loginMutation = useMutation<{ requiresOtp: boolean }, Error, LoginAdminVariables>({
     mutationFn: async ({ email, password, captchaToken }) => {
+      await clearIdentityBoundQueryCache(queryClient);
       try {
         const response = await loginAdmin({ email, password, captchaToken });
 

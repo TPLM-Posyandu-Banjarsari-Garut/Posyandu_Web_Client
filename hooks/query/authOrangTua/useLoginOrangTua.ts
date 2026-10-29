@@ -8,6 +8,7 @@ import axios from "axios";
 import { loginOrangTua, signInOrangTuaGoogle } from "@/service/auth/orangTuaAuthService";
 import { isEmailNotVerifiedError } from "@/service/auth/authService";
 import { OrangTuaLoginPayload } from "@/interfaces/auth";
+import { clearIdentityBoundQueryCache } from "@/service/auth/clearIdentityBoundQueryCache";
 
 interface LoginOrangTuaVariables extends OrangTuaLoginPayload {
   rememberMe?: boolean;
@@ -67,6 +68,7 @@ export function useLoginOrangTua() {
 
   const loginMutation = useMutation<{ requiresOtp: boolean }, Error, LoginOrangTuaVariables>({
     mutationFn: async ({ email, password, captchaToken }) => {
+      await clearIdentityBoundQueryCache(queryClient);
       try {
         const response = await loginOrangTua({ email, password, captchaToken });
 
@@ -149,6 +151,7 @@ export function useLoginOrangTua() {
     setIsGooglePending(true);
     setApiError("");
     try {
+      await clearIdentityBoundQueryCache(queryClient);
       const callbackURL = `${window.location.origin}/orangtua/home`;
       const response = await signInOrangTuaGoogle(callbackURL);
       if (response && response.url) {

@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { logoutOrangTua } from "@/service/auth/orangTuaAuthService";
+import { clearIdentityBoundQueryCache } from "@/service/auth/clearIdentityBoundQueryCache";
 
 const ORANGTUA_LOGIN_PATH = "/orangtua/login";
 
@@ -17,6 +18,7 @@ export function useLogoutOrangTua() {
 
   return useMutation<void, Error, void>({
     mutationFn: async () => {
+      await clearIdentityBoundQueryCache(queryClient);
       await logoutOrangTua();
     },
     onSuccess: handlePostLogout,

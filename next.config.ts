@@ -4,8 +4,8 @@ import withPWAInit from "@ducanh2912/next-pwa";
 
 const withPWA = withPWAInit({
   dest: "public",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
+  cacheOnFrontEndNav: false,
+  aggressiveFrontEndNavCaching: false,
   reloadOnOnline: true,
   disable: false,
   workboxOptions: {
@@ -90,6 +90,14 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: securityHeaders,
       },
+      {
+        source: "/api/:path*",
+        headers: [{ key: "Cache-Control", value: "no-store, private" }],
+      },
+      ...["admin", "kader", "bidan", "orangtua"].map((rolePath) => ({
+        source: `/${rolePath}/:path*`,
+        headers: [{ key: "Cache-Control", value: "no-store, private" }],
+      })),
     ];
   },
 };

@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { logoutBidan } from "@/service/auth/bidanAuthService";
+import { clearIdentityBoundQueryCache } from "@/service/auth/clearIdentityBoundQueryCache";
 
 const BIDAN_LOGIN_PATH = "/bidan/login";
 
@@ -17,6 +18,7 @@ export function useLogoutBidan() {
 
   return useMutation<void, Error, void>({
     mutationFn: async () => {
+      await clearIdentityBoundQueryCache(queryClient);
       await logoutBidan();
     },
     onSuccess: handlePostLogout,

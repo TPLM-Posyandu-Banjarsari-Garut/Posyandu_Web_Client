@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useGetMidwifeProfile } from "@/hooks/query/midwife/useMidwifeProfile";
 import { useCreateChild } from "@/hooks/query/child/useManageChildren";
-import { useGetUsers } from "@/hooks/query/userAdmin/UseManageUsers";
+import { useGetParents } from "@/hooks/query/parent/useManageParents";
 import { useGetPosyandus, useGetPosyanduById } from "@/hooks/query/posyandu/useManagePosyandu";
 import { CreateChildPayload } from "@/interfaces/child";
 import axios from "axios";
@@ -39,8 +39,7 @@ export default function PendaftaranBayi() {
   const [showMotherDropdown, setShowMotherDropdown] = useState(false);
 
   // Fetch parent users for mother search
-  const { data: motherUsersData, isLoading: isMotherLoading } = useGetUsers({
-    role: "parent",
+  const { data: motherUsersData, isLoading: isMotherLoading } = useGetParents({
     search: motherSearch || undefined,
     limit: 10,
   });
@@ -554,13 +553,13 @@ export default function PendaftaranBayi() {
                               type="button"
                               onClick={() => {
                                 setValue("mother_name", user.name);
-                                setValue("mother_id", user.id);
+                                setValue("mother_id", user.user_id);
                                 setShowMotherDropdown(false);
                               }}
                               className="w-full px-3 py-2 rounded-lg text-left hover:bg-purple-50 text-xs font-semibold transition-colors flex flex-col gap-0.5"
                             >
                               <span className="text-slate-800 font-bold">{user.name}</span>
-                              <span className="text-slate-400 text-[10px]">{user.email}</span>
+                              <span className="text-slate-400 text-[10px]">{user.phone_number}</span>
                             </button>
                           ))
                         ) : (

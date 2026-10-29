@@ -8,6 +8,7 @@ import axios from "axios";
 import { loginBidan } from "@/service/auth/bidanAuthService";
 import { isEmailNotVerifiedError } from "@/service/auth/authService";
 import { BidanLoginPayload } from "@/interfaces/auth";
+import { clearIdentityBoundQueryCache } from "@/service/auth/clearIdentityBoundQueryCache";
 
 interface LoginBidanVariables extends BidanLoginPayload {
   rememberMe?: boolean;
@@ -72,6 +73,7 @@ export function useLoginBidan() {
 
   const loginMutation = useMutation<{ requiresOtp: boolean }, Error, LoginBidanVariables>({
     mutationFn: async ({ email, password, captchaToken }) => {
+      await clearIdentityBoundQueryCache(queryClient);
       try {
         const response = await loginBidan({ email, password, captchaToken });
 

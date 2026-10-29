@@ -8,7 +8,7 @@ import BottombarBidan from "@/components/ui/bottombar/bidan/BottombarBidan";
 import GrafikPertumbuhan from "@/components/ui/grafik/GrafikPertumbuhan";
 import { useGetChildById, useUpdateChild } from "@/hooks/query/child/useManageChildren";
 import { useGetPosyandus } from "@/hooks/query/posyandu/useManagePosyandu";
-import { useGetUsers } from "@/hooks/query/userAdmin/UseManageUsers";
+import { useGetParents } from "@/hooks/query/parent/useManageParents";
 import { CreateChildPayload } from "@/interfaces/child";
 
 function DetailBayiContent() {
@@ -27,8 +27,7 @@ function DetailBayiContent() {
   // Queries & Mutations
   const { data: childResponse, isLoading: isChildLoading, error: childError } = useGetChildById(childId);
   const { data: posyandusData } = useGetPosyandus({ limit: 100 });
-  const { data: motherUsersData, isLoading: isMotherLoading } = useGetUsers({
-    role: "parent",
+  const { data: motherUsersData, isLoading: isMotherLoading } = useGetParents({
     search: motherSearch || undefined,
     limit: 10,
   });
@@ -567,14 +566,14 @@ function DetailBayiContent() {
                               key={user.id}
                               type="button"
                               onClick={() => {
-                                handleFieldChange("parent_user_id", user.id);
+                                handleFieldChange("parent_user_id", user.user_id);
                                 handleFieldChange("mother_name", user.name);
                                 setShowMotherDropdown(false);
                               }}
                               className="w-full px-3 py-2 rounded-lg text-left hover:bg-purple-50 text-xs font-semibold transition-colors flex flex-col gap-0.5"
                             >
                               <span className="text-slate-800 font-bold">{user.name}</span>
-                              <span className="text-slate-400 text-[10px]">{user.email}</span>
+                              <span className="text-slate-400 text-[10px]">{user.phone_number}</span>
                             </button>
                           ))
                         ) : (

@@ -8,6 +8,7 @@ import axios from "axios";
 import { loginKader } from "@/service/auth/kaderAuthService";
 import { isEmailNotVerifiedError } from "@/service/auth/authService";
 import { KaderLoginPayload } from "@/interfaces/auth";
+import { clearIdentityBoundQueryCache } from "@/service/auth/clearIdentityBoundQueryCache";
 
 interface LoginKaderVariables extends KaderLoginPayload {
   rememberMe?: boolean;
@@ -73,6 +74,7 @@ export function useLoginKader() {
 
   const loginMutation = useMutation<{ requiresOtp: boolean }, Error, LoginKaderVariables>({
     mutationFn: async ({ email, password, captchaToken }) => {
+      await clearIdentityBoundQueryCache(queryClient);
       try {
         const response = await loginKader({ email, password, captchaToken });
 

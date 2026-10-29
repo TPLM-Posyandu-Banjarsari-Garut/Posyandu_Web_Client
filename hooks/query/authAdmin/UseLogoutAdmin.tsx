@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { logoutAdmin } from "@/service/auth/adminAuthService";
+import { clearIdentityBoundQueryCache } from "@/service/auth/clearIdentityBoundQueryCache";
 
 const ADMIN_LOGIN_PATH = "/admin/login";
 
@@ -22,6 +23,7 @@ export function useLogoutAdmin() {
 
   return useMutation<void, Error, void>({
     mutationFn: async () => {
+      await clearIdentityBoundQueryCache(queryClient);
       await logoutAdmin();
     },
     onSuccess: handlePostLogout,
