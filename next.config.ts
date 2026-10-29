@@ -1,3 +1,4 @@
+import "./src/configs/require-bun-version";
 import type { NextConfig } from "next";
 import withPWAInit from "@ducanh2912/next-pwa";
 
