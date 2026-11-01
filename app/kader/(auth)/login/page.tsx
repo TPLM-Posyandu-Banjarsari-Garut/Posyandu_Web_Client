@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useLoginKader } from "@/hooks/query/authKader/UseLoginKader";
 import TurnstileWidget from "@/components/ui/TurnstileWidget";
@@ -8,6 +8,12 @@ import TurnstileWidget from "@/components/ui/TurnstileWidget";
 export default function KaderLogin() {
   const router = useRouter();
   const [captchaToken, setCaptchaToken] = useState<string>('');
+  const [captchaResetKey, setCaptchaResetKey] = useState<number>(0);
+
+  const handleAuthError = useCallback(() => {
+    setCaptchaToken('');
+    setCaptchaResetKey((prev) => prev + 1);
+  }, []);
 
   const {
     register,
@@ -17,7 +23,7 @@ export default function KaderLogin() {
     setPasswordVisible,
     showSuccess,
     isPending,
-  } = useLoginKader();
+  } = useLoginKader({ onAuthError: handleAuthError });
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans pb-10 pt-4 px-0 sm:px-0 text-slate-800 flex justify-center">
@@ -49,7 +55,7 @@ export default function KaderLogin() {
         {/* White Form Card Overlap Section */}
         <div className="bg-white rounded-t-[2.5rem] -mt-8 pt-8 px-6 pb-8 flex-1 flex flex-col justify-between relative z-10">
           
-          <form onSubmit={onSubmit(captchaToken)} className="flex flex-col gap-5">
+          <form onSubmit={onSubmit(captchaToken, handleAuthError)} className="flex flex-col gap-5">
             
             {/* Error Alert Display */}
             {displayError && (
@@ -160,6 +166,7 @@ export default function KaderLogin() {
           {/* CAPTCHA Turnstile */}
           <div className="mt-6">
             <TurnstileWidget
+              resetKey={captchaResetKey}
               onVerify={(token) => setCaptchaToken(token)}
               onExpire={() => setCaptchaToken('')}
               theme="light"
@@ -169,7 +176,7 @@ export default function KaderLogin() {
           {/* Submit Action Button */}
           <div className="mt-4 flex flex-col gap-4">
             <button
-              onClick={onSubmit(captchaToken)}
+              onClick={onSubmit(captchaToken, handleAuthError)}
               disabled={isPending || !captchaToken}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-full active:scale-98 transition-all shadow-[0_8px_20px_rgba(37,99,235,0.25)] flex justify-center items-center gap-2 disabled:opacity-75 cursor-pointer"
             >

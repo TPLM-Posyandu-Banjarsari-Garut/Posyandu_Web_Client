@@ -40,7 +40,11 @@ function getErrorMessage(error: unknown): string {
   return "Terjadi kesalahan saat pendaftaran";
 }
 
-export function useRegisterOrangTua() {
+export interface UseRegisterOrangTuaOptions {
+  onAuthError?: () => void;
+}
+
+export function useRegisterOrangTua(options?: UseRegisterOrangTuaOptions) {
   const router = useRouter();
 
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -83,10 +87,16 @@ export function useRegisterOrangTua() {
     },
   });
 
-  const onSubmit = (captchaToken: string) =>
+  const onSubmit = (captchaToken: string, onAuthError?: () => void) =>
     handleSubmit((data) => {
+      const triggerAuthError = () => {
+        onAuthError?.();
+        options?.onAuthError?.();
+      };
+
       if (!captchaToken) {
         setApiError("Silakan selesaikan verifikasi CAPTCHA terlebih dahulu.");
+        triggerAuthError();
         return;
       }
       setApiError("");
@@ -104,7 +114,7 @@ export function useRegisterOrangTua() {
           captchaToken,
         },
         {
-          onSuccess: (res) => {
+          onSuccess: () => {
             setShowSuccess(true);
             // Set session storage item for OTP page to know which email to verify
             sessionStorage.setItem("verify_email", data.email);
@@ -115,6 +125,7 @@ export function useRegisterOrangTua() {
           },
           onError: (err) => {
             setApiError(err.message);
+            triggerAuthError();
           },
         }
       );

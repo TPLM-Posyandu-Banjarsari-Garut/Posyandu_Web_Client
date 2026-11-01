@@ -35,7 +35,11 @@ function getErrorMessage(error: unknown): string {
   return "Terjadi kesalahan saat login";
 }
 
-export function useLoginOrangTua() {
+export interface UseLoginOrangTuaOptions {
+  onAuthError?: () => void;
+}
+
+export function useLoginOrangTua(options?: UseLoginOrangTuaOptions) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -106,10 +110,16 @@ export function useLoginOrangTua() {
     },
   });
 
-  const onSubmit = (captchaToken: string) =>
+  const onSubmit = (captchaToken: string, onAuthError?: () => void) =>
     handleSubmit((data) => {
+      const triggerAuthError = () => {
+        onAuthError?.();
+        options?.onAuthError?.();
+      };
+
       if (!captchaToken) {
         setApiError("Silakan selesaikan verifikasi CAPTCHA terlebih dahulu.");
+        triggerAuthError();
         return;
       }
       setApiError("");
@@ -140,6 +150,7 @@ export function useLoginOrangTua() {
           onError: (err) => {
             setApiError(err.message);
             setIsSubmitting(false);
+            triggerAuthError();
           },
         }
       );

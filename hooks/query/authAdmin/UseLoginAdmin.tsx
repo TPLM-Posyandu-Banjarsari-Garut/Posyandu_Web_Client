@@ -41,7 +41,11 @@ function getErrorMessage(error: unknown): string {
   return "Terjadi kesalahan saat login";
 }
 
-export function useLoginAdmin() {
+export interface UseLoginAdminOptions {
+  onAuthError?: () => void;
+}
+
+export function useLoginAdmin(options?: UseLoginAdminOptions) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -117,10 +121,16 @@ export function useLoginAdmin() {
     },
   });
 
-  const onSubmit = (captchaToken: string) =>
+  const onSubmit = (captchaToken: string, onAuthError?: () => void) =>
     handleSubmit((data) => {
+      const triggerAuthError = () => {
+        onAuthError?.();
+        options?.onAuthError?.();
+      };
+
       if (!captchaToken) {
         setApiError("Silakan selesaikan verifikasi CAPTCHA terlebih dahulu.");
+        triggerAuthError();
         return;
       }
       setApiError("");
@@ -151,6 +161,7 @@ export function useLoginAdmin() {
           onError: (err) => {
             setApiError(err.message);
             setIsSubmitting(false);
+            triggerAuthError();
           },
         }
       );

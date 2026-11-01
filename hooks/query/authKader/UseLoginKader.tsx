@@ -41,7 +41,11 @@ function getErrorMessage(error: unknown): string {
   return "Terjadi kesalahan saat login";
 }
 
-export function useLoginKader() {
+export interface UseLoginKaderOptions {
+  onAuthError?: () => void;
+}
+
+export function useLoginKader(options?: UseLoginKaderOptions) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -114,10 +118,16 @@ export function useLoginKader() {
     },
   });
 
-  const onSubmit = (captchaToken: string) =>
+  const onSubmit = (captchaToken: string, onAuthError?: () => void) =>
     handleSubmit((data) => {
+      const triggerAuthError = () => {
+        onAuthError?.();
+        options?.onAuthError?.();
+      };
+
       if (!captchaToken) {
         setApiError("Silakan selesaikan verifikasi CAPTCHA terlebih dahulu.");
+        triggerAuthError();
         return;
       }
       setApiError("");
@@ -148,6 +158,7 @@ export function useLoginKader() {
           onError: (err) => {
             setApiError(err.message);
             setIsSubmitting(false);
+            triggerAuthError();
           },
         }
       );

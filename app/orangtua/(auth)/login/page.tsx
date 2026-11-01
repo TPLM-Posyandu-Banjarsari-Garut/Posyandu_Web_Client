@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useLoginOrangTua } from "@/hooks/query/authOrangTua/useLoginOrangTua";
 import { useRegisterOrangTua } from "@/hooks/query/authOrangTua/useRegisterOrangTua";
@@ -12,10 +12,17 @@ export default function OrangTuaAuth() {
   // Active Tab state ("login" or "register")
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [captchaToken, setCaptchaToken] = useState<string>('');
+  const [captchaResetKey, setCaptchaResetKey] = useState<number>(0);
+
+  const handleAuthError = useCallback(() => {
+    setCaptchaToken('');
+    setCaptchaResetKey((prev) => prev + 1);
+  }, []);
 
   const handleTabChange = (tab: "login" | "register") => {
     setActiveTab(tab);
     setCaptchaToken('');
+    setCaptchaResetKey((prev) => prev + 1);
   };
 
   const {
@@ -28,7 +35,7 @@ export default function OrangTuaAuth() {
     isPending: isLoginPending,
     handleGoogleLogin,
     isGooglePending,
-  } = useLoginOrangTua();
+  } = useLoginOrangTua({ onAuthError: handleAuthError });
 
   const {
     register: registerSignup,
@@ -40,7 +47,7 @@ export default function OrangTuaAuth() {
     setConfirmPasswordVisible: setRegisterConfirmPasswordVisible,
     showSuccess: showRegisterSuccess,
     isPending: isRegisterPending,
-  } = useRegisterOrangTua();
+  } = useRegisterOrangTua({ onAuthError: handleAuthError });
 
   const error = activeTab === "login" ? loginError : registerError;
   const isLoading = (activeTab === "login" ? isLoginPending : isRegisterPending) || isGooglePending;
@@ -123,7 +130,7 @@ export default function OrangTuaAuth() {
             )}
 
             {activeTab === "login" ? (
-              <form id="loginForm" onSubmit={onSubmitLogin(captchaToken)} className="flex flex-col gap-5">
+              <form id="loginForm" onSubmit={onSubmitLogin(captchaToken, handleAuthError)} className="flex flex-col gap-5">
                 <div className="flex items-center gap-3.5 bg-slate-50 border border-slate-200/80 rounded-[1.25rem] p-3 hover:border-slate-350 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/10 transition-all">
                   <div className="w-11 h-11 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 shrink-0">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -198,7 +205,7 @@ export default function OrangTuaAuth() {
                 </div>
               </form>
             ) : (
-              <form id="registerForm" onSubmit={onSubmitSignup(captchaToken)} className="flex flex-col gap-5">
+              <form id="registerForm" onSubmit={onSubmitSignup(captchaToken, handleAuthError)} className="flex flex-col gap-5">
                 <div className="flex items-center gap-3.5 bg-slate-50 border border-slate-200/80 rounded-[1.25rem] p-3 hover:border-slate-350 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/10 transition-all">
                   <div className="w-11 h-11 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 shrink-0">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -334,6 +341,7 @@ export default function OrangTuaAuth() {
           <div className="mt-8 flex flex-col gap-6">
             {/* CAPTCHA Turnstile */}
             <TurnstileWidget
+              resetKey={captchaResetKey}
               onVerify={(token) => setCaptchaToken(token)}
               onExpire={() => setCaptchaToken('')}
               theme="light"
