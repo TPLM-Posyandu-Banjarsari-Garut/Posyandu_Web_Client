@@ -77,10 +77,12 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    const isCsrfError =
-      error.response?.status === 403 &&
-      (error.response?.data?.message?.toLowerCase().includes("csrf") ||
-        error.response?.data?.error?.toLowerCase().includes("csrf"));
+    let isCsrfError = false;
+
+    if (error.response?.status === 403 && error.response?.data) {
+      const rawMessage = extractErrorMessage(error.response.data, "");
+      isCsrfError = rawMessage.toLowerCase().includes("csrf");
+    }
 
     if (isCsrfError && originalRequest && !originalRequest._retryCsrf) {
       originalRequest._retryCsrf = true;
@@ -174,13 +176,120 @@ export async function resendEmailOTP(payload: ResendEmailOTPPayload): Promise<{ 
   return data;
 }
 
+/**
+ * Ekstraksi pesan error yang aman dari berbagai bentuk response error backend
+ * (string, object, array, better-auth error object, Cloudflare turnstile)
+ */
+export function extractErrorMessage(data: unknown, fallback = "Terjadi kesalahan"): string {
+  if (!data) return fallback;
+
+  if (typeof data === "string") {
+    if (data.trim().startsWith("<")) return fallback;
+    return data;
+  }
+
+  if (typeof data === "object" && data !== null) {
+    const obj = data as Record<string, unknown>;
+
+    // 1. Pesan langsung dalam string message
+    if (typeof obj.message === "string" && obj.message.trim()) {
+      return obj.message;
+    }
+
+    // 2. Pesan berbentuk array
+    if (Array.isArray(obj.message) && obj.message.length > 0) {
+      const first = obj.message[0];
+      if (typeof first === "string" && first.trim()) return first;
+      if (first && typeof first === "object" && "message" in first && typeof (first as any).message === "string") {
+        return (first as any).message;
+      }
+    }
+
+    // 3. Error langsung berupa string
+    if (typeof obj.error === "string" && obj.error.trim()) {
+      return obj.error;
+    }
+
+    // 4. Error berbentuk object (seperti Better-Auth: { error: { message: "...", status: 400 } })
+    if (obj.error && typeof obj.error === "object") {
+      const errObj = obj.error as Record<string, unknown>;
+      if (typeof errObj.message === "string" && errObj.message.trim()) {
+        return errObj.message;
+      }
+      if (typeof errObj.error === "string" && errObj.error.trim()) {
+        return errObj.error;
+      }
+      if (typeof errObj.statusText === "string" && errObj.statusText.trim()) {
+        return errObj.statusText;
+      }
+    }
+
+    // 5. Error berbentuk array
+    if (Array.isArray(obj.error) && obj.error.length > 0) {
+      const first = obj.error[0];
+      if (typeof first === "string" && first.trim()) return first;
+    }
+
+    // 6. Error code langsung dari Cloudflare Turnstile
+    if (Array.isArray(obj["error-codes"]) && (obj["error-codes"] as unknown[]).length > 0) {
+      const first = (obj["error-codes"] as unknown[])[0];
+      if (typeof first === "string" && first.trim()) return `Turnstile error: ${first}`;
+    }
+
+    // 7. Format array errors umum
+    if (Array.isArray(obj.errors) && obj.errors.length > 0) {
+      const first = obj.errors[0];
+      if (typeof first === "string" && first.trim()) return first;
+      if (first && typeof first === "object" && "message" in first && typeof (first as any).message === "string") {
+        return (first as any).message;
+      }
+    }
+  }
+
+  return fallback;
+}
+
+/**
+ * Helper terpusat untuk mengambil pesan error dari Axios error atau general Error
+ */
+export function getApiErrorMessage(
+  error: unknown,
+  fallback = "Terjadi kesalahan saat memproses permintaan"
+): string {
+  if (axios.isAxiosError(error)) {
+    if (!error.response) {
+      return "Tidak dapat terhubung ke server. Pastikan koneksi internet aktif dan coba lagi.";
+    }
+    return extractErrorMessage(error.response.data, fallback);
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return fallback;
+}
+
 export function isEmailNotVerifiedError(error: unknown): boolean {
   if (!axios.isAxiosError(error)) return false;
-  const data = error.response?.data as { code?: string; message?: string; error?: string } | undefined;
+  const data = error.response?.data;
   if (!data) return false;
 
-  const code = (data.code ?? "").toUpperCase();
-  const message = (data.message ?? data.error ?? "").toLowerCase();
+  let code = "";
+  if (typeof data === "object" && data !== null) {
+    const obj = data as Record<string, unknown>;
+    if (typeof obj.code === "string") {
+      code = obj.code.toUpperCase();
+    } else if (typeof obj.code === "number") {
+      code = String(obj.code);
+    } else if (obj.error && typeof obj.error === "object") {
+      const errObj = obj.error as Record<string, unknown>;
+      if (typeof errObj.code === "string") {
+        code = errObj.code.toUpperCase();
+      }
+    }
+  }
+
+  const rawMessage = extractErrorMessage(data, "");
+  const message = rawMessage.toLowerCase();
 
   return (
     code === "EMAIL_NOT_VERIFIED" ||

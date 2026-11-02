@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { registerOrangTua } from "@/service/auth/orangTuaAuthService";
+import { extractErrorMessage } from "@/service/auth/authService";
 import { OrangTuaRegisterPayload, OrangTuaUser } from "@/interfaces/auth";
 
 interface RegisterOrangTuaResult {
@@ -21,18 +22,22 @@ function getErrorMessage(error: unknown): string {
     if (!error.response) {
       return "Tidak dapat terhubung ke server. Pastikan koneksi internet aktif dan coba lagi.";
     }
-    const data = error.response.data as { message?: string; error?: string; code?: string } | undefined;
-    
+    const data = error.response.data;
+    const rawMessage = extractErrorMessage(data, "");
+    const code =
+      typeof data === "object" && data !== null
+        ? String((data as Record<string, unknown>).code ?? "").toUpperCase()
+        : "";
+
     // Check for "User already exists" error from better-auth
     if (
-      data?.code === "USER_ALREADY_EXISTS" || 
-      data?.message?.toLowerCase().includes("already exists") ||
-      data?.error?.toLowerCase().includes("already exists")
+      code === "USER_ALREADY_EXISTS" || 
+      rawMessage.toLowerCase().includes("already exists")
     ) {
       return "Email sudah terdaftar. Gunakan email lain.";
     }
 
-    return data?.message ?? data?.error ?? "Terjadi kesalahan saat pendaftaran";
+    return extractErrorMessage(data, "Terjadi kesalahan saat pendaftaran");
   }
   if (error instanceof Error) {
     return error.message;

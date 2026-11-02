@@ -6,8 +6,8 @@ import {
   verifyEmailOTP,
   resendEmailOTP,
   changePassword,
+  getApiErrorMessage,
 } from "@/service/auth/authService";
-import axios from "axios";
 
 export interface OtpVerificationCardProps {
   roleName: string;
@@ -18,14 +18,7 @@ export interface OtpVerificationCardProps {
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{12,100}$/;
 
 function getErrorMessage(error: unknown, fallback: string): string {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { message?: string; error?: string } | undefined;
-    return data?.message ?? data?.error ?? fallback;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return fallback;
+  return getApiErrorMessage(error, fallback);
 }
 
 export default function OtpVerificationCard({

@@ -112,10 +112,11 @@ const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetProps>(
           'expired-callback': () => {
             onExpireRef.current?.();
           },
-          'error-callback': (errorCode?: string) => {
-            console.error('Cloudflare Turnstile error:', errorCode);
+          'error-callback': (errorCode?: string | number) => {
+            const codeStr = errorCode !== undefined ? String(errorCode) : undefined;
+            console.error('Cloudflare Turnstile error:', codeStr);
             onExpireRef.current?.();
-            onErrorRef.current?.(errorCode);
+            onErrorRef.current?.(codeStr);
           },
           'timeout-callback': () => {
             onExpireRef.current?.();

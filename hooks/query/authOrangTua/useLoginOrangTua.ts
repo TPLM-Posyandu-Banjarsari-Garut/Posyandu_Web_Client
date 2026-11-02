@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { loginOrangTua, signInOrangTuaGoogle } from "@/service/auth/orangTuaAuthService";
-import { isEmailNotVerifiedError } from "@/service/auth/authService";
+import { isEmailNotVerifiedError, getApiErrorMessage } from "@/service/auth/authService";
 import { OrangTuaLoginPayload } from "@/interfaces/auth";
 import { clearIdentityBoundQueryCache } from "@/service/auth/clearIdentityBoundQueryCache";
 
@@ -22,17 +22,7 @@ export interface LoginFormInputs {
 }
 
 function getErrorMessage(error: unknown): string {
-  if (axios.isAxiosError(error)) {
-    if (!error.response) {
-      return "Tidak dapat terhubung ke server. Pastikan koneksi internet aktif dan coba lagi.";
-    }
-    const data = error.response.data as { message?: string; error?: string } | undefined;
-    return data?.message ?? data?.error ?? "Email atau kata sandi tidak valid";
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Terjadi kesalahan saat login";
+  return getApiErrorMessage(error, "Email atau kata sandi tidak valid");
 }
 
 export interface UseLoginOrangTuaOptions {
