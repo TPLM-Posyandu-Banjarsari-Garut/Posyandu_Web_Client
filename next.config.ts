@@ -22,8 +22,8 @@ const isDev = process.env.NODE_ENV === "development";
 const cspDirectives = [
   `default-src 'self'`,
   // script: izinkan self, inline (Next.js butuhkan), dan Cloudflare Turnstile
-  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://challenges.cloudflare.com`,
-  `script-src-elem 'self' 'unsafe-inline' https://challenges.cloudflare.com`,
+  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://challenges.cloudflare.com https://*.challenges.cloudflare.com`,
+  `script-src-elem 'self' 'unsafe-inline' https://challenges.cloudflare.com https://*.challenges.cloudflare.com`,
   // style: izinkan self, inline (TailwindCSS), dan Google Fonts
   `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
   `style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com`,
@@ -32,9 +32,9 @@ const cspDirectives = [
   // gambar: self, data URI, blob, dan semua HTTPS (untuk avatar, dll)
   `img-src 'self' data: blob: https:`,
   // koneksi: self dan backend API
-  `connect-src 'self' ${API_URL} https://challenges.cloudflare.com ws: wss:`,
+  `connect-src 'self' ${API_URL} https://challenges.cloudflare.com https://*.challenges.cloudflare.com ws: wss:`,
   // iframe: izinkan Cloudflare Turnstile widget
-  `frame-src 'self' https://challenges.cloudflare.com`,
+  `frame-src 'self' https://challenges.cloudflare.com https://*.challenges.cloudflare.com`,
   // melarang embed halaman ini di frame lain (anti-clickjacking)
   `frame-ancestors 'none'`,
   // melarang plugin object/embed

@@ -6,6 +6,7 @@ import {
   useImperativeHandle,
   forwardRef,
   useCallback,
+  useState,
 } from 'react';
 import Script from 'next/script';
 
@@ -42,95 +43,113 @@ export interface TurnstileWidgetProps {
   onExpire?: () => void;
   onError?: (errorCode?: string) => void;
   theme?: 'light' | 'dark' | 'auto';
+  size?: 'normal' | 'compact' | 'flexible';
   resetKey?: number | string;
+  className?: string;
 }
 
 const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetProps>(
   function TurnstileWidget(
-    { onVerify, onExpire, onError, theme = 'light', resetKey },
+    {
+      onVerify,
+      onExpire,
+      onError,
+      theme = 'light',
+      size = 'normal',
+      resetKey,
+      className,
+    },
     ref
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
-    const isMountedRef = useRef(false);
+    const isRenderingRef = useRef(false);
+    const [scriptLoadError, setScriptLoadError] = useState(false);
+
+    // Keep callback references stable across renders to prevent unnecessary re-mounts
+    const onVerifyRef = useRef(onVerify);
+    const onExpireRef = useRef(onExpire);
+    const onErrorRef = useRef(onError);
+
+    useEffect(() => {
+      onVerifyRef.current = onVerify;
+      onExpireRef.current = onExpire;
+      onErrorRef.current = onError;
+    });
 
     const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
+    // Bersihkan widget Turnstile secara aman
+    const cleanupWidget = useCallback(() => {
+      if (typeof window !== 'undefined' && window.turnstile && widgetIdRef.current) {
+        try {
+          window.turnstile.remove(widgetIdRef.current);
+        } catch {
+          // ignore
+        }
+        widgetIdRef.current = null;
+      }
+      isRenderingRef.current = false;
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
+    }, []);
+
+    // Render widget Turnstile langsung (jangan pakai turnstile.ready karena Cloudflare melempar error 3857 jika script async)
     const renderWidget = useCallback(() => {
-      if (!containerRef.current || !window.turnstile || !siteKey) return;
-      // Cegah render ganda jika widget sudah ada
-      if (widgetIdRef.current) return;
+      if (!containerRef.current || !siteKey || typeof window === 'undefined') return;
+      if (!window.turnstile || typeof window.turnstile.render !== 'function') return;
+      if (widgetIdRef.current || isRenderingRef.current) return;
+
+      isRenderingRef.current = true;
 
       try {
-        widgetIdRef.current = window.turnstile.render(containerRef.current, {
+        const id = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
           callback: (token: string) => {
-            onVerify(token);
+            onVerifyRef.current?.(token);
           },
           'expired-callback': () => {
-            if (onExpire) onExpire();
+            onExpireRef.current?.();
           },
           'error-callback': (errorCode?: string) => {
-            if (onExpire) onExpire();
-            if (onError) onError(errorCode);
-            // Auto reload widget jika ada error pada Cloudflare Turnstile
-            setTimeout(() => {
-              try {
-                if (widgetIdRef.current && window.turnstile) {
-                  window.turnstile.reset(widgetIdRef.current);
-                }
-              } catch {
-                // ignore
-              }
-            }, 1500);
+            console.error('Cloudflare Turnstile error:', errorCode);
+            onExpireRef.current?.();
+            onErrorRef.current?.(errorCode);
           },
           'timeout-callback': () => {
-            if (onExpire) onExpire();
-            setTimeout(() => {
-              try {
-                if (widgetIdRef.current && window.turnstile) {
-                  window.turnstile.reset(widgetIdRef.current);
-                }
-              } catch {
-                // ignore
-              }
-            }, 1000);
+            onExpireRef.current?.();
           },
           'refresh-expired': 'auto',
           'refresh-timeout': 'auto',
           theme,
+          size,
           language: 'id',
         });
+
+        if (id !== undefined && id !== null) {
+          widgetIdRef.current = String(id);
+        }
       } catch (err) {
         console.error('Turnstile render failed:', err);
+      } finally {
+        isRenderingRef.current = false;
       }
-    }, [siteKey, onVerify, onExpire, onError, theme]);
+    }, [siteKey, theme, size]);
 
+    // Reset widget (hanya reset status widget yang ada tanpa unmount/re-render DOM jika memungkinkan)
     const reset = useCallback(() => {
-      if (onExpire) {
-        onExpire();
-      }
-      if (typeof window !== 'undefined' && window.turnstile) {
+      onExpireRef.current?.();
+      if (typeof window !== 'undefined' && window.turnstile && widgetIdRef.current) {
         try {
-          if (widgetIdRef.current) {
-            window.turnstile.reset(widgetIdRef.current);
-          } else {
-            window.turnstile.reset();
-          }
+          window.turnstile.reset(widgetIdRef.current);
         } catch {
           // Jika reset gagal, bersihkan dan render ulang
-          try {
-            if (widgetIdRef.current) {
-              window.turnstile.remove(widgetIdRef.current);
-              widgetIdRef.current = null;
-            }
-            renderWidget();
-          } catch {
-            // ignore
-          }
+          cleanupWidget();
+          renderWidget();
         }
       }
-    }, [onExpire, renderWidget]);
+    }, [cleanupWidget, renderWidget]);
 
     useImperativeHandle(
       ref,
@@ -140,55 +159,61 @@ const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetProps>(
       [reset]
     );
 
-    // Auto-reset jika resetKey berubah setelah mount
+    // Track resetKey changes only (skip pada initial mount agar tidak memicu reset seketika)
+    const isInitialMount = useRef(true);
+    const prevResetKeyRef = useRef(resetKey);
+
     useEffect(() => {
-      if (isMountedRef.current && resetKey !== undefined) {
+      if (isInitialMount.current) {
+        isInitialMount.current = false;
+        prevResetKeyRef.current = resetKey;
+        return;
+      }
+
+      if (resetKey !== undefined && resetKey !== prevResetKeyRef.current) {
+        prevResetKeyRef.current = resetKey;
         reset();
       }
     }, [resetKey, reset]);
 
+    // Lifecycle: mount & unmount
     useEffect(() => {
-      isMountedRef.current = true;
+      let isCancelled = false;
 
-      if (window.turnstile) {
-        renderWidget();
-        return () => {
-          if (window.turnstile && widgetIdRef.current) {
-            try {
-              window.turnstile.remove(widgetIdRef.current);
-            } catch {
-              // ignore
-            }
-            widgetIdRef.current = null;
+      const tryInit = () => {
+        if (isCancelled) return;
+        if (window.turnstile && typeof window.turnstile.render === 'function') {
+          renderWidget();
+        }
+      };
+
+      if (window.turnstile && typeof window.turnstile.render === 'function') {
+        tryInit();
+      } else {
+        const checkInterval = setInterval(() => {
+          if (window.turnstile && typeof window.turnstile.render === 'function') {
+            clearInterval(checkInterval);
+            tryInit();
           }
+        }, 50);
+
+        const timeout = setTimeout(() => {
+          clearInterval(checkInterval);
+        }, 5000);
+
+        return () => {
+          isCancelled = true;
+          clearInterval(checkInterval);
+          clearTimeout(timeout);
+          cleanupWidget();
         };
       }
 
-      // Interval fallback jika script sudah dimuat namun window.turnstile belum siap
-      const checkTurnstileInterval = setInterval(() => {
-        if (window.turnstile) {
-          clearInterval(checkTurnstileInterval);
-          renderWidget();
-        }
-      }, 100);
-
-      const timeout = setTimeout(() => {
-        clearInterval(checkTurnstileInterval);
-      }, 5000);
-
       return () => {
-        clearInterval(checkTurnstileInterval);
-        clearTimeout(timeout);
-        if (window.turnstile && widgetIdRef.current) {
-          try {
-            window.turnstile.remove(widgetIdRef.current);
-          } catch {
-            // ignore
-          }
-          widgetIdRef.current = null;
-        }
+        isCancelled = true;
+        cleanupWidget();
       };
-    }, [renderWidget]);
+    }, [renderWidget, cleanupWidget]);
 
     if (!siteKey) {
       return (
@@ -205,14 +230,35 @@ const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetProps>(
       );
     }
 
+    if (scriptLoadError) {
+      return (
+        <div className="flex flex-col items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-600 text-center">
+          <span>Gagal memuat CAPTCHA. Silakan periksa koneksi internet atau matikan ad-blocker Anda.</span>
+          <button
+            type="button"
+            onClick={() => {
+              setScriptLoadError(false);
+              cleanupWidget();
+              renderWidget();
+            }}
+            className="text-xs font-bold underline hover:text-red-700"
+          >
+            Coba lagi
+          </button>
+        </div>
+      );
+    }
+
     return (
       <>
         <Script
+          id="cloudflare-turnstile-script"
           src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
           strategy="afterInteractive"
           onLoad={renderWidget}
+          onError={() => setScriptLoadError(true)}
         />
-        <div className="flex justify-center">
+        <div className={`flex justify-center items-center min-h-[65px] ${className ?? ''}`}>
           <div ref={containerRef} />
         </div>
       </>

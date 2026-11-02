@@ -14,6 +14,14 @@ export default function OrangTuaAuth() {
   const [captchaToken, setCaptchaToken] = useState<string>('');
   const [captchaResetKey, setCaptchaResetKey] = useState<number>(0);
 
+  const handleVerifyCaptcha = useCallback((token: string) => {
+    setCaptchaToken(token);
+  }, []);
+
+  const handleExpireCaptcha = useCallback(() => {
+    setCaptchaToken('');
+  }, []);
+
   const handleAuthError = useCallback(() => {
     setCaptchaToken('');
     setCaptchaResetKey((prev) => prev + 1);
@@ -342,8 +350,8 @@ export default function OrangTuaAuth() {
             {/* CAPTCHA Turnstile */}
             <TurnstileWidget
               resetKey={captchaResetKey}
-              onVerify={(token) => setCaptchaToken(token)}
-              onExpire={() => setCaptchaToken('')}
+              onVerify={handleVerifyCaptcha}
+              onExpire={handleExpireCaptcha}
               theme="light"
             />
             <button
